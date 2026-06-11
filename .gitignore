@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Tauri build output
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# Sidecar binaries (built locally via sidecar/publish.ps1)
+src-tauri/binaries/*
+!src-tauri/binaries/.gitkeep
+
+# Editor / OS
+.DS_Store
+*.local
+.idea/
+
+# Logs
+*.log

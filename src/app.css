@@ -1,0 +1,299 @@
+@import "tailwindcss";
+
+/* The app is dark-only: <html class="dark"> is hardcoded in index.html so the
+   dark: variants of the ported shadcn components always apply. */
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * atelier by feelgood — design system
+ * Ported from panel/app/globals.css, dark-only (no theme switch).
+ * Background #0b0b0b, white text, Discord blurple #5865F2 / #7289DA.
+ */
+
+:root {
+  /* Dark tokens only — the app never renders a light theme. */
+  --background: #0b0b0b;
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.16 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.16 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  /* Discord blurple #5865F2 */
+  --primary: oklch(0.5856 0.2037 277.12);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.235 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.235 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.5856 0.2037 277.12 / 60%);
+  --chart-1: oklch(0.5856 0.2037 277.12);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.145 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.5856 0.2037 277.12);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.5856 0.2037 277.12 / 60%);
+
+  /* Brand */
+  --blurple: #5865f2;
+  --blurple-hover: #4752c4;
+  --blurple-soft: #7289da;
+}
+
+@theme inline {
+  --font-sans: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-blurple: var(--blurple);
+  --color-blurple-hover: var(--blurple-hover);
+  --color-blurple-soft: var(--blurple-soft);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    /* Transparent so the OS window effect (acrylic/mica blur, see
+       tauri.conf.json windowEffects) shines through the whole app. */
+    background: transparent;
+  }
+
+  body {
+    @apply text-foreground font-sans;
+    /* Translucent dark tint over the acrylic blur — the glassmorphism base.
+       (Solid #0b0b0b would kill the window transparency.) */
+    background: rgba(11, 11, 11, 0.55);
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    /* Desktop app: no text cursor / selection chrome by default */
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: default;
+  }
+
+  input,
+  textarea,
+  [contenteditable="true"] {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  #root {
+    height: 100%;
+  }
+}
+
+/* Smooth screen transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.screen-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Apple Site Header Glass Effects - Clean, Minimal, Crisp */
+.liquid-glass {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.liquid-glass-enhanced {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Improved header glass background for better contrast */
+.liquid-glass-header {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Apple-style glass border utilities - Clean and minimal */
+.glass-border {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.glass-border-enhanced {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.glass-border-subtle {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Enhanced glass border hover effects with chromatic aberration */
+.glass-border:hover {
+  filter: drop-shadow(0 0 2px rgba(255, 0, 0, 0.1)) drop-shadow(1px 0 2px rgba(0, 255, 0, 0.08))
+    drop-shadow(-1px 0 2px rgba(0, 0, 255, 0.06));
+}
+
+.glass-border-enhanced:hover {
+  filter: drop-shadow(0 0 3px rgba(255, 0, 0, 0.12)) drop-shadow(1px 0 3px rgba(0, 255, 0, 0.1))
+    drop-shadow(-1px 0 3px rgba(0, 0, 255, 0.08));
+}
+
+.glass-border-subtle:hover {
+  filter: drop-shadow(0 0 1px rgba(255, 0, 0, 0.06)) drop-shadow(0.5px 0 1px rgba(0, 255, 0, 0.05))
+    drop-shadow(-0.5px 0 1px rgba(0, 0, 255, 0.04));
+}
+
+/* Opt-out for LARGE panel surfaces: the chromatic hover fringe above is meant
+   for small chips/pills — on big containers (workbench panes) it reads as a
+   glitch when the cursor moves across rows. */
+.glass-hover-none:hover {
+  filter: none;
+}
+
+/* Grid Background Pattern */
+.grid-background {
+  position: relative;
+}
+
+.grid-background::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Fade In Up Animation */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  /* fill-mode "both" (not "forwards"): with an animation-delay the element
+     must WAIT in the from-state (invisible) — "forwards" lets it flash
+     visible first, which looks like the animation playing twice. */
+  animation: fade-in-up 0.6s ease-out both;
+}
+
+.animation-delay-100 {
+  animation-delay: 0.1s;
+}
+
+.animation-delay-200 {
+  animation-delay: 0.2s;
+}
+
+.animation-delay-300 {
+  animation-delay: 0.3s;
+}
+
+.animation-delay-400 {
+  animation-delay: 0.4s;
+}
+
+/* Custom Scrollbar Styling (blurple hover) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b0b0b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #7289da;
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) #0b0b0b;
+}

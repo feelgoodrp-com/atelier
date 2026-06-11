@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="de" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>atelier by feelgood</title>
+    <style>
+      /* Unlayered styles — these BEAT the @layer base rules in app.css, so the
+         window transparency must be defined here, not (only) there. The body
+         carries the translucent dark tint over the OS acrylic blur. */
+      html {
+        background: transparent;
+      }
+      body {
+        background: rgba(11, 11, 11, 0.55);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

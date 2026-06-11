@@ -1,0 +1,53 @@
+# PR/push gate: frontend typecheck+bundle, project-schema selftest, sidecar
+# compile and a cargo check of the Tauri host. The real installer is built by
+# release.yml on v* tags.
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck + bundle frontend
+        run: bun run build
+
+      - name: Project schema selftest
+        run: bun run selftest:project
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build sidecar
+        run: dotnet build sidecar/Feelgood.Atelier.Sidecar.csproj -c Release
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Placeholder sidecar binary for tauri-build
+        shell: pwsh
+        # tauri-build only checks that the externalBin file exists; cargo check
+        # never runs it. The release pipeline ships the real exe.
+        run: |
+          New-Item -ItemType File -Force src-tauri/binaries/fg-atelier-sidecar-x86_64-pc-windows-msvc.exe | Out-Null
+
+      - name: Check Tauri host
+        run: cargo check --manifest-path src-tauri/Cargo.toml --locked

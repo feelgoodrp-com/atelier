@@ -1,0 +1,58 @@
+import { Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+interface ConfirmDeleteDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** Number of drawables about to be deleted. */
+  count: number;
+  onConfirm: () => void;
+}
+
+/** Destructive confirmation before removing drawables from the project. */
+export function ConfirmDeleteDialog({
+  open,
+  onOpenChange,
+  count,
+  onConfirm,
+}: ConfirmDeleteDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="liquid-glass border-white/15 sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="text-white">
+            {count === 1 ? "Drawable löschen?" : `${count} Drawables löschen?`}
+          </DialogTitle>
+          <DialogDescription className="text-white/50">
+            Entfernt {count === 1 ? "das Drawable" : "die Drawables"} aus dem
+            Projekt. Die kopierten Dateien bleiben im assets-Ordner erhalten.
+            Mit Strg+Z rückgängig machbar.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Abbrechen
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => {
+              onConfirm();
+              onOpenChange(false);
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+            Löschen
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

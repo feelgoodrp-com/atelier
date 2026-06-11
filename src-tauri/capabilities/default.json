@@ -1,0 +1,40 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window. fs note: project folders live at arbitrary user-chosen paths and must reopen from the recents list WITHOUT a dialog after app restart, so dialog-granted runtime scopes are not sufficient — the fs commands used by lib/project/* get an explicit global scope instead (kept to the minimal command set; no read-all/write-all).",
+  "windows": ["main", "logs"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-close",
+    "core:window:allow-is-maximized",
+    "opener:default",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [{ "path": "**" }]
+    },
+    "shell:allow-open",
+    "dialog:default",
+    "fs:default",
+    "fs:allow-mkdir",
+    "fs:allow-exists",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-read-file",
+    "fs:allow-write-file",
+    "fs:allow-read-dir",
+    "fs:allow-rename",
+    "fs:allow-copy-file",
+    "fs:allow-remove",
+    {
+      "identifier": "fs:scope",
+      "allow": [{ "path": "**" }]
+    },
+    "store:default",
+    "process:default",
+    "oauth:allow-start",
+    "oauth:allow-cancel"
+  ]
+}

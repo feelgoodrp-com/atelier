@@ -1,0 +1,50 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "atelier by feelgood",
+  "version": "0.1.0",
+  "identifier": "com.feelgood.atelier",
+  "build": {
+    "beforeDevCommand": "bun run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "bun run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "atelier by feelgood",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1200,
+        "minHeight": 760,
+        "center": true,
+        "decorations": false,
+        "transparent": true,
+        "windowEffects": {
+          "effects": ["acrylic", "tabbed", "mica", "blur"],
+          "color": "#0b0b0b66"
+        }
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "plugins": {
+    "fs": {
+      "requireLiteralLeadingDot": false
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "externalBin": ["binaries/fg-atelier-sidecar"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

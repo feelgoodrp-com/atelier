@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Feelgood.Atelier.Sidecar</RootNamespace>
+    <AssemblyName>Feelgood.Atelier.Sidecar</AssemblyName>
+    <Version>0.1.0</Version>
+    <!-- Single-file publish target is win-x64 only (Tauri desktop app). -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <!-- third_party lives inside the project dir; keep its sources out of the
+         default compile glob (it is consumed via ProjectReference only). -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);third_party\**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      LICENSE GUARDRAIL: only the vendored CodeWalker.Core (dexyfex's CodeWalker
+      component, vendored under third_party/) may be referenced. NEVER reference
+      or copy code from grzyClothTool (GPL-3.0, behavior reference only).
+    -->
+    <ProjectReference Include="third_party\CodeWalker.Core\CodeWalker.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- BC1/BC3/BC7 texture (re)compression for POST /texture/optimize (MIT). -->
+    <PackageReference Include="BCnEncoder.Net" Version="2.1.0" />
+  </ItemGroup>
+
+</Project>
