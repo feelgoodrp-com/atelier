@@ -111,17 +111,33 @@ export function WorkbenchScreen() {
       <div className="glass-border-subtle glass-hover-none flex h-full flex-col rounded-[10px]">
         <WorkbenchHeader onOpenDuplicates={() => setDuplicatesOpen(true)} />
 
-        <ResizablePanelGroup direction="horizontal" className="min-h-0 flex-1">
+        {/* autoSaveId persists panel sizes to localStorage (per panel-id set,
+            so layouts with/without the preview panel are stored separately). */}
+        <ResizablePanelGroup
+          direction="horizontal"
+          autoSaveId="atelier:workbench:h"
+          className="min-h-0 flex-1"
+        >
           {/* Left: categories */}
-          <ResizablePanel defaultSize={20} minSize={14} maxSize={30}>
+          <ResizablePanel
+            id="categories"
+            order={1}
+            defaultSize={20}
+            minSize={14}
+            maxSize={30}
+          >
             <CategoryTree />
           </ResizablePanel>
 
           <ResizableHandle withHandle className="bg-white/8" />
 
           {/* Center: drawables + dockable 3D preview */}
-          <ResizablePanel defaultSize={52} minSize={30}>
-            <ResizablePanelGroup direction="vertical" className="min-h-0">
+          <ResizablePanel id="center" order={2} defaultSize={52} minSize={30}>
+            <ResizablePanelGroup
+              direction="vertical"
+              autoSaveId="atelier:workbench:v"
+              className="min-h-0"
+            >
               <ResizablePanel id="drawables" order={1} defaultSize={60} minSize={25}>
                 <DrawableList />
               </ResizablePanel>
@@ -139,7 +155,7 @@ export function WorkbenchScreen() {
           <ResizableHandle withHandle className="bg-white/8" />
 
           {/* Right: inspector */}
-          <ResizablePanel defaultSize={28} minSize={18} maxSize={40}>
+          <ResizablePanel id="inspector" order={3} defaultSize={28} minSize={18} maxSize={40}>
             <Inspector />
           </ResizablePanel>
         </ResizablePanelGroup>

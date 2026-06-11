@@ -254,11 +254,13 @@ export function Viewer3D({
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       camera={{ fov: 40, near: 0.01, far: 200, position: [1.4, 0.9, 2.4] }}
     >
-      {/* Feelgood dark stage — subtle hemisphere + key/rim, no bright HDRI. */}
+      {/* Feelgood dark stage — subtle hemisphere + key/rim, no bright HDRI.
+          All lights stay color-neutral so the embedded textures (skin tones
+          especially) read true instead of picking up a cool cast. */}
       <ambientLight intensity={0.25} />
-      <hemisphereLight args={["#b8bdd1", "#15151a", 0.5]} />
+      <hemisphereLight args={["#c4c4c4", "#15151a", 0.5]} />
       <directionalLight position={[2.5, 4, 2.5]} intensity={1.4} />
-      <directionalLight position={[-3, 2, -2.5]} intensity={0.5} color="#7289da" />
+      <directionalLight position={[-3, 2, -2.5]} intensity={0.5} />
 
       {models.map((model) => (
         <GlbModel

@@ -142,6 +142,11 @@ Server-Builds + Publish/Registry).
   sowie Bulk-Werkzeug „Alle übergroßen Texturen optimieren…" (>2048px);
   aktualisiert Hashes/Previews aller betroffenen Drawables als EIN
   Undo-Schritt
+  - **Hinweis zu Altbeständen:** Vor dem R/B-Swizzle-Fix (Juni 2026) per
+    „Optimieren" geschriebene `.ytd`s wurden mit vertauschten R/B-Kanälen
+    gespeichert — sie zeigen sich seit dem Fix wahrheitsgemäß blau und
+    müssen aus den Originalquellen neu importiert/optimiert werden
+    (erneutes Optimieren konserviert die Vertauschung).
 - Cloud: nach erfolgreichem Push „Server-Build anstoßen" — Status kommt als
   WS-Broadcast `{ type: "build-status", buildId, status }`, Toast bei
   done/error

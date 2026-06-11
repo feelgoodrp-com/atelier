@@ -8,9 +8,14 @@
  *   feeds the LOD warning chips without refetching GLBs.
  * - Viewport options: camera preset, autorotate, ped-body toggle, per-drawable
  *   texture variant selection (drives `textureIndex` of /preview/glb).
+ *
+ * Global viewport prefs (camera preset, autorotate, ped body, pose) are
+ * persisted to localStorage via zustand/persist — caches, blob URLs and
+ * per-project state are excluded via partialize.
  */
 
-import { create } from "zustand";
+import { create, type StateCreator } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 import { toast } from "sonner";
 import {
   PoseUnavailableError,
@@ -214,7 +219,16 @@ export function selectPreviewedDrawables(
   };
 }
 
-export const usePreview3dStore = create<Preview3dState>((set, get) => {
+/** Slice of {@link Preview3dState} written to localStorage. */
+type Preview3dPersisted = Pick<
+  Preview3dState,
+  "cameraPreset" | "autoRotate" | "includePedBody" | "pose"
+>;
+
+const createPreview3dState: StateCreator<
+  Preview3dState,
+  [["zustand/persist", unknown]]
+> = (set, get) => {
   /** LRU order, oldest first. Lives outside the reactive state. */
   let lruOrder: string[] = [];
 
@@ -450,4 +464,40 @@ export const usePreview3dStore = create<Preview3dState>((set, get) => {
 
     requestFrame: () => set((state) => ({ frameNonce: state.frameNonce + 1 })),
   };
-});
+};
+
+export const usePreview3dStore = create<Preview3dState>()(
+  persist(createPreview3dState, {
+    name: "atelier:preview3d-prefs",
+    version: 1,
+    storage: createJSONStorage(() => localStorage),
+    partialize: (s): Preview3dPersisted => ({
+      cameraPreset: s.cameraPreset,
+      autoRotate: s.autoRotate,
+      includePedBody: s.includePedBody,
+      pose: s.pose,
+    }),
+    // Validating merge — a stale/tampered blob must never yield an unknown
+    // camera preset (the toolbar select would render empty). A persisted
+    // pose the installation no longer serves is fine: setPoses drops it
+    // once the live list arrives, and the 422 handler falls back to the
+    // bind pose. includePedBody without a GTA path stays inert thanks to
+    // the gtaPathReady guard in the preview pane.
+    merge: (persisted, current) => {
+      const p = (persisted ?? {}) as Partial<Preview3dPersisted>;
+      return {
+        ...current,
+        cameraPreset: CAMERA_PRESETS.some((c) => c.id === p.cameraPreset)
+          ? (p.cameraPreset as CameraPreset)
+          : current.cameraPreset,
+        autoRotate:
+          typeof p.autoRotate === "boolean" ? p.autoRotate : current.autoRotate,
+        includePedBody:
+          typeof p.includePedBody === "boolean"
+            ? p.includePedBody
+            : current.includePedBody,
+        pose: typeof p.pose === "string" ? p.pose : null,
+      };
+    },
+  }),
+);

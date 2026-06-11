@@ -240,6 +240,9 @@ public static class GlbBuilder
             var height = Math.Max(1, (int)texture.Height);
             if (rgba.Length < width * height * 4) return -1;
 
+            // DDSIO.GetPixels returns BGRA byte order (GDI+/WPF convention);
+            // PNG scanlines are RGBA, so swap R/B before encoding.
+            PixelSwizzle.BgraToRgbaInPlace(rgba);
             textures.Add(new GlbWriter.TextureSpec(PngEncoder.EncodeRgba(rgba, width, height)));
             return textures.Count - 1;
         }

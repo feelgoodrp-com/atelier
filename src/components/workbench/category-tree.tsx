@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   Anchor,
   Backpack,
@@ -131,21 +131,25 @@ function Section({
   statsBySlot,
   category,
   onSelect,
+  open,
+  onOpenChange,
 }: {
   title: string;
   slots: GtaSlot[];
   statsBySlot: Map<string, CategoryStats>;
   category: CategoryId;
   onSelect: (id: CategoryId) => void;
+  /** Collapse state lives in the workbench store (persisted). */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(true);
   const total = slots.reduce(
     (sum, slot) => sum + (statsBySlot.get(slot.id)?.count ?? 0),
     0,
   );
 
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
+    <Collapsible open={open} onOpenChange={onOpenChange}>
       <CollapsibleTrigger asChild>
         <button
           type="button"
@@ -183,6 +187,8 @@ export function CategoryTree() {
   const viewGender = useWorkbenchStore((s) => s.viewGender);
   const category = useWorkbenchStore((s) => s.category);
   const setCategory = useWorkbenchStore((s) => s.setCategory);
+  const categorySections = useWorkbenchStore((s) => s.categorySections);
+  const setCategorySection = useWorkbenchStore((s) => s.setCategorySection);
 
   // Live counts + warning badge per slot for the active gender.
   const { statsBySlot, totalCount, totalWarnings } = useMemo(() => {
@@ -255,6 +261,8 @@ export function CategoryTree() {
             statsBySlot={statsBySlot}
             category={category}
             onSelect={setCategory}
+            open={categorySections.components}
+            onOpenChange={(open) => setCategorySection("components", open)}
           />
           <Section
             title="Props"
@@ -262,6 +270,8 @@ export function CategoryTree() {
             statsBySlot={statsBySlot}
             category={category}
             onSelect={setCategory}
+            open={categorySections.props}
+            onOpenChange={(open) => setCategorySection("props", open)}
           />
         </div>
       </ScrollArea>

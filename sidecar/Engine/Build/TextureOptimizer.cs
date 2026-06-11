@@ -71,6 +71,11 @@ public static class TextureOptimizer
         var rgba = DDSIO.GetPixels(texture, 0)
             ?? throw new InvalidDataException($"Textur '{texture.Name}' konnte nicht dekodiert werden.");
 
+        // DDSIO.GetPixels returns BGRA byte order (GDI+/WPF convention);
+        // BCnEncoder consumes the buffer as Rgba32, so swap R/B first or the
+        // swapped channels get baked into the rebuilt .ytd on disk.
+        PixelSwizzle.BgraToRgbaInPlace(rgba);
+
         var width = Math.Max(1, (int)texture.Width);
         var height = Math.Max(1, (int)texture.Height);
         var (scaled, newWidth, newHeight) = RgbaResize.FitLongestEdge(rgba, width, height, maxDimension);

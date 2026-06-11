@@ -25,6 +25,9 @@ public static class ThumbnailRenderer
             var height = Math.Max(1, (int)texture.Height);
             if (rgba.Length < width * height * 4) return null;
 
+            // DDSIO.GetPixels returns BGRA byte order (GDI+/WPF convention);
+            // PNG scanlines are RGBA, so swap R/B before scaling/encoding.
+            PixelSwizzle.BgraToRgbaInPlace(rgba);
             var (scaled, scaledWidth, scaledHeight) = RgbaResize.FitLongestEdge(rgba, width, height, maxSize);
             var pngBase64 = Convert.ToBase64String(PngEncoder.EncodeRgba(scaled, scaledWidth, scaledHeight));
             ThumbnailCache.Put(fileSha, textureName, maxSize, pngBase64);

@@ -2690,31 +2690,34 @@ namespace CodeWalker.Utils
                     }
 
 
+                    // Vendored fix: upstream copy-paste bug assigned the green
+                    // channel results to r using the r0/r1 endpoints, leaving
+                    // g constant 255 and corrupting r (BC5/ATI2 normal maps).
                     byte g = 255;
                     uint gIndex = (uint)((gMask >> 3 * (4 * blockY + blockX)) & 0x07);
                     if (gIndex == 0)
                     {
-                        r = r0;
+                        g = g0;
                     }
                     else if (gIndex == 1)
                     {
-                        r = r1;
+                        g = g1;
                     }
-                    else if (r0 > r1)
+                    else if (g0 > g1)
                     {
-                        r = (byte)(((8 - gIndex) * r0 + (gIndex - 1) * r1) / 7);
+                        g = (byte)(((8 - gIndex) * g0 + (gIndex - 1) * g1) / 7);
                     }
                     else if (gIndex == 6)
                     {
-                        r = 0;
+                        g = 0;
                     }
                     else if (gIndex == 7)
                     {
-                        r = 0xff;
+                        g = 0xff;
                     }
                     else
                     {
-                        r = (byte)(((6 - gIndex) * r0 + (gIndex - 1) * r1) / 5);
+                        g = (byte)(((6 - gIndex) * g0 + (gIndex - 1) * g1) / 5);
                     }
 
 
