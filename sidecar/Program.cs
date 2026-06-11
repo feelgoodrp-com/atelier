@@ -81,7 +81,7 @@ var app = builder.Build();
 app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()
     // Custom response headers (preview mesh stats) must be exposed explicitly
     // or the webview's fetch() cannot read them.
-    .WithExposedHeaders("X-FG-Vertex-Count", "X-FG-Poly-Count"));
+    .WithExposedHeaders("X-FG-Vertex-Count", "X-FG-Poly-Count", "X-FG-Appearance-Fallbacks", "X-FG-Transient-Degraded"));
 
 app.UseMiddleware<TokenAuthMiddleware>();
 

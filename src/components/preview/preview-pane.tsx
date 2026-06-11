@@ -44,6 +44,7 @@ import type { PreviewAnyRequest } from "@/lib/stores/preview-3d-store";
 import {
   CAMERA_PRESETS,
   PREVIEW_MAX_MODELS,
+  appearanceKey,
   clampTextureIndex,
   glbCacheKey,
   outfitCacheKey,
@@ -52,6 +53,7 @@ import {
   usePreview3dStore,
   type CameraPreset,
 } from "@/lib/stores/preview-3d-store";
+import { CharacterPopover } from "./character-popover";
 import { useProjectStore } from "@/lib/stores/project-store";
 import { useSidecarStore } from "@/lib/stores/sidecar-store";
 import { useWorkbenchStore } from "@/lib/stores/workbench-store";
@@ -173,6 +175,7 @@ export function PreviewPane() {
   const pose = usePreview3dStore((s) => s.pose);
   const poses = usePreview3dStore((s) => s.poses);
   const posesLoaded = usePreview3dStore((s) => s.posesLoaded);
+  const appearance = usePreview3dStore((s) => s.appearance);
   const frameNonce = usePreview3dStore((s) => s.frameNonce);
   const ensureGlb = usePreview3dStore((s) => s.ensureGlb);
   const retryGlb = usePreview3dStore((s) => s.retryGlb);
@@ -281,8 +284,16 @@ export function PreviewPane() {
       return [
         {
           drawable: rendered[0],
-          key: outfitCacheKey(parts, pedModel, poseActive),
-          request: { items, pedModel, includePedBody: true, pose: poseActive },
+          key: outfitCacheKey(parts, pedModel, poseActive, appearanceKey(appearance)),
+          request: {
+            items,
+            pedModel,
+            includePedBody: true,
+            pose: poseActive,
+            // Appearance only matters when the ped body is merged — the
+            // garment-only branch below stays appearance-free on purpose.
+            ...(appearance ? { appearance } : {}),
+          },
         },
       ];
     }
@@ -313,7 +324,14 @@ export function PreviewPane() {
         },
       ];
     });
-  }, [projectDir, rendered, textureIndexByDrawable, pedBodyActive, poseActive]);
+  }, [
+    projectDir,
+    rendered,
+    textureIndexByDrawable,
+    pedBodyActive,
+    poseActive,
+    appearance,
+  ]);
 
   // Fetch GLBs + /parse/ydd metadata (LOD chips) for the rendered set.
   // `entries` is a dependency on purpose: ensureGlb early-returns for cached
@@ -347,6 +365,23 @@ export function PreviewPane() {
       }),
     [requests, entries],
   );
+
+  /**
+   * Appearance fallback slots of the CURRENTLY RENDERED entries — per-entry
+   * state, so cache hits keep their warnings and prefetch responses for other
+   * genders/appearances never leak into the popover. With ped body there is
+   * exactly one outfit request; without it appearance is not applied.
+   */
+  const appearanceFallbacks = useMemo(() => {
+    if (!pedBodyActive) return [];
+    const slots = new Set<string>();
+    for (const { key } of requests) {
+      for (const slot of entries[key]?.appearanceFallbacks ?? []) {
+        slots.add(slot);
+      }
+    }
+    return [...slots].sort();
+  }, [pedBodyActive, requests, entries]);
 
   const loadingCount = requests.filter(
     (r) => entries[r.key]?.status === "loading",
@@ -578,6 +613,12 @@ export function PreviewPane() {
                 : "GTA-Pfad in den Einstellungen setzen"}
             </TooltipContent>
           </Tooltip>
+
+          <CharacterPopover
+            disabled={!pedBodyActive}
+            pedModel={rendered.length > 0 ? pedModelFor(rendered[0]) : null}
+            fallbackSlots={appearanceFallbacks}
+          />
 
           <div className="mx-1 h-5 w-px bg-white/10" />
 

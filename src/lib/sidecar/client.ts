@@ -156,6 +156,18 @@ function parseCountHeader(value: string | null): number | null {
 }
 
 /**
+ * Parses the comma-separated X-FG-Appearance-Fallbacks header (slot names the
+ * sidecar reset to default) — [] when the header is absent/empty.
+ */
+function parseFallbacksHeader(value: string | null): string[] {
+  if (!value) return [];
+  return value
+    .split(",")
+    .map((slot) => slot.trim())
+    .filter((slot) => slot.length > 0);
+}
+
+/**
  * Maps a non-2xx preview response to a typed error. The 422 envelope of
  * pose_unavailable additionally carries the offending pose id.
  */
@@ -202,6 +214,7 @@ export async function fetchPreviewGlb(
       ...(request.pedModel ? { pedModel: request.pedModel } : {}),
       includePedBody: request.includePedBody ?? false,
       pose: request.pose ?? null,
+      ...(request.appearance ? { appearance: request.appearance } : {}),
     }),
   });
   if (!res.ok) {
@@ -211,6 +224,10 @@ export async function fetchPreviewGlb(
     glb: await res.arrayBuffer(),
     vertexCount: parseCountHeader(res.headers.get("X-FG-Vertex-Count")),
     polyCount: parseCountHeader(res.headers.get("X-FG-Poly-Count")),
+    appearanceFallbacks: parseFallbacksHeader(
+      res.headers.get("X-FG-Appearance-Fallbacks"),
+    ),
+    transientDegraded: res.headers.get("X-FG-Transient-Degraded") === "1",
   };
 }
 
@@ -239,6 +256,7 @@ export async function fetchPreviewOutfitGlb(
       ...(request.pedModel ? { pedModel: request.pedModel } : {}),
       includePedBody: request.includePedBody ?? false,
       pose: request.pose ?? null,
+      ...(request.appearance ? { appearance: request.appearance } : {}),
     }),
   });
   if (!res.ok) {
@@ -248,6 +266,10 @@ export async function fetchPreviewOutfitGlb(
     glb: await res.arrayBuffer(),
     vertexCount: parseCountHeader(res.headers.get("X-FG-Vertex-Count")),
     polyCount: parseCountHeader(res.headers.get("X-FG-Poly-Count")),
+    appearanceFallbacks: parseFallbacksHeader(
+      res.headers.get("X-FG-Appearance-Fallbacks"),
+    ),
+    transientDegraded: res.headers.get("X-FG-Transient-Degraded") === "1",
   };
 }
 

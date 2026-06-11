@@ -19,7 +19,64 @@ public sealed record ParseRequest(string? Path);
 public sealed record OutfitItemRequest(string? YddPath, List<string>? YtdPaths, int? TextureIndex, string? Slot);
 
 /// <summary>POST /preview/outfit-glb — several garments on ONE ped at once. Pose: see GET /preview/poses (null = bind pose).</summary>
-public sealed record PreviewOutfitRequest(List<OutfitItemRequest>? Items, string? PedModel, bool? IncludePedBody, string? Pose);
+public sealed record PreviewOutfitRequest(List<OutfitItemRequest>? Items, string? PedModel, bool? IncludePedBody, string? Pose, PedAppearanceDto? Appearance);
+
+/// <summary>
+/// One ped component variation override. Dictionary keys follow
+/// GtaSlots.ComponentIds ("head".."jbib"). Alt is the drawable alternative
+/// (optional, defaults to 0 — Menyoo exports do not carry one).
+/// </summary>
+public sealed record PedAppearanceComponentDto(int Drawable, int Texture, int? Alt);
+
+/// <summary>
+/// One ped prop. Anchor keys follow GtaSlots.PropAnchorIds ("p_head", ...).
+/// Stage 1: validated but NOT rendered yet (prop anchoring lands in stage 2a).
+/// </summary>
+public sealed record PedAppearancePropDto(string? Anchor, int Drawable, int Texture);
+
+/// <summary>
+/// Optional ped appearance for POST /preview/glb and /preview/outfit-glb.
+/// Only changes the output when the ped body is rendered (includePedBody);
+/// unlisted slots keep the ped defaults. Unresolvable drawable indices (DLC)
+/// fall back to the slot default and are reported via the
+/// X-FG-Appearance-Fallbacks response header.
+/// </summary>
+public sealed record PedAppearanceDto(
+    Dictionary<string, PedAppearanceComponentDto>? Components,
+    List<PedAppearancePropDto>? Props);
+
+/// <summary>
+/// Canonical appearance cache-key string — MUST stay byte-identical with the
+/// client implementation (atelier/src: appearanceKey): component entries that
+/// are EXACTLY the ped default (drawable=0, texture=0, alt 0/absent) are
+/// skipped, the rest is sorted alphabetically as "slot=drawable:texture"
+/// (":a&lt;alt&gt;" appended only when alt != 0), joined with ",", then "|", then
+/// props sorted alphabetically as "anchor=drawable:texture" joined with ",";
+/// null/empty appearance — INCLUDING one where every component was skipped
+/// and no props remain — maps to "default".
+/// Example: "hair=2:1,jbib=5:0|p_head=1:0".
+/// </summary>
+public static class PedAppearanceKey
+{
+    public static string Canonical(PedAppearanceDto? appearance)
+    {
+        // All-default normalization (shared contract): drawable=0/texture=0/
+        // alt=0 IS the ped default, so it must not create a distinct key.
+        var componentParts = (appearance?.Components ?? Enumerable.Empty<KeyValuePair<string, PedAppearanceComponentDto>>())
+            .Where(kv => kv.Value.Drawable != 0 || kv.Value.Texture != 0 || (kv.Value.Alt ?? 0) != 0)
+            .Select(kv => string.Create(System.Globalization.CultureInfo.InvariantCulture,
+                $"{kv.Key}={kv.Value.Drawable}:{kv.Value.Texture}{((kv.Value.Alt ?? 0) != 0 ? $":a{kv.Value.Alt}" : string.Empty)}"))
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .ToList();
+        var propParts = (appearance?.Props ?? Enumerable.Empty<PedAppearancePropDto>())
+            .Select(p => string.Create(System.Globalization.CultureInfo.InvariantCulture,
+                $"{p.Anchor}={p.Drawable}:{p.Texture}"))
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .ToList();
+        if (componentParts.Count == 0 && propParts.Count == 0) return "default";
+        return string.Join(",", componentParts) + "|" + string.Join(",", propParts);
+    }
+}
 
 /// <summary>One selectable preview pose (GET /preview/poses).</summary>
 public sealed record PoseInfo(string Id, string Label);
@@ -80,7 +137,8 @@ public sealed record PreviewGlbRequest(
     int? TextureIndex,
     string? PedModel,
     bool? IncludePedBody,
-    string? Pose);
+    string? Pose,
+    PedAppearanceDto? Appearance);
 
 public sealed record ImportScanRequest(string? FolderPath);
 

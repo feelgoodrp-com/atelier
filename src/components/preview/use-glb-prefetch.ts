@@ -10,6 +10,7 @@
 import { useEffect } from "react";
 import { joinPath } from "@/lib/project/io";
 import {
+  appearanceKey,
   clampTextureIndex,
   glbCacheKey,
   outfitCacheKey,
@@ -33,6 +34,7 @@ export function useGlbPrefetch(visible: ProjectDrawable[]): void {
   const includePedBody = usePreview3dStore((s) => s.includePedBody);
   const gtaPathReady = usePreview3dStore((s) => s.gtaPathReady);
   const pose = usePreview3dStore((s) => s.pose);
+  const appearance = usePreview3dStore((s) => s.appearance);
   const prefetchGlbs = usePreview3dStore((s) => s.prefetchGlbs);
 
   useEffect(() => {
@@ -65,12 +67,15 @@ export function useGlbPrefetch(visible: ProjectDrawable[]): void {
                 [{ yddHash: ydd.hash, textureHash }],
                 pedModel,
                 poseActive,
+                appearanceKey(appearance),
               ),
               request: {
                 items: [{ yddPath, ytdPaths, textureIndex, slot: drawable.type }],
                 pedModel,
                 includePedBody: true,
                 pose: poseActive,
+                // Mirrors the pane: appearance is part of key AND request.
+                ...(appearance ? { appearance } : {}),
               },
             };
           }
@@ -102,6 +107,7 @@ export function useGlbPrefetch(visible: ProjectDrawable[]): void {
     includePedBody,
     gtaPathReady,
     pose,
+    appearance,
     prefetchGlbs,
   ]);
 }

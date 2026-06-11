@@ -1,3 +1,5 @@
+import type { ComponentSlotId, PropSlotId } from "@/lib/gta/components";
+
 /** Mirror of the Rust `SidecarStatus` enum (serialized lowercase). */
 export type SidecarStatus = "connecting" | "ready" | "unavailable" | "error";
 
@@ -120,6 +122,33 @@ export interface ImportScanResult {
 /** Freemode ped skeleton/body the preview can render the clothing on. */
 export type PedModel = "mp_m_freemode_01" | "mp_f_freemode_01";
 
+/** One component-slot override of the ped appearance. */
+export interface PedAppearanceComponent {
+  drawable: number;
+  texture: number;
+  /** Alternative drawable suffix (GetDrawableName alt) — omitted/0 = none. */
+  alt?: number;
+}
+
+/** One attached prop — Stufe 1: validated by the sidecar but NOT rendered. */
+export interface PedAppearanceProp {
+  /** Anchor key, e.g. "p_head" (GtaSlots.PropAnchorIds). */
+  anchor: PropSlotId;
+  drawable: number;
+  texture: number;
+}
+
+/**
+ * Mirror of sidecar PedAppearanceDto: component variations + props of the
+ * freemode ped body. Only effective when the ped body is rendered; slots the
+ * sidecar cannot resolve (DLC indices) fall back to default and are reported
+ * via the X-FG-Appearance-Fallbacks response header.
+ */
+export interface PedAppearance {
+  components?: Partial<Record<ComponentSlotId, PedAppearanceComponent>>;
+  props?: PedAppearanceProp[];
+}
+
 /** One selectable preview pose (GET /preview/poses) — label is German. */
 export interface PoseInfo {
   id: string;
@@ -147,6 +176,8 @@ export interface PreviewGlbRequest {
    * configured gtaPath (else 422). Null/undefined = bind pose.
    */
   pose?: string | null;
+  /** Ped-body appearance — only effective when the ped body is rendered. */
+  appearance?: PedAppearance;
 }
 
 /** One garment of an outfit preview (mirrors sidecar OutfitItemRequest). */
@@ -165,6 +196,8 @@ export interface PreviewOutfitRequest {
   includePedBody?: boolean;
   /** Pose id (see {@link PreviewGlbRequest.pose}); null/undefined = bind pose. */
   pose?: string | null;
+  /** Ped-body appearance — only effective when the ped body is rendered. */
+  appearance?: PedAppearance;
 }
 
 /**
@@ -176,6 +209,17 @@ export interface PreviewGlbResult {
   glb: ArrayBuffer;
   vertexCount: number | null;
   polyCount: number | null;
+  /**
+   * Slot names that fell back to the default drawable (DLC/out-of-range
+   * indices) — from the X-FG-Appearance-Fallbacks header, [] when absent.
+   */
+  appearanceFallbacks: string[];
+  /**
+   * True when the sidecar built this GLB while a component load timed out
+   * (X-FG-Transient-Degraded header) — the result may be missing a texture
+   * and must not be frozen in the client GLB cache; a retry can succeed.
+   */
+  transientDegraded: boolean;
 }
 
 // ---------------------------------------------------------------------------

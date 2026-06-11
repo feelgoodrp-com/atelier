@@ -53,6 +53,13 @@ public static class PreviewEndpoints
             var poseCheck = ValidatePose(request?.Pose, state, out var pose);
             if (poseCheck != null) return poseCheck;
 
+            var appearanceCheck = ValidateAppearance(request?.Appearance, out var appearance);
+            if (appearanceCheck != null) return appearanceCheck;
+            // Appearance only changes the bytes when the ped body is rendered —
+            // keep the key segment at "default" otherwise so garment-only
+            // requests keep sharing one cache entry.
+            var appearanceKey = includePedBody ? PedAppearanceKey.Canonical(appearance) : "default";
+
             // Content-hash cache key (file BYTES, not paths) so the client can
             // cache by the same key and renames/copies still hit server-side.
             var cacheKey = new PreviewGlbCache.Key(
@@ -60,19 +67,29 @@ public static class PreviewEndpoints
                 ytdBytes != null ? Sha256Hex(ytdBytes) : "none",
                 includePedBody,
                 includePedBody || pose != null ? pedModel : string.Empty,
-                pose ?? "none");
-            if (PreviewGlbCache.TryGet(cacheKey, out var cached))
-                return GlbResponse(ctx, cached);
+                pose ?? "none",
+                appearanceKey);
+            if (PreviewGlbCache.TryGet(cacheKey, out var cached, out var cachedFallbacks))
+                return GlbResponse(ctx, cached, cachedFallbacks);
 
             var poseLoad = TryLoadPose(poseEngine, state, pedModel, pose, log, out var poseData);
             if (poseLoad != null) return poseLoad;
 
             IReadOnlyList<PedBodyService.PedComponent>? pedComponents = null;
+            string? appearanceFallbacks = null;
+            var cacheable = true;
             if (includePedBody)
             {
                 try
                 {
-                    pedComponents = pedBody.LoadDefaultComponents(state.GtaPath!, pedModel);
+                    var loaded = pedBody.LoadComponents(state.GtaPath!, pedModel, appearance);
+                    pedComponents = loaded.Components;
+                    if (loaded.FallbackSlots.Count > 0)
+                        appearanceFallbacks = string.Join(",", loaded.FallbackSlots);
+                    // Transient load timeouts (content pump under load) must
+                    // not freeze a degraded GLB under this key — serve the
+                    // result but let the next request rebuild it.
+                    cacheable = !loaded.HadTransientLoadFailure;
                 }
                 catch (Exception ex)
                 {
@@ -96,10 +113,13 @@ public static class PreviewEndpoints
                     $"Vorschau konnte nicht erstellt werden: {ex.Message}"));
             }
 
-            PreviewGlbCache.Put(cacheKey, result);
-            log.LogInformation("Preview GLB built: {Bytes} bytes, {Vertices} vertices, {Polys} polys, ped={Ped}, pose={Pose}",
-                result.Glb.Length, result.VertexCount, result.PolyCount, includePedBody ? pedModel : "none", pose ?? "none");
-            return GlbResponse(ctx, result);
+            if (cacheable)
+                PreviewGlbCache.Put(cacheKey, result, appearanceFallbacks);
+            else
+                log.LogWarning("Preview GLB not cached (transient component load failure) for appearance={Appearance}", appearanceKey);
+            log.LogInformation("Preview GLB built: {Bytes} bytes, {Vertices} vertices, {Polys} polys, ped={Ped}, pose={Pose}, appearance={Appearance}",
+                result.Glb.Length, result.VertexCount, result.PolyCount, includePedBody ? pedModel : "none", pose ?? "none", appearanceKey);
+            return GlbResponse(ctx, result, appearanceFallbacks, transientDegraded: !cacheable);
         });
 
         // GET /preview/poses -> the static pose list (id + German label) so
@@ -161,6 +181,65 @@ public static class PreviewEndpoints
     private static int? CoversComponentIndex(string? slot) =>
         slot != null && Engine.Build.GtaSlots.ComponentIds.TryGetValue(slot, out var id) ? id : null;
 
+    /// <summary>
+    /// Validates + normalizes the optional appearance: slot/anchor keys are
+    /// trimmed + lowercased, unknown slots/anchors and negative indices are a
+    /// 400 (German message, uniform error shape). Returns null on success;
+    /// normalized is null when the request carries no (effective) appearance.
+    /// Props are validated only — rendering them comes with stage 2a.
+    /// </summary>
+    private static IResult? ValidateAppearance(PedAppearanceDto? raw, out PedAppearanceDto? normalized)
+    {
+        normalized = null;
+        if (raw == null) return null;
+
+        Dictionary<string, PedAppearanceComponentDto>? components = null;
+        if (raw.Components is { Count: > 0 })
+        {
+            components = new Dictionary<string, PedAppearanceComponentDto>(raw.Components.Count);
+            foreach (var (rawSlot, component) in raw.Components)
+            {
+                var slot = rawSlot?.Trim().ToLowerInvariant() ?? string.Empty;
+                if (!Engine.Build.GtaSlots.ComponentIds.ContainsKey(slot))
+                    return Results.BadRequest(new ErrorResponse(
+                        $"Unbekannter Komponenten-Slot '{rawSlot}' in 'appearance.components' (erlaubt: {string.Join(", ", Engine.Build.GtaSlots.ComponentIds.Keys)})."));
+                if (component == null || component.Drawable < 0 || component.Texture < 0 || (component.Alt ?? 0) < 0)
+                    return Results.BadRequest(new ErrorResponse(
+                        $"Feld 'appearance.components.{slot}': 'drawable', 'texture' und 'alt' müssen Zahlen >= 0 sein."));
+                if (!components.TryAdd(slot, component))
+                    return Results.BadRequest(new ErrorResponse(
+                        $"Slot '{slot}' ist in 'appearance.components' mehrfach angegeben."));
+            }
+        }
+
+        List<PedAppearancePropDto>? props = null;
+        if (raw.Props is { Count: > 0 })
+        {
+            props = new List<PedAppearancePropDto>(raw.Props.Count);
+            var seenAnchors = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var prop in raw.Props)
+            {
+                var anchor = prop?.Anchor?.Trim().ToLowerInvariant() ?? string.Empty;
+                if (prop == null || !Engine.Build.GtaSlots.PropAnchorIds.ContainsKey(anchor))
+                    return Results.BadRequest(new ErrorResponse(
+                        $"Unbekannter Prop-Anker '{prop?.Anchor}' in 'appearance.props' (erlaubt: {string.Join(", ", Engine.Build.GtaSlots.PropAnchorIds.Keys)})."));
+                if (prop.Drawable < 0 || prop.Texture < 0)
+                    return Results.BadRequest(new ErrorResponse(
+                        $"Feld 'appearance.props' ({anchor}): 'drawable' und 'texture' müssen Zahlen >= 0 sein."));
+                // Duplicate anchors would make the canonical key ambiguous —
+                // reject them exactly like duplicate component slots.
+                if (!seenAnchors.Add(anchor))
+                    return Results.BadRequest(new ErrorResponse(
+                        $"Anker '{anchor}' ist in 'appearance.props' mehrfach angegeben."));
+                props.Add(prop with { Anchor = anchor });
+            }
+        }
+
+        if (components == null && props == null) return null; // empty appearance == default
+        normalized = new PedAppearanceDto(components, props);
+        return null;
+    }
+
     private static void MapOutfitEndpoint(IEndpointRouteBuilder app)
     {
         // POST /preview/outfit-glb -> ONE GLB containing all garments at once;
@@ -194,6 +273,11 @@ public static class PreviewEndpoints
             var poseCheck = ValidatePose(request?.Pose, state, out var pose);
             if (poseCheck != null) return poseCheck;
 
+            var appearanceCheck = ValidateAppearance(request?.Appearance, out var appearance);
+            if (appearanceCheck != null) return appearanceCheck;
+            // Appearance only changes the bytes when the ped body is rendered.
+            var appearanceKey = includePedBody ? PedAppearanceKey.Canonical(appearance) : "default";
+
             // Read all files + build the content-hash cache key in one pass.
             var builderItems = new List<GlbBuilder.OutfitItem>(items.Count);
             var keyParts = new List<string>(items.Count);
@@ -222,19 +306,28 @@ public static class PreviewEndpoints
                 "outfit",
                 includePedBody,
                 includePedBody || pose != null ? pedModel : string.Empty,
-                pose ?? "none");
-            if (PreviewGlbCache.TryGet(cacheKey, out var cached))
-                return GlbResponse(ctx, cached);
+                pose ?? "none",
+                appearanceKey);
+            if (PreviewGlbCache.TryGet(cacheKey, out var cached, out var cachedFallbacks))
+                return GlbResponse(ctx, cached, cachedFallbacks);
 
             var poseLoad = TryLoadPose(poseEngine, state, pedModel, pose, log, out var poseData);
             if (poseLoad != null) return poseLoad;
 
             IReadOnlyList<PedBodyService.PedComponent>? pedComponents = null;
+            string? appearanceFallbacks = null;
+            var cacheable = true;
             if (includePedBody)
             {
                 try
                 {
-                    pedComponents = pedBody.LoadDefaultComponents(state.GtaPath!, pedModel);
+                    var loaded = pedBody.LoadComponents(state.GtaPath!, pedModel, appearance);
+                    pedComponents = loaded.Components;
+                    if (loaded.FallbackSlots.Count > 0)
+                        appearanceFallbacks = string.Join(",", loaded.FallbackSlots);
+                    // Same poisoning guard as /preview/glb: transient load
+                    // timeouts keep the degraded GLB out of the cache.
+                    cacheable = !loaded.HadTransientLoadFailure;
                 }
                 catch (Exception ex)
                 {
@@ -255,17 +348,28 @@ public static class PreviewEndpoints
                     $"Outfit-Vorschau konnte nicht erstellt werden: {ex.Message}"));
             }
 
-            PreviewGlbCache.Put(cacheKey, result);
-            log.LogInformation("Outfit GLB built: {Items} items, {Bytes} bytes, {Vertices} vertices, ped={Ped}, pose={Pose}",
-                builderItems.Count, result.Glb.Length, result.VertexCount, includePedBody ? pedModel : "none", pose ?? "none");
-            return GlbResponse(ctx, result);
+            if (cacheable)
+                PreviewGlbCache.Put(cacheKey, result, appearanceFallbacks);
+            else
+                log.LogWarning("Outfit GLB not cached (transient component load failure) for appearance={Appearance}", appearanceKey);
+            log.LogInformation("Outfit GLB built: {Items} items, {Bytes} bytes, {Vertices} vertices, ped={Ped}, pose={Pose}, appearance={Appearance}",
+                builderItems.Count, result.Glb.Length, result.VertexCount, includePedBody ? pedModel : "none", pose ?? "none", appearanceKey);
+            return GlbResponse(ctx, result, appearanceFallbacks, transientDegraded: !cacheable);
         });
     }
 
-    private static IResult GlbResponse(HttpContext ctx, GlbBuilder.Result result)
+    private static IResult GlbResponse(HttpContext ctx, GlbBuilder.Result result, string? appearanceFallbacks = null, bool transientDegraded = false)
     {
         ctx.Response.Headers["X-FG-Vertex-Count"] = result.VertexCount.ToString(CultureInfo.InvariantCulture);
         ctx.Response.Headers["X-FG-Poly-Count"] = result.PolyCount.ToString(CultureInfo.InvariantCulture);
+        // Comma-separated slot names that fell back to the ped default
+        // (unresolvable DLC/out-of-range indices) — only set when non-empty.
+        if (!string.IsNullOrEmpty(appearanceFallbacks))
+            ctx.Response.Headers["X-FG-Appearance-Fallbacks"] = appearanceFallbacks;
+        // Mirrors the server-side cache skip on transient component-load
+        // failures: tells the client not to freeze this GLB in ITS cache either.
+        if (transientDegraded)
+            ctx.Response.Headers["X-FG-Transient-Degraded"] = "1";
         return Results.Bytes(result.Glb, GlbContentType);
     }
 

@@ -2,8 +2,9 @@
  * 3D preview state for the workbench viewport:
  *
  * - GLB blob cache keyed by ydd hash + applied texture hash + ped-body mode
- *   + pose id. LRU with cap {@link GLB_CACHE_MAX}; evicted entries revoke
- *   their object URL. In-flight requests are deduped per key.
+ *   + pose id (+ canonical appearance key when the ped body is merged). LRU
+ *   with cap {@link GLB_CACHE_MAX}; evicted entries revoke their object URL.
+ *   In-flight requests are deduped per key.
  * - /parse/ydd metadata cache (LOD flags + mesh stats) keyed by ydd hash —
  *   feeds the LOD warning chips without refetching GLBs.
  * - Viewport options: camera preset, autorotate, ped-body toggle, per-drawable
@@ -25,12 +26,25 @@ import {
 } from "@/lib/sidecar/client";
 import type {
   DrawableInfo,
+  PedAppearance,
   PedModel,
   PoseInfo,
   PreviewGlbRequest,
   PreviewOutfitRequest,
 } from "@/lib/sidecar/types";
+import {
+  appearanceKey,
+  sanitizeAppearance,
+  sanitizeAppearanceExtras,
+  sanitizeAppearancePresets,
+  type AppearancePreset,
+  type PedAppearanceExtras,
+} from "@/lib/preview/appearance";
 import type { AtelierProject, ProjectDrawable } from "@/lib/project/schema";
+
+// Canonical appearance-key helper (shared sidecar contract) — re-exported so
+// UI code can keep importing preview concerns from the store module.
+export { appearanceKey };
 
 /** Single-garment OR outfit request — the fetch dispatches on `items`. */
 export type PreviewAnyRequest = PreviewGlbRequest | PreviewOutfitRequest;
@@ -72,6 +86,19 @@ export interface GlbEntry {
   /** From the X-FG-Vertex-Count / X-FG-Poly-Count response headers. */
   vertexCount: number | null;
   polyCount: number | null;
+  /**
+   * Slots the sidecar reset to default (X-FG-Appearance-Fallbacks header) —
+   * stored PER ENTRY so the warnings stay correct on cache hits and cannot be
+   * overwritten by prefetch responses for other genders/appearances. The UI
+   * derives its hints from the entry that is actually rendered.
+   */
+  appearanceFallbacks: string[];
+  /**
+   * Mirrors the sidecar's X-FG-Transient-Degraded header: the GLB was built
+   * while a component load timed out and may miss a texture. ensureGlb and
+   * the prefetcher treat such entries as retryable instead of frozen.
+   */
+  transient: boolean;
   /** German error message when status === "error". */
   error: string | null;
 }
@@ -104,6 +131,14 @@ interface Preview3dState {
   posesLoaded: boolean;
   /** Bumped by the "Fokus" button — the viewer re-frames on change. */
   frameNonce: number;
+  /** Active ped-body appearance (null = game default) — sent with outfit GLBs. */
+  appearance: PedAppearance | null;
+  /** Head-feature extras of the last import — stored for presets, not rendered. */
+  appearanceExtras: PedAppearanceExtras | null;
+  /** German parser warnings of the last Menyoo import (transient). */
+  appearanceWarnings: string[];
+  /** Named USER presets — the built-in standard presets live in appearance.ts. */
+  appearancePresets: AppearancePreset[];
 
   /** Fetches + caches the GLB for `key` once (no-op while loading/ready). */
   ensureGlb: (key: string, request: PreviewAnyRequest) => void;
@@ -131,6 +166,19 @@ interface Preview3dState {
   /** Replaces the pose list with the live GET /preview/poses result. */
   setPoses: (poses: PoseInfo[]) => void;
   requestFrame: () => void;
+  /** Sets the active appearance (stepper edits) — keeps extras/warnings. */
+  setAppearance: (appearance: PedAppearance | null) => void;
+  /** Applies a Menyoo import / preset: appearance + extras + warnings. */
+  applyImportedAppearance: (
+    appearance: PedAppearance | null,
+    extras: PedAppearanceExtras | null,
+    warnings: string[],
+  ) => void;
+  /** Back to the game default (clears extras, warnings and fallbacks). */
+  resetAppearance: () => void;
+  /** Upserts a user preset by name (case-insensitive). */
+  saveAppearancePreset: (preset: AppearancePreset) => void;
+  deleteAppearancePreset: (name: string) => void;
 }
 
 /** Freemode ped model matching a drawable's gender. */
@@ -153,9 +201,14 @@ export function glbCacheKey(
   pedModel: PedModel | null,
   pose: string | null,
   poseSkeleton: PedModel | null = null,
+  appearance: string = "default",
 ): string {
   const body = pedModel ?? (poseSkeleton ? `skel-${poseSkeleton}` : "off");
-  return `${yddHash}|${textureHash ?? "none"}|${body}|${pose ?? "none"}`;
+  const base = `${yddHash}|${textureHash ?? "none"}|${body}|${pose ?? "none"}`;
+  // Appearance changes the bytes ONLY when the ped body is merged — garment-
+  // only and "skel-" keys stay untouched (appending there would invalidate
+  // every cached GLB for nothing).
+  return pedModel ? `${base}|app:${appearance}` : base;
 }
 
 /**
@@ -168,12 +221,16 @@ export function outfitCacheKey(
   parts: Array<{ yddHash: string; textureHash: string | null }>,
   pedModel: PedModel | null,
   pose: string | null,
+  appearance: string = "default",
 ): string {
   const sorted = parts
     .map((p) => `${p.yddHash}:${p.textureHash ?? "none"}`)
     .sort()
     .join("+");
-  return `outfit|${sorted}|${pedModel ?? "off"}|${pose ?? "none"}`;
+  const base = `outfit|${sorted}|${pedModel ?? "off"}|${pose ?? "none"}`;
+  // Same rule as glbCacheKey: the appearance segment exists only when the
+  // ped body is part of the request.
+  return pedModel ? `${base}|app:${appearance}` : base;
 }
 
 /** Clamps a stored texture selection to the drawable's current variants. */
@@ -222,7 +279,13 @@ export function selectPreviewedDrawables(
 /** Slice of {@link Preview3dState} written to localStorage. */
 type Preview3dPersisted = Pick<
   Preview3dState,
-  "cameraPreset" | "autoRotate" | "includePedBody" | "pose"
+  | "cameraPreset"
+  | "autoRotate"
+  | "includePedBody"
+  | "pose"
+  | "appearance"
+  | "appearanceExtras"
+  | "appearancePresets"
 >;
 
 const createPreview3dState: StateCreator<
@@ -267,6 +330,8 @@ const createPreview3dState: StateCreator<
           url: null,
           vertexCount: null,
           polyCount: null,
+          appearanceFallbacks: [],
+          transient: false,
           error: null,
         },
       },
@@ -279,6 +344,9 @@ const createPreview3dState: StateCreator<
           ? await fetchPreviewOutfitGlb(request)
           : await fetchPreviewGlb(request);
       const blob = new Blob([result.glb], { type: "model/gltf-binary" });
+      // Fallback slots live ON the entry (keyed by ped model + appearance):
+      // cache hits keep their warnings and prefetch responses for other
+      // genders/appearances can never overwrite the visible hints.
       set((state) => ({
         entries: {
           ...state.entries,
@@ -287,6 +355,8 @@ const createPreview3dState: StateCreator<
             url: URL.createObjectURL(blob),
             vertexCount: result.vertexCount,
             polyCount: result.polyCount,
+            appearanceFallbacks: result.appearanceFallbacks,
+            transient: result.transientDegraded,
             error: null,
           },
         },
@@ -321,6 +391,8 @@ const createPreview3dState: StateCreator<
             url: null,
             vertexCount: null,
             polyCount: null,
+            appearanceFallbacks: [],
+            transient: false,
             error: e instanceof Error ? e.message : String(e),
           },
         },
@@ -342,7 +414,10 @@ const createPreview3dState: StateCreator<
     try {
       while (prefetchQueue.length > 0) {
         const next = prefetchQueue.shift()!;
-        if (get().entries[next.key]) continue; // landed meanwhile
+        const landed = get().entries[next.key];
+        // Transient-degraded entries are worth a retry, everything else
+        // (loading/ready/error) landed meanwhile and is skipped.
+        if (landed && !(landed.status === "ready" && landed.transient)) continue;
         await fetchGlb(next.key, next.request);
       }
     } finally {
@@ -391,10 +466,16 @@ const createPreview3dState: StateCreator<
     poses: [...POSES_FALLBACK],
     posesLoaded: false,
     frameNonce: 0,
+    appearance: null,
+    appearanceExtras: null,
+    appearanceWarnings: [],
+    appearancePresets: [],
 
     ensureGlb: (key, request) => {
       const existing = get().entries[key];
-      if (existing) {
+      // Transient-degraded results (sidecar load timeout) are retryable:
+      // re-fetch instead of freezing the possibly texture-less GLB.
+      if (existing && !(existing.status === "ready" && existing.transient)) {
         // Errored entries stay until an explicit retry — touching keeps
         // recently shown models at the warm end of the LRU.
         touch(key);
@@ -409,7 +490,10 @@ const createPreview3dState: StateCreator<
     },
 
     prefetchGlbs: (items) => {
-      prefetchQueue = items.filter((item) => !get().entries[item.key]);
+      prefetchQueue = items.filter((item) => {
+        const existing = get().entries[item.key];
+        return !existing || (existing.status === "ready" && existing.transient);
+      });
       void pumpPrefetch();
     },
 
@@ -463,26 +547,71 @@ const createPreview3dState: StateCreator<
       })),
 
     requestFrame: () => set((state) => ({ frameNonce: state.frameNonce + 1 })),
+
+    // Appearance changes need no explicit cache flush — the |app:<key>
+    // segment of the outfit cache keys re-fetches automatically, and the
+    // fallback hints travel with the entries (no transient state to clear).
+    setAppearance: (appearance) => set({ appearance }),
+
+    applyImportedAppearance: (appearance, extras, warnings) =>
+      set({
+        appearance,
+        appearanceExtras: extras,
+        appearanceWarnings: warnings,
+      }),
+
+    resetAppearance: () =>
+      set({
+        appearance: null,
+        appearanceExtras: null,
+        appearanceWarnings: [],
+      }),
+
+    saveAppearancePreset: (preset) =>
+      set((state) => ({
+        appearancePresets: [
+          ...state.appearancePresets.filter(
+            (p) => p.name.toLowerCase() !== preset.name.toLowerCase(),
+          ),
+          preset,
+        ],
+      })),
+
+    deleteAppearancePreset: (name) =>
+      set((state) => ({
+        appearancePresets: state.appearancePresets.filter(
+          (p) => p.name.toLowerCase() !== name.toLowerCase(),
+        ),
+      })),
   };
 };
 
 export const usePreview3dStore = create<Preview3dState>()(
   persist(createPreview3dState, {
     name: "atelier:preview3d-prefs",
-    version: 1,
+    version: 2,
     storage: createJSONStorage(() => localStorage),
     partialize: (s): Preview3dPersisted => ({
       cameraPreset: s.cameraPreset,
       autoRotate: s.autoRotate,
       includePedBody: s.includePedBody,
       pose: s.pose,
+      appearance: s.appearance,
+      appearanceExtras: s.appearanceExtras,
+      appearancePresets: s.appearancePresets,
     }),
+    // v1 -> v2 (appearance fields): old blobs pass through unchanged — the
+    // new fields are simply absent and the validating merge below defaults
+    // them. Newly written blobs carry version 2.
+    migrate: (persisted) => persisted as Preview3dPersisted,
     // Validating merge — a stale/tampered blob must never yield an unknown
     // camera preset (the toolbar select would render empty). A persisted
     // pose the installation no longer serves is fine: setPoses drops it
     // once the live list arrives, and the 422 handler falls back to the
     // bind pose. includePedBody without a GTA path stays inert thanks to
-    // the gtaPathReady guard in the preview pane.
+    // the gtaPathReady guard in the preview pane. Appearance blobs are
+    // structurally validated — unknown slots/anchors are dropped, so the
+    // sidecar never sees an invalid request (it would answer 400).
     merge: (persisted, current) => {
       const p = (persisted ?? {}) as Partial<Preview3dPersisted>;
       return {
@@ -497,6 +626,9 @@ export const usePreview3dStore = create<Preview3dState>()(
             ? p.includePedBody
             : current.includePedBody,
         pose: typeof p.pose === "string" ? p.pose : null,
+        appearance: sanitizeAppearance(p.appearance),
+        appearanceExtras: sanitizeAppearanceExtras(p.appearanceExtras),
+        appearancePresets: sanitizeAppearancePresets(p.appearancePresets),
       };
     },
   }),
