@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 const PATREON_URL = "https://patreon.com/grzybeek";
 const KOFI_URL = "https://ko-fi.com/grzybeek";
 
-function PatreonMark({ className }: { className?: string }) {
+export function PatreonMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
       <circle cx="15" cy="9.5" r="7" />
@@ -20,7 +20,7 @@ function PatreonMark({ className }: { className?: string }) {
   );
 }
 
-function KofiMark({ className }: { className?: string }) {
+export function KofiMark({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"

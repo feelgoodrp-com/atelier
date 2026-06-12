@@ -297,3 +297,55 @@
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.1) #0b0b0b;
 }
+
+/* --- Login progress: indeterminate loading bar + auth success checkmark --- */
+@keyframes atelier-indeterminate {
+  0% {
+    transform: translateX(-130%);
+  }
+  100% {
+    transform: translateX(430%);
+  }
+}
+
+.atelier-indeterminate {
+  animation: atelier-indeterminate 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Stroke-draw used by the auth success check (mirrors the browser success
+   page): the circle and tick draw themselves in once. */
+@keyframes atelier-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.atelier-check-circle {
+  stroke-dasharray: 152;
+  stroke-dashoffset: 152;
+  animation: atelier-draw 0.55s ease-out 0.05s forwards;
+}
+
+.atelier-check-tick {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: atelier-draw 0.4s ease-out 0.45s forwards;
+}
+
+@keyframes atelier-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.atelier-pop {
+  animation: atelier-pop 0.4s ease-out both;
+}

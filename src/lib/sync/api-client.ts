@@ -204,6 +204,40 @@ export function discordStartUrl(apiUrl: string, redirectUri: string): string {
   return `${apiUrl}/api/v1/auth/discord/start?redirect_uri=${encodeURIComponent(redirectUri)}`;
 }
 
+/**
+ * Probes GET {apiUrl}/health and confirms an atelier-api answers there — used
+ * by the first-run setup wizard. Throws a German message on any failure
+ * (unreachable, wrong service, timeout after 5s).
+ */
+export async function checkApiHealth(apiUrl: string): Promise<{ version: string | null }> {
+  const base = apiUrl.trim().replace(/\/+$/u, "");
+  if (!/^https?:\/\//u.test(base)) {
+    throw new Error("Adresse muss mit http:// oder https:// beginnen.");
+  }
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 5000);
+  let res: Response;
+  try {
+    res = await fetch(`${base}/health`, { method: "GET", signal: ctrl.signal });
+  } catch (e) {
+    throw new Error(
+      ctrl.signal.aborted
+        ? "Keine Antwort (Zeitüberschreitung) — läuft der Server?"
+        : "Server nicht erreichbar — läuft die atelier-api unter dieser Adresse?",
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!res.ok) throw new Error(`Server antwortete mit HTTP ${res.status}.`);
+  const data = (await res.json().catch(() => null)) as
+    | { ok?: boolean; service?: string; version?: string }
+    | null;
+  if (!data || data.service !== "atelier-api") {
+    throw new Error("Hier antwortet eine andere Anwendung, keine atelier-api.");
+  }
+  return { version: typeof data.version === "string" ? data.version : null };
+}
+
 /** Exchanges the one-time code from the loopback redirect for device tokens. */
 export async function exchangeDeviceCode(args: {
   code: string;

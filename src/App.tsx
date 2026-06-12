@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { TopBar } from "@/components/shell/top-bar";
@@ -7,11 +7,12 @@ import { LauncherScreen } from "@/screens/launcher";
 import { WorkbenchScreen } from "@/screens/workbench";
 import { SettingsScreen } from "@/screens/settings";
 import { BootSplash, LoginGate } from "@/screens/login";
+import { OnboardingWizard } from "@/screens/onboarding";
 import { useUiStore } from "@/lib/stores/ui-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useSidecarHealth } from "@/lib/sidecar/client";
 import { useGtaPathSync } from "@/lib/sidecar/gta-path";
-import { getLogConsoleEnabled } from "@/lib/settings";
+import { getLogConsoleEnabled, getOnboardingDone } from "@/lib/settings";
 import { openLogWindow, useLogConsoleStore } from "@/lib/stores/log-console-store";
 import { usePresenceHeartbeat } from "@/lib/sync/presence";
 import { useCollab } from "@/lib/sync/collab";
@@ -23,6 +24,14 @@ function App() {
   const bootstrapping = useAuthStore((s) => s.bootstrapping);
   const authStatus = useAuthStore((s) => s.status);
   const user = useAuthStore((s) => s.user);
+
+  // First-run setup wizard gate (null = still loading the flag).
+  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
+  useEffect(() => {
+    getOnboardingDone()
+      .then(setOnboardingDone)
+      .catch(() => setOnboardingDone(true));
+  }, []);
 
   // Sidecar status pill (Rust events + /health polling).
   useSidecarHealth();
@@ -67,11 +76,15 @@ function App() {
 
   // HARD GATE: without a logged-in AND approved account the tool is unusable.
   const authorized = authStatus === "loggedIn" && user?.status === "approved";
+  // First run (never configured + truly logged out) → setup wizard before login.
+  const showOnboarding = authStatus === "loggedOut" && onboardingDone === false;
 
   return (
     <TooltipProvider delayDuration={200}>
-      {bootstrapping ? (
+      {bootstrapping || onboardingDone === null ? (
         <BootSplash />
+      ) : showOnboarding ? (
+        <OnboardingWizard onDone={() => setOnboardingDone(true)} />
       ) : !authorized ? (
         <LoginGate />
       ) : (

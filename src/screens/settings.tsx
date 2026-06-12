@@ -45,6 +45,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { CreditsPanel } from "@/components/settings/credits-panel";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useSidecarStore } from "@/lib/stores/sidecar-store";
 import { restartSidecar } from "@/lib/sidecar/client";
@@ -646,28 +647,36 @@ export function SettingsScreen() {
 
   return (
     <div className="screen-fade-in h-full overflow-y-auto px-10 py-10">
-      <div className="w-full">
-        <h1 className="text-2xl font-semibold tracking-tight text-white">
-          Einstellungen
-        </h1>
-        <Tabs defaultValue="general" className="mt-6">
-          <TabsList className="liquid-glass bg-transparent">
-            <TabsTrigger value="general">Allgemein</TabsTrigger>
-            <TabsTrigger value="account">Konto</TabsTrigger>
-            {isAdmin && <TabsTrigger value="admin">Admin</TabsTrigger>}
-          </TabsList>
-          <TabsContent value="general" className="mt-4">
-            <GeneralTab />
-          </TabsContent>
-          <TabsContent value="account" className="mt-4">
-            <AccountTab />
-          </TabsContent>
-          {isAdmin && (
-            <TabsContent value="admin" className="mt-4">
-              <AdminTab />
+      {/* Narrower content column + a credits/thanks sidebar on the right. */}
+      <div className="mx-auto flex w-full max-w-5xl gap-8">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-white">
+            Einstellungen
+          </h1>
+          <Tabs defaultValue="general" className="mt-6">
+            <TabsList className="liquid-glass bg-transparent">
+              <TabsTrigger value="general">Allgemein</TabsTrigger>
+              <TabsTrigger value="account">Konto</TabsTrigger>
+              {isAdmin && <TabsTrigger value="admin">Admin</TabsTrigger>}
+            </TabsList>
+            <TabsContent value="general" className="mt-4">
+              <GeneralTab />
             </TabsContent>
-          )}
-        </Tabs>
+            <TabsContent value="account" className="mt-4">
+              <AccountTab />
+            </TabsContent>
+            {isAdmin && (
+              <TabsContent value="admin" className="mt-4">
+                <AdminTab />
+              </TabsContent>
+            )}
+          </Tabs>
+        </div>
+        <aside className="hidden w-64 shrink-0 lg:block">
+          <div className="sticky top-0">
+            <CreditsPanel />
+          </div>
+        </aside>
       </div>
     </div>
   );

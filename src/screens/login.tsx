@@ -19,16 +19,85 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import atelierLogo from "@/assets/atelier-logo.png";
+import heroVideo from "@/assets/hero-desktop.webm";
 import { WindowControls } from "@/components/shell/top-bar";
 import { GrzybeekCredits } from "@/components/shell/credits";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAuthStore, type LoginPhase } from "@/lib/stores/auth-store";
 import { cn } from "@/lib/utils";
 
 const PENDING_POLL_MS = 15_000;
 
-function GateShell({ children }: { children: React.ReactNode }) {
+const LOGIN_PHASE_LABEL: Record<Exclude<LoginPhase, "idle">, string> = {
+  connecting: "Verbindung wird vorbereitet…",
+  awaiting: "Warte auf Bestätigung im Browser…",
+  exchanging: "Anmeldung wird abgeschlossen…",
+  success: "Angemeldet!",
+};
+
+/** Animated green checkmark shown the moment auth succeeds (matches the
+ *  browser success page's draw-in). */
+function SuccessCheck() {
   return (
-    <div className="grid-background flex h-full flex-col text-foreground">
+    <div className="atelier-pop flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/15">
+      <svg
+        viewBox="0 0 52 52"
+        className="h-8 w-8"
+        fill="none"
+        stroke="#4ade80"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle className="atelier-check-circle" cx="26" cy="26" r="24" strokeWidth={2.5} />
+        <path className="atelier-check-tick" d="M14 27l8 8 16-17" strokeWidth={3} />
+      </svg>
+    </div>
+  );
+}
+
+/** Loading bar (or checkmark on success) replacing the login button while an
+ *  interactive Discord login runs. */
+function LoginProgress({ phase }: { phase: Exclude<LoginPhase, "idle"> }) {
+  if (phase === "success") {
+    return (
+      <div className="mt-8 flex flex-col items-center gap-3">
+        <SuccessCheck />
+        <p className="text-sm font-medium text-emerald-300">
+          {LOGIN_PHASE_LABEL.success}
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-8 flex flex-col gap-3">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+        <div className="atelier-indeterminate h-full w-1/3 rounded-full bg-gradient-to-r from-[#5865F2] to-[#7289DA]" />
+      </div>
+      <p className="text-center text-sm text-white/55">{LOGIN_PHASE_LABEL[phase]}</p>
+    </div>
+  );
+}
+
+export function GateShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative flex h-full flex-col overflow-hidden bg-[#0b0b0b] text-foreground">
+      {/* Hero video background, a darkening gradient veil over it (so the card
+          + text stay readable), and the subtle grid on top for brand texture. */}
+      <video
+        className="absolute inset-0 z-0 h-full w-full object-cover"
+        autoPlay
+        loop
+        muted
+        playsInline
+        aria-hidden="true"
+      >
+        <source src={heroVideo} type="video/webm" />
+      </video>
+      <div
+        className="absolute inset-0 z-0 bg-gradient-to-b from-[#0b0b0b]/75 via-[#0b0b0b]/55 to-[#0b0b0b]/92"
+        aria-hidden="true"
+      />
+      <div className="grid-background absolute inset-0 z-0 opacity-50" aria-hidden="true" />
+
       {/* Minimal title strip: draggable, window controls only. */}
       <div
         data-tauri-drag-region
@@ -46,9 +115,9 @@ function GateShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center p-8">
-        {children}
-      </div>
+      {/* Content region — consumers place their own card/splash + can pin
+          things (e.g. the credits) to its edges. */}
+      <div className="relative z-10 min-h-0 flex-1">{children}</div>
     </div>
   );
 }
@@ -96,39 +165,33 @@ function ApiUrlAdvanced() {
 }
 
 function LoginCard() {
-  const status = useAuthStore((s) => s.status);
+  const loginPhase = useAuthStore((s) => s.loginPhase);
   const login = useAuthStore((s) => s.login);
+  const busy = loginPhase !== "idle";
 
   return (
-    <div className="liquid-glass w-full max-w-md rounded-2xl p-8">
-      <div className="flex items-center gap-3">
-        <img src={atelierLogo} alt="" className="h-12 w-12" draggable={false} />
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-semibold tracking-tight text-white">atelier</span>
-          <span className="text-sm font-medium text-[#7289DA]">by feelgood</span>
-        </div>
-      </div>
-      <p className="mt-3 text-sm leading-relaxed text-white/55">
-        GTA&nbsp;V Clothing-Werkstatt der Feelgood-Community. Melde dich mit Discord an, um
-        Packs zu erstellen, zu teilen und gemeinsam zu bauen.
+    <div className="liquid-glass w-full max-w-sm rounded-2xl p-8">
+      <h2 className="text-xl font-semibold text-white">Anmelden</h2>
+      <p className="mt-1 text-sm text-white/50">
+        Melde dich mit Discord an, um loszulegen.
       </p>
 
-      <Button
-        className="mt-8 h-11 w-full bg-[#5865F2] text-white hover:bg-[#4752C4]"
-        disabled={status === "loggingIn"}
-        onClick={() => {
-          login().catch((e: unknown) => {
-            toast.error("Anmeldung fehlgeschlagen", {
-              description: e instanceof Error ? e.message : String(e),
+      {busy ? (
+        <LoginProgress phase={loginPhase} />
+      ) : (
+        <Button
+          className="mt-6 h-11 w-full bg-[#5865F2] text-white hover:bg-[#4752C4]"
+          onClick={() => {
+            login().catch((e: unknown) => {
+              toast.error("Anmeldung fehlgeschlagen", {
+                description: e instanceof Error ? e.message : String(e),
+              });
             });
-          });
-        }}
-      >
-        {status === "loggingIn" ? "Warte auf Discord…" : "Mit Discord anmelden"}
-      </Button>
-      <p className="mt-3 text-center text-xs text-white/35">
-        Der Browser öffnet sich für die Anmeldung und du kehrst danach hierher zurück.
-      </p>
+          }}
+        >
+          Mit Discord anmelden
+        </Button>
+      )}
 
       <div className="mt-6 border-t border-white/10 pt-4">
         <ApiUrlAdvanced />
@@ -151,14 +214,14 @@ function PendingCard() {
   }, [reloadUser]);
 
   return (
-    <div className="liquid-glass w-full max-w-md rounded-2xl p-8 text-center">
+    <div className="liquid-glass w-full max-w-sm rounded-2xl p-8 text-center">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/15">
         <ShieldCheck className="h-6 w-6 text-amber-300" />
       </div>
       <h2 className="mt-4 text-lg font-semibold text-white">Warte auf Freigabe</h2>
-      <p className="mt-2 text-sm leading-relaxed text-white/55">
-        Hey {user?.username ?? ""}! Dein Account wurde erstellt, muss aber noch von einem
-        Admin freigeschaltet werden. Diese Seite prüft den Status automatisch.
+      <p className="mt-2 text-sm text-white/55">
+        {user?.username ? `Hey ${user.username} — d` : "D"}ein Konto muss noch von
+        einem Admin freigegeben werden. Wir prüfen automatisch.
       </p>
       <div className="mt-6 flex justify-center gap-2">
         <Button
@@ -186,14 +249,13 @@ function PendingCard() {
 function LockedCard() {
   const logout = useAuthStore((s) => s.logout);
   return (
-    <div className="liquid-glass w-full max-w-md rounded-2xl p-8 text-center">
+    <div className="liquid-glass w-full max-w-sm rounded-2xl p-8 text-center">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-500/15">
         <Lock className="h-6 w-6 text-red-400" />
       </div>
-      <h2 className="mt-4 text-lg font-semibold text-white">Account gesperrt</h2>
-      <p className="mt-2 text-sm leading-relaxed text-white/55">
-        Dein Account wurde gesperrt. Wende dich an einen Admin, wenn du denkst, dass das ein
-        Fehler ist.
+      <h2 className="mt-4 text-lg font-semibold text-white">Konto gesperrt</h2>
+      <p className="mt-2 text-sm text-white/55">
+        Dein Konto wurde gesperrt. Melde dich bei einem Admin.
       </p>
       <Button variant="ghost" size="sm" className="mt-6" onClick={() => void logout()}>
         Abmelden
@@ -206,11 +268,13 @@ function LockedCard() {
 export function BootSplash() {
   return (
     <GateShell>
-      <div className="flex animate-pulse flex-col items-center gap-4">
-        <img src={atelierLogo} alt="" className="h-20 w-20" draggable={false} />
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-semibold tracking-tight text-white">atelier</span>
-          <span className="text-sm font-medium text-[#7289DA]">by feelgood</span>
+      <div className="flex h-full items-center justify-center">
+        <div className="flex animate-pulse flex-col items-center gap-4">
+          <img src={atelierLogo} alt="" className="h-20 w-20" draggable={false} />
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-semibold tracking-tight text-white">atelier</span>
+            <span className="text-sm font-medium text-[#7289DA]">by feelgood</span>
+          </div>
         </div>
       </div>
     </GateShell>
@@ -228,8 +292,29 @@ export function LoginGate() {
 
   return (
     <GateShell>
-      <div className="flex w-full flex-col items-center gap-8">
+      <div className="flex h-full items-center justify-between gap-10 px-10 xl:px-20">
+        {/* Left: big standalone branding over the video. */}
+        <div className="flex max-w-md flex-col items-start gap-5">
+          <img src={atelierLogo} alt="" className="h-28 w-28" draggable={false} />
+          <div>
+            <div className="flex items-baseline gap-3">
+              <span className="text-5xl font-semibold tracking-tight text-white">
+                atelier
+              </span>
+              <span className="text-lg font-medium text-[#7289DA]">by feelgood</span>
+            </div>
+            <p className="mt-3 text-base text-white/55">
+              Für alle. Fuck Gatekeeping.
+            </p>
+          </div>
+        </div>
+
+        {/* Right: the login / pending / locked card. */}
         {card}
+      </div>
+
+      {/* Credits centered along the bottom edge. */}
+      <div className="absolute inset-x-0 bottom-6 flex justify-center px-8">
         <GrzybeekCredits />
       </div>
     </GateShell>

@@ -31,6 +31,22 @@ export async function setGtaPath(path: string | null): Promise<void> {
   }
 }
 
+/**
+ * Whether the first-run setup wizard has been completed. Existing installs
+ * (a GTA path is already configured) are treated as done so an update never
+ * re-shows the wizard.
+ */
+export async function getOnboardingDone(): Promise<boolean> {
+  const store = await getStore();
+  if ((await store.get<boolean>("onboardingDone")) === true) return true;
+  return (await store.get<string>("gtaPath")) != null;
+}
+
+export async function setOnboardingDone(done: boolean): Promise<void> {
+  const store = await getStore();
+  await store.set("onboardingDone", done);
+}
+
 /** Feature switch for the live log console (Settings → Logs). */
 export async function getLogConsoleEnabled(): Promise<boolean> {
   const store = await getStore();

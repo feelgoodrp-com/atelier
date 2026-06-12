@@ -77,8 +77,21 @@ p{font-size:13.5px;line-height:1.6;color:rgba(255,255,255,.55)}
 
 export type AuthStatus = "loggedOut" | "loggingIn" | "loggedIn";
 
+/**
+ * Sub-phase of an interactive login — drives the login card's progress bar
+ * and the success checkmark. "idle" whenever no interactive login is running.
+ */
+export type LoginPhase =
+  | "idle"
+  | "connecting"
+  | "awaiting"
+  | "exchanging"
+  | "success";
+
 interface AuthState {
   status: AuthStatus;
+  /** Progress sub-phase of {@link login} (loading bar + auth checkmark). */
+  loginPhase: LoginPhase;
   /** True until the initial silent-login attempt finished (gate shows a splash). */
   bootstrapping: boolean;
   user: User | null;
@@ -119,6 +132,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
   return {
     status: "loggedOut",
+    loginPhase: "idle",
     bootstrapping: true,
     user: null,
     accessToken: null,
@@ -148,13 +162,15 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
     login: async () => {
       if (get().status === "loggingIn") return;
-      set({ status: "loggingIn" });
+      set({ status: "loggingIn", loginPhase: "connecting" });
 
       let port: number | null = null;
       const cleanups: Array<() => void> = [];
       try {
         port = await startOauthServer({ response: oauthResponseHtml(get().apiUrl) });
         const redirectUri = `http://127.0.0.1:${port}/callback`;
+        // Browser is about to open — we now wait for the user to authorize.
+        set({ loginPhase: "awaiting" });
 
         const code = await new Promise<string>((resolve, reject) => {
           const timeout = setTimeout(
@@ -184,12 +200,22 @@ export const useAuthStore = create<AuthState>((set, get) => {
           openInBrowser(discordStartUrl(get().apiUrl, redirectUri)).catch(reject);
         });
 
+        // Code received — exchange it for tokens.
+        set({ loginPhase: "exchanging" });
         const device = await getDeviceMeta();
         const tokens = await exchangeDeviceCode({ code, redirectUri, device });
         await setRefreshToken(tokens.refreshToken);
-        set({ status: "loggedIn", user: tokens.user, accessToken: tokens.accessToken });
+        // Hold on "success" briefly so the checkmark animates before the gate
+        // swaps the card (status flip unmounts the login card).
+        set({
+          loginPhase: "success",
+          user: tokens.user,
+          accessToken: tokens.accessToken,
+        });
+        await new Promise((resolve) => setTimeout(resolve, 850));
+        set({ status: "loggedIn", loginPhase: "idle" });
       } catch (e) {
-        set({ status: "loggedOut" });
+        set({ status: "loggedOut", loginPhase: "idle" });
         throw e;
       } finally {
         cleanups.forEach((fn) => fn());
