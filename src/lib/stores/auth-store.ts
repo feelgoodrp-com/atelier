@@ -70,7 +70,7 @@ p{font-size:13.5px;line-height:1.6;color:rgba(255,255,255,.55)}
 <div class="brand">
 <img class="logo" src="${apiUrl}/logo.png" alt="" onerror="this.style.display='none'">
 <div class="wm"><b>atelier</b><span>by feelgood</span></div>
-<p class="tag">Clothing-Werkstatt der Feelgood-Community.</p>
+<p class="tag">Für alle. Fucke gatekeeping.</p>
 </div>
 <main class="card">
 <div class="icon"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M14 27l8 8 16-17"/></svg></div>
