@@ -180,7 +180,7 @@ function CloudLinkDialog() {
         <DialogHeader>
           <DialogTitle className="text-white">Mit Cloud verknüpfen</DialogTitle>
           <DialogDescription className="text-white/50">
-            Verbindet dieses Projekt mit einem Pack auf dem Feelgood-Server,
+            Verbindet dieses Projekt mit einem Pack auf dem atelier-Server,
             damit dein Team gemeinsam daran arbeiten kann.
           </DialogDescription>
         </DialogHeader>
