@@ -12,11 +12,14 @@ import { joinPath } from "@/lib/project/io";
 import {
   appearanceKey,
   clampTextureIndex,
+  drawableHairScale,
+  drawableHasHeelLift,
   glbCacheKey,
   outfitCacheKey,
   pedModelFor,
   usePreview3dStore,
 } from "@/lib/stores/preview-3d-store";
+import { HEEL_LIFT_M } from "@/lib/preview/appearance";
 import { useProjectStore } from "@/lib/stores/project-store";
 import { useSidecarStore } from "@/lib/stores/sidecar-store";
 import { useWorkbenchStore } from "@/lib/stores/workbench-store";
@@ -58,24 +61,44 @@ export function useGlbPrefetch(visible: ProjectDrawable[]): void {
           const pedModel = pedModelFor(drawable);
           const yddPath = joinPath(projectDir, ydd.path);
           const ytdPaths = drawable.textures.map((t) => joinPath(projectDir, t.path));
+          // Same derivation as the pane — without it the prefetched key/request
+          // for a hair or heel drawable would NOT match the real one (miss).
+          const hairScale = drawableHairScale(drawable);
+          const heelLift = drawableHasHeelLift(drawable);
 
           // With ped body the pane requests OUTFIT GLBs — prefetch the
           // single-garment outfit (the likely click target) so the keys match.
           if (pedBodyActive) {
             return {
               key: outfitCacheKey(
-                [{ yddHash: ydd.hash, textureHash }],
+                [
+                  {
+                    yddHash: ydd.hash,
+                    textureHash,
+                    ...(hairScale != null ? { hairScale } : {}),
+                  },
+                ],
                 pedModel,
                 poseActive,
                 appearanceKey(appearance),
+                heelLift,
               ),
               request: {
-                items: [{ yddPath, ytdPaths, textureIndex, slot: drawable.type }],
+                items: [
+                  {
+                    yddPath,
+                    ytdPaths,
+                    textureIndex,
+                    slot: drawable.type,
+                    ...(hairScale != null ? { hairScale } : {}),
+                  },
+                ],
                 pedModel,
                 includePedBody: true,
                 pose: poseActive,
                 // Mirrors the pane: appearance is part of key AND request.
                 ...(appearance ? { appearance } : {}),
+                ...(heelLift ? { heelLift: HEEL_LIFT_M } : {}),
               },
             };
           }
@@ -83,7 +106,16 @@ export function useGlbPrefetch(visible: ProjectDrawable[]): void {
           // request AND the cache key must carry it (matches the pane).
           const poseSkeleton = poseActive ? pedModel : null;
           return {
-            key: glbCacheKey(ydd.hash, textureHash, null, poseActive, poseSkeleton),
+            key: glbCacheKey(
+              ydd.hash,
+              textureHash,
+              null,
+              poseActive,
+              poseSkeleton,
+              "default",
+              hairScale,
+              heelLift,
+            ),
             request: {
               yddPath,
               ytdPaths,
@@ -91,6 +123,8 @@ export function useGlbPrefetch(visible: ProjectDrawable[]): void {
               includePedBody: false,
               pose: poseActive,
               ...(poseSkeleton ? { pedModel: poseSkeleton } : {}),
+              ...(hairScale != null ? { hairScale } : {}),
+              ...(heelLift ? { heelLift: HEEL_LIFT_M } : {}),
             },
           };
         });

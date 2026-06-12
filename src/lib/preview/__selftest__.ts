@@ -16,8 +16,10 @@ import {
   appearanceKey,
   EYE_COLOUR_UNSET,
   extrasToFace,
+  f2,
   hasUnrenderedExtras,
   normalizeAppearance,
+  quantizeScale,
   sanitizeAppearance,
   sanitizeAppearancePresets,
   sanitizeFace,
@@ -669,6 +671,14 @@ for (const [opacity, expectedF2] of F2_XX5) {
       },
     }),
     `||f=0:0:0:0.00:0.00,k=0:0:0:0.00,o0=1:${expectedF2}:-:-,e=-`,
+  );
+  // quantizeScale (the value the client SENDS for hairScale) must land in the
+  // SAME F2 bucket as the raw input, so the rendered mesh matches its cache key.
+  // Idempotent: requantizing the sent value never escapes its bucket.
+  checkEq(
+    `quantizeScale(${opacity}) keys identically to f2(${opacity}) -> "${expectedF2}"`,
+    f2(quantizeScale(opacity)),
+    expectedF2,
   );
 }
 

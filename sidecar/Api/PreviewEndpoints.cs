@@ -11,6 +11,18 @@ public static class PreviewEndpoints
     private const string DefaultPedModel = "mp_m_freemode_01";
     private static readonly string[] AllowedPedModels = { "mp_m_freemode_01", "mp_f_freemode_01" };
 
+    /// <summary>
+    /// Heel lift in metres (glTF-up = Y) the WHOLE 3D-preview scene rises when a
+    /// rendered feet item has high heels. The high-heels flag is a BOOL with no
+    /// height, so the contract pins one constant (~ grzy UI 1.0 /10). The client
+    /// sends this exact numeric value as heelLift; the sidecar uses it 1:1 as
+    /// yLift. Honest approximation, NOT a real expression/creaturemetadata
+    /// effect — just "the ped stands higher", the analogue of grzy's floor trick
+    /// (we render no floor). If a real height field ever lands it replaces this
+    /// constant in one place per side.
+    /// </summary>
+    private const double HeelLiftMetres = 0.08;
+
     public static void MapPreviewEndpoints(this IEndpointRouteBuilder app)
     {
         // POST /preview/glb -> GLB bytes (model/gltf-binary) with
@@ -60,6 +72,14 @@ public static class PreviewEndpoints
             // requests keep sharing one cache entry.
             var appearanceKey = includePedBody ? PedAppearanceKey.Canonical(appearance) : "default";
 
+            // 3D-preview hair/heel: hairScale (0..1) shrinks THIS ydd, heelLift
+            // (metres) lifts the WHOLE scene. Unlike appearance these ALWAYS
+            // change the garment mesh, so the suffix is keyed regardless of
+            // includePedBody. Absent => "" => byte-identical key + GLB.
+            var hairScale = NormalizeHairScale(request?.HairScale);
+            var heelLift = NormalizeHeelLift(request?.HeelLift);
+            var extra = PreviewExtraKey(hairScale, heelLift);
+
             // Content-hash cache key (file BYTES, not paths) so the client can
             // cache by the same key and renames/copies still hit server-side.
             var cacheKey = new PreviewGlbCache.Key(
@@ -68,7 +88,8 @@ public static class PreviewEndpoints
                 includePedBody,
                 includePedBody || pose != null ? pedModel : string.Empty,
                 pose ?? "none",
-                appearanceKey);
+                appearanceKey,
+                extra);
             if (PreviewGlbCache.TryGet(cacheKey, out var cached, out var cachedFallbacks))
                 return GlbResponse(ctx, cached, cachedFallbacks);
 
@@ -103,7 +124,7 @@ public static class PreviewEndpoints
             GlbBuilder.Result result;
             try
             {
-                result = GlbBuilder.Build(yddBytes, ytdBytes, pedComponents, log, poseData);
+                result = GlbBuilder.Build(yddBytes, ytdBytes, pedComponents, log, poseData, hairScale, (float)heelLift);
             }
             catch (Exception ex)
             {
@@ -180,6 +201,52 @@ public static class PreviewEndpoints
     /// <summary>Maps an outfit-item slot to the ped component it replaces (props cover nothing).</summary>
     private static int? CoversComponentIndex(string? slot) =>
         slot != null && Engine.Build.GtaSlots.ComponentIds.TryGetValue(slot, out var id) ? id : null;
+
+    /// <summary>
+    /// Normalizes the optional 3D-preview hairScale: null/NaN/out-of-bounds is
+    /// treated leniently (no 400 — like the face block). null/&lt;=0 disables the
+    /// feature (returns null => Identity mesh path), otherwise it is clamped to
+    /// [0,1]. A value of exactly 0 is "feature on, but full hair" — but since
+    /// scale 0 means no shrink AND the GLB is byte-identical, we collapse it to
+    /// null so the cache key + bytes match a request that omits the field.
+    /// </summary>
+    private static double? NormalizeHairScale(double? raw)
+    {
+        if (raw == null || double.IsNaN(raw.Value)) return null;
+        var v = Math.Clamp(raw.Value, 0d, 1d);
+        return v <= 0d ? null : v;
+    }
+
+    /// <summary>
+    /// Normalizes the optional 3D-preview heelLift (metres). null/NaN/&lt;=0 means
+    /// "off" (0 => no scene lift => byte-identical). The client sends the fixed
+    /// <see cref="HeelLiftMetres"/> when a rendered feet item has high heels; we
+    /// clamp non-finite junk but otherwise pass the metres through 1:1.
+    /// </summary>
+    private static double NormalizeHeelLift(double? raw)
+    {
+        if (raw == null || double.IsNaN(raw.Value) || raw.Value <= 0d) return 0d;
+        return raw.Value;
+    }
+
+    /// <summary>
+    /// Builds the cache-key suffix for the 3D-preview hair/heel flags. Mirrors
+    /// the client (preview-3d-store): "|hs:&lt;F2&gt;" only when hairScale is on,
+    /// "|hl1" only when heelLift is on, in that fixed order. Empty when neither
+    /// is active, so the key stays byte-identical to before the contract.
+    /// hairScale uses the SAME quantizer as the face mixes (PedAppearanceKey
+    /// .FmtScale == F2), so slider value -> key is stable + reproducible.
+    /// heelLift is bool-derived, so only its presence is keyed ("hl1").
+    /// </summary>
+    private static string PreviewExtraKey(double? hairScale, double heelLift)
+    {
+        var extra = string.Empty;
+        if (hairScale is double hs)
+            extra += "|hs:" + PedAppearanceKey.FmtScale((float)hs);
+        if (heelLift > 0d)
+            extra += "|hl1";
+        return extra;
+    }
 
     /// <summary>
     /// Validates + normalizes the optional appearance: slot/anchor keys are
@@ -331,6 +398,11 @@ public static class PreviewEndpoints
             // Appearance only changes the bytes when the ped body is rendered.
             var appearanceKey = includePedBody ? PedAppearanceKey.Canonical(appearance) : "default";
 
+            // Global 3D-preview heel lift (metres) — derived client-side from
+            // the feet item's high-heels flag, raises the WHOLE scene. hairScale
+            // is per-item (read in the loop). Absent => 0 => byte-identical.
+            var heelLift = NormalizeHeelLift(request?.HeelLift);
+
             // Read all files + build the content-hash cache key in one pass.
             var builderItems = new List<GlbBuilder.OutfitItem>(items.Count);
             var keyParts = new List<string>(items.Count);
@@ -350,9 +422,19 @@ public static class PreviewEndpoints
                 }
 
                 var covers = CoversComponentIndex(item?.Slot?.Trim().ToLowerInvariant());
-                builderItems.Add(new GlbBuilder.OutfitItem(yddBytes, ytdBytes, covers));
-                keyParts.Add($"{Sha256Hex(yddBytes)}:{(ytdBytes != null ? Sha256Hex(ytdBytes) : "none")}:{covers?.ToString(CultureInfo.InvariantCulture) ?? "p"}");
+                // Per-item hair shrink (only the hair/p_head item carries it).
+                var itemHairScale = NormalizeHairScale(item?.HairScale);
+                builderItems.Add(new GlbBuilder.OutfitItem(yddBytes, ytdBytes, covers, itemHairScale));
+                // Item key string mirrors the client outfitCacheKey part format:
+                // the per-item hair suffix ":h<F2>" is appended only when set,
+                // so an item without it keys exactly as before the contract.
+                var hairKeyPart = itemHairScale is double h ? ":h" + PedAppearanceKey.FmtScale((float)h) : string.Empty;
+                keyParts.Add($"{Sha256Hex(yddBytes)}:{(ytdBytes != null ? Sha256Hex(ytdBytes) : "none")}:{covers?.ToString(CultureInfo.InvariantCulture) ?? "p"}{hairKeyPart}");
             }
+
+            // Global heel lift goes in the key Extra (NOT per item) — empty when
+            // off, so an outfit without heels keys byte-identically to before.
+            var extra = PreviewExtraKey(null, heelLift);
 
             var cacheKey = new PreviewGlbCache.Key(
                 Sha256Hex(System.Text.Encoding.UTF8.GetBytes(string.Join("|", keyParts))),
@@ -360,7 +442,8 @@ public static class PreviewEndpoints
                 includePedBody,
                 includePedBody || pose != null ? pedModel : string.Empty,
                 pose ?? "none",
-                appearanceKey);
+                appearanceKey,
+                extra);
             if (PreviewGlbCache.TryGet(cacheKey, out var cached, out var cachedFallbacks))
                 return GlbResponse(ctx, cached, cachedFallbacks);
 
@@ -392,7 +475,7 @@ public static class PreviewEndpoints
             GlbBuilder.Result result;
             try
             {
-                result = GlbBuilder.BuildOutfit(builderItems, pedComponents, log, poseData);
+                result = GlbBuilder.BuildOutfit(builderItems, pedComponents, log, poseData, (float)heelLift);
             }
             catch (Exception ex)
             {

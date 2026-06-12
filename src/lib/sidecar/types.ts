@@ -232,6 +232,19 @@ export interface PreviewGlbRequest {
   pose?: string | null;
   /** Ped-body appearance — only effective when the ped body is rendered. */
   appearance?: PedAppearance;
+  /**
+   * Uniform mesh scale of the whole drawable (0..1, 1 = vanish), preview-only —
+   * mirrors the build-time hairScale for hair/p_head drawables so the slider is
+   * SEEN in 3D. Absent/null = no scaling (GLB bytes byte-identical to before).
+   * The single /preview/glb holds exactly one ydd, so this applies to it whole.
+   */
+  hairScale?: number | null;
+  /**
+   * Vertical scene lift in meters (glTF up = Y), preview-only — raises the
+   * whole single-garment scene as if it "stood on heels". Set only for a feet
+   * drawable with highHeels (value = {@link HEEL_LIFT_M}). Absent/null = 0.
+   */
+  heelLift?: number | null;
 }
 
 /** One garment of an outfit preview (mirrors sidecar OutfitItemRequest). */
@@ -241,6 +254,12 @@ export interface PreviewOutfitItem {
   textureIndex?: number;
   /** Slot id (e.g. "uppr", "p_head") — component slots replace the ped default. */
   slot: string;
+  /**
+   * Uniform mesh scale for THIS item (0..1), preview-only — set only for the
+   * hair/p_head garment so its mesh shrinks per the hairScale slider. heelLift
+   * is GLOBAL (request level), not per item. Absent/null = no scaling.
+   */
+  hairScale?: number | null;
 }
 
 /** POST /preview/outfit-glb — several garments on ONE ped in one scene. */
@@ -252,6 +271,13 @@ export interface PreviewOutfitRequest {
   pose?: string | null;
   /** Ped-body appearance — only effective when the ped body is rendered. */
   appearance?: PedAppearance;
+  /**
+   * GLOBAL vertical scene lift in meters (glTF up = Y), preview-only — raises
+   * the WHOLE scene (ped body + all garments), derived from any rendered feet
+   * item with highHeels (value = {@link HEEL_LIFT_M}). Absent/null = 0. Lives at
+   * request level (not per item) because the whole ped "stands on heels".
+   */
+  heelLift?: number | null;
 }
 
 /**

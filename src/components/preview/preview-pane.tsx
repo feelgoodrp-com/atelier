@@ -46,6 +46,8 @@ import {
   PREVIEW_MAX_MODELS,
   appearanceKey,
   clampTextureIndex,
+  drawableHairScale,
+  drawableHasHeelLift,
   glbCacheKey,
   outfitCacheKey,
   pedModelFor,
@@ -53,6 +55,7 @@ import {
   usePreview3dStore,
   type CameraPreset,
 } from "@/lib/stores/preview-3d-store";
+import { HEEL_LIFT_M } from "@/lib/preview/appearance";
 import { CharacterPopover } from "./character-popover";
 import { useProjectStore } from "@/lib/stores/project-store";
 import { useSidecarStore } from "@/lib/stores/sidecar-store";
@@ -259,7 +262,14 @@ export function PreviewPane() {
 
     if (pedBodyActive && rendered.length > 0) {
       const pedModel = pedModelFor(rendered[0]);
-      const parts: Array<{ yddHash: string; textureHash: string | null }> = [];
+      // heelLift is GLOBAL: any rendered feet item with highHeels raises the
+      // whole scene. Derived once from the rendered set (not per item).
+      const heelLift = rendered.some(drawableHasHeelLift);
+      const parts: Array<{
+        yddHash: string;
+        textureHash: string | null;
+        hairScale?: number | null;
+      }> = [];
       const items = rendered.flatMap((drawable) => {
         const ydd = drawable.ydd;
         if (!ydd) return [];
@@ -267,9 +277,13 @@ export function PreviewPane() {
           drawable,
           textureIndexByDrawable[drawable.id],
         );
+        // Per-item hairScale (hair/p_head only) — both the key part AND the
+        // request item must carry it, or prefetch/render keys diverge.
+        const hairScale = drawableHairScale(drawable);
         parts.push({
           yddHash: ydd.hash,
           textureHash: drawable.textures[textureIndex]?.hash ?? null,
+          ...(hairScale != null ? { hairScale } : {}),
         });
         return [
           {
@@ -277,6 +291,7 @@ export function PreviewPane() {
             ytdPaths: drawable.textures.map((t) => joinPath(projectDir, t.path)),
             textureIndex,
             slot: drawable.type,
+            ...(hairScale != null ? { hairScale } : {}),
           },
         ];
       });
@@ -284,7 +299,13 @@ export function PreviewPane() {
       return [
         {
           drawable: rendered[0],
-          key: outfitCacheKey(parts, pedModel, poseActive, appearanceKey(appearance)),
+          key: outfitCacheKey(
+            parts,
+            pedModel,
+            poseActive,
+            appearanceKey(appearance),
+            heelLift,
+          ),
           request: {
             items,
             pedModel,
@@ -293,6 +314,9 @@ export function PreviewPane() {
             // Appearance only matters when the ped body is merged — the
             // garment-only branch below stays appearance-free on purpose.
             ...(appearance ? { appearance } : {}),
+            // Global scene lift — numeric meters, only when a feet heel item is
+            // in the scene (client.ts drops the field otherwise).
+            ...(heelLift ? { heelLift: HEEL_LIFT_M } : {}),
           },
         },
       ];
@@ -309,10 +333,23 @@ export function PreviewPane() {
       // A pose bakes against a GENDER-specific skeleton + clip — without the
       // pedModel a female garment would silently get the male skeleton.
       const poseSkeleton = poseActive ? pedModelFor(drawable) : null;
+      // Single garment: hairScale applies to this whole ydd; heelLift lifts
+      // this (single) scene — both derived from THIS drawable's type+flags.
+      const hairScale = drawableHairScale(drawable);
+      const heelLift = drawableHasHeelLift(drawable);
       return [
         {
           drawable,
-          key: glbCacheKey(ydd.hash, textureHash, null, poseActive, poseSkeleton),
+          key: glbCacheKey(
+            ydd.hash,
+            textureHash,
+            null,
+            poseActive,
+            poseSkeleton,
+            "default",
+            hairScale,
+            heelLift,
+          ),
           request: {
             yddPath: joinPath(projectDir, ydd.path),
             ytdPaths: drawable.textures.map((t) => joinPath(projectDir, t.path)),
@@ -320,11 +357,19 @@ export function PreviewPane() {
             includePedBody: false,
             pose: poseActive,
             ...(poseSkeleton ? { pedModel: poseSkeleton } : {}),
+            // Preview-only mesh transforms — dropped from the body by client.ts
+            // when inactive, so heel-/hair-free garments stay byte-identical.
+            ...(hairScale != null ? { hairScale } : {}),
+            ...(heelLift ? { heelLift: HEEL_LIFT_M } : {}),
           },
         },
       ];
     });
   }, [
+    // `rendered` is a fresh array whenever the project changes (the inspector's
+    // updateDrawable replaces the drawable + project ref), so editing the hair
+    // slider / high-heels switch re-runs this memo and the preview updates live
+    // — the derived hairScale/heelLift come straight from each drawable.flags.
     projectDir,
     rendered,
     textureIndexByDrawable,

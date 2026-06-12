@@ -215,6 +215,11 @@ export async function fetchPreviewGlb(
       includePedBody: request.includePedBody ?? false,
       pose: request.pose ?? null,
       ...(request.appearance ? { appearance: request.appearance } : {}),
+      // Preview-only transforms — written ONLY when active, so a request
+      // without them stays byte-for-byte identical to before (sidecar reads
+      // the missing fields as null -> Identity path -> same GLB bytes).
+      ...(request.hairScale != null ? { hairScale: request.hairScale } : {}),
+      ...(request.heelLift ? { heelLift: request.heelLift } : {}),
     }),
   });
   if (!res.ok) {
@@ -252,11 +257,17 @@ export async function fetchPreviewOutfitGlb(
         ytdPaths: item.ytdPaths,
         textureIndex: item.textureIndex ?? 0,
         slot: item.slot,
+        // Per-item hairScale — only the hair/p_head item carries it; absent for
+        // every other garment keeps those items' bytes identical to before.
+        ...(item.hairScale != null ? { hairScale: item.hairScale } : {}),
       })),
       ...(request.pedModel ? { pedModel: request.pedModel } : {}),
       includePedBody: request.includePedBody ?? false,
       pose: request.pose ?? null,
       ...(request.appearance ? { appearance: request.appearance } : {}),
+      // Global scene lift (derived from the feet item) — written only when
+      // active so a heel-free outfit request stays byte-identical to before.
+      ...(request.heelLift ? { heelLift: request.heelLift } : {}),
     }),
   });
   if (!res.ok) {

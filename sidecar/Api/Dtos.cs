@@ -15,11 +15,23 @@ public sealed record ConfigResponse(bool Ok, string? GtaPath, bool GtaPathReady)
 
 public sealed record ParseRequest(string? Path);
 
-/// <summary>One garment of an outfit preview (POST /preview/outfit-glb).</summary>
-public sealed record OutfitItemRequest(string? YddPath, List<string>? YtdPaths, int? TextureIndex, string? Slot);
+/// <summary>
+/// One garment of an outfit preview (POST /preview/outfit-glb). HairScale is
+/// the PER-ITEM 3D-preview hair shrink (0..1, null/absent = off) — only the
+/// hair/p_head item carries it; the whole item mesh is uniformly scaled. See
+/// the contract on <see cref="PreviewGlbRequest.HairScale"/> for the semantics.
+/// </summary>
+public sealed record OutfitItemRequest(string? YddPath, List<string>? YtdPaths, int? TextureIndex, string? Slot, double? HairScale);
 
-/// <summary>POST /preview/outfit-glb — several garments on ONE ped at once. Pose: see GET /preview/poses (null = bind pose).</summary>
-public sealed record PreviewOutfitRequest(List<OutfitItemRequest>? Items, string? PedModel, bool? IncludePedBody, string? Pose, PedAppearanceDto? Appearance);
+/// <summary>
+/// POST /preview/outfit-glb — several garments on ONE ped at once. Pose: see
+/// GET /preview/poses (null = bind pose). HeelLift is the GLOBAL vertical
+/// scene lift in metres (Y-up, null/absent = 0) derived from the feet item's
+/// high-heels flag — it raises the WHOLE scene (ped body + all garments), not
+/// a single item (hairScale is the garment-local one). See the contract on
+/// <see cref="PreviewGlbRequest.HeelLift"/>.
+/// </summary>
+public sealed record PreviewOutfitRequest(List<OutfitItemRequest>? Items, string? PedModel, bool? IncludePedBody, string? Pose, PedAppearanceDto? Appearance, double? HeelLift);
 
 /// <summary>
 /// One ped component variation override. Dictionary keys follow
@@ -111,6 +123,14 @@ public static class PedAppearanceKey
 {
     /// <summary>Overlay index sentinel for "layer off" — never written to the key.</summary>
     public const int OverlayOff = 255;
+
+    /// <summary>
+    /// Public re-use of the invariant 2-decimal quantizer for the 3D-preview
+    /// hair/heel cache key (PreviewEndpoints). Same byte-identical "0.00"..
+    /// "1.00" output as the face mixes — keeping it here means there is ONE
+    /// quantizer on the C# side, matching the single client-side f2.
+    /// </summary>
+    public static string FmtScale(float value) => F2(value);
 
     public static string Canonical(PedAppearanceDto? appearance)
     {
@@ -241,6 +261,18 @@ public sealed record YtdParseResponse(
 /// into range). IncludePedBody requires a configured gtaPath (else 422).
 /// Pose (optional, see GET /preview/poses) bakes a static pose into the mesh
 /// and also requires a configured gtaPath; null = bind pose.
+///
+/// HairScale + HeelLift are the 3D-preview-only hair/heel effects (no build
+/// impact). Both are OPTIONAL and ABSENT/null means "today's behaviour" — the
+/// GLB bytes are then bit-identical to before the contract. The client only
+/// writes them when active.
+///   HairScale: 0..1 uniform hair shrink. Only meaningful when this single ydd
+///     IS a hair/p_head drawable (the client sends it only then); since the
+///     single endpoint carries no slot, it applies to the WHOLE ydd.
+///   HeelLift: metres (glTF-up = Y) the WHOLE scene is raised. Single mode only
+///     sets it when this drawable is a feet item with high heels.
+/// See <see cref="Feelgood.Atelier.Sidecar.Engine.GlbBuilder"/> for the exact
+/// transform semantics.
 /// </summary>
 public sealed record PreviewGlbRequest(
     string? YddPath,
@@ -249,7 +281,9 @@ public sealed record PreviewGlbRequest(
     string? PedModel,
     bool? IncludePedBody,
     string? Pose,
-    PedAppearanceDto? Appearance);
+    PedAppearanceDto? Appearance,
+    double? HairScale,
+    double? HeelLift);
 
 public sealed record ImportScanRequest(string? FolderPath);
 

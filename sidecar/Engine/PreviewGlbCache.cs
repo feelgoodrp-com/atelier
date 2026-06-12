@@ -20,8 +20,12 @@ public static class PreviewGlbCache
     /// gender-specific); Pose is the pose id or "none" for bind pose;
     /// Appearance is the canonical appearance key (PedAppearanceKey.Canonical,
     /// "default" when none is applied or the ped body is not rendered).
+    /// Extra carries the 3D-preview hair/heel suffix (e.g. "|hs:0.50|hl1") and
+    /// is "" for requests without those flags — an empty Extra yields the exact
+    /// same key as before the hair/heel contract, so old cache entries and
+    /// GLB bytes stay bit-identical.
     /// </summary>
-    public readonly record struct Key(string YddSha, string YtdSha, bool IncludePedBody, string PedModel, string Pose, string Appearance);
+    public readonly record struct Key(string YddSha, string YtdSha, bool IncludePedBody, string PedModel, string Pose, string Appearance, string Extra = "");
 
     /// <summary>
     /// AppearanceFallbacks is the prebuilt X-FG-Appearance-Fallbacks header

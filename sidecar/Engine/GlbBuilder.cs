@@ -27,20 +27,25 @@ public static class GlbBuilder
         byte[]? ytdBytes,
         IReadOnlyList<PedBodyService.PedComponent>? pedComponents,
         ILogger log,
-        PoseData? pose = null)
+        PoseData? pose = null,
+        double? hairScale = null,
+        float yLift = 0f)
     {
         var ydd = LoadYdd(yddBytes);
         if (ydd?.Drawables == null || ydd.Drawables.Length == 0)
             throw new InvalidDataException("Keine Drawables in der YDD-Datei gefunden.");
 
         var mesh = new MeshAccumulator();
+        // Single mode: hairScale (if any) applies to the WHOLE ydd; yLift lifts
+        // the whole scene. Both default to the byte-identical Identity path.
+        var hairScaleVec = HairScaleVec(hairScale);
 
         // 1) Garment drawables (all of them - multi-drawable YDDs land in one scene).
         var garmentPrimitives = new List<Primitive>();
         foreach (var drawable in ydd.Drawables)
         {
             if (drawable == null) continue;
-            AppendDrawable(drawable, mesh, garmentPrimitives, pose);
+            AppendDrawable(drawable, mesh, garmentPrimitives, pose, hairScaleVec, yLift: yLift);
         }
 
         if (mesh.Positions.Count < 9 || garmentPrimitives.Count == 0)
@@ -62,7 +67,9 @@ public static class GlbBuilder
             foreach (var component in pedComponents)
             {
                 var componentPrimitives = new List<Primitive>();
-                AppendDrawable(component.Drawable, mesh, componentPrimitives, pose);
+                // Ped body never gets hairScale (that is garment-local), but it
+                // DOES get the global heel lift so the whole ped rises together.
+                AppendDrawable(component.Drawable, mesh, componentPrimitives, pose, yLift: yLift);
                 if (componentPrimitives.Count == 0) continue;
 
                 var materialIndex = ResolveComponentMaterial(component, textures, log);
@@ -88,8 +95,10 @@ public static class GlbBuilder
     }
 
     /// <summary>One outfit garment: mesh bytes, optional texture dict bytes,
-    /// and the ped component slot it REPLACES (null for props/unknown).</summary>
-    public sealed record OutfitItem(byte[] YddBytes, byte[]? YtdBytes, int? CoversComponentIndex);
+    /// the ped component slot it REPLACES (null for props/unknown), and the
+    /// per-item 3D-preview hair shrink (0..1, null = off; only the hair/p_head
+    /// item carries it — it scales JUST this item's mesh).</summary>
+    public sealed record OutfitItem(byte[] YddBytes, byte[]? YtdBytes, int? CoversComponentIndex, double? HairScale = null);
 
     /// <summary>
     /// Builds ONE scene from several garments at once. With a ped body, the
@@ -101,7 +110,8 @@ public static class GlbBuilder
         IReadOnlyList<OutfitItem> items,
         IReadOnlyList<PedBodyService.PedComponent>? pedComponents,
         ILogger log,
-        PoseData? pose = null)
+        PoseData? pose = null,
+        float yLift = 0f)
     {
         var mesh = new MeshAccumulator();
         var allPrimitives = new List<Primitive>();
@@ -113,11 +123,14 @@ public static class GlbBuilder
             if (ydd?.Drawables == null || ydd.Drawables.Length == 0)
                 throw new InvalidDataException("Keine Drawables in einer der YDD-Dateien gefunden.");
 
+            // hairScale is PER ITEM (only the hair/p_head item != null); yLift
+            // is GLOBAL and applies to every item + the ped body below.
+            var itemHairScaleVec = HairScaleVec(item.HairScale);
             var itemPrimitives = new List<Primitive>();
             foreach (var drawable in ydd.Drawables)
             {
                 if (drawable == null) continue;
-                AppendDrawable(drawable, mesh, itemPrimitives, pose);
+                AppendDrawable(drawable, mesh, itemPrimitives, pose, itemHairScaleVec, yLift: yLift);
             }
             if (itemPrimitives.Count == 0) continue;
 
@@ -143,7 +156,8 @@ public static class GlbBuilder
                 if (covered.Contains(component.ComponentIndex)) continue;
 
                 var componentPrimitives = new List<Primitive>();
-                AppendDrawable(component.Drawable, mesh, componentPrimitives, pose);
+                // Global heel lift only — never the garment-local hairScale.
+                AppendDrawable(component.Drawable, mesh, componentPrimitives, pose, yLift: yLift);
                 if (componentPrimitives.Count == 0) continue;
 
                 var materialIndex = ResolveComponentMaterial(component, textures, log);
@@ -166,6 +180,21 @@ public static class GlbBuilder
         var vertexCount = mesh.Positions.Count / 3;
         var polyCount = allPrimitives.Sum(p => p.Indices.Count) / 3;
         return new Result(glb, vertexCount, polyCount);
+    }
+
+    /// <summary>
+    /// Maps the UI hairScale (0..1, null = off) to the uniform per-axis scale
+    /// vector for the 3D preview. grzy's slider is INVERTED: UI 0 = full hair,
+    /// UI 1 = gone — so the effective mesh scale is s = 1 - clamp(v,0,1) on all
+    /// three axes. The inversion happens EXACTLY ONCE here (idempotent; we do
+    /// not mutate any source value, unlike grzy's in-place bug). null in =>
+    /// null out => AppendDrawable takes the byte-identical Identity path.
+    /// </summary>
+    private static Vector3? HairScaleVec(double? hairScale)
+    {
+        if (hairScale == null) return null;
+        var s = 1f - Math.Clamp((float)hairScale.Value, 0f, 1f);
+        return new Vector3(s, s, s);
     }
 
     private static YddFile LoadYdd(byte[] fileBytes)
@@ -313,12 +342,40 @@ public static class GlbBuilder
     /// per geometry. Vertices use glTF's Y-up convention. With a pose the
     /// positions AND normals are CPU-skinned in GTA space first (4-bone
     /// weighted blend); without one this path is byte-identical to before.
+    ///
+    /// 3D-preview-only transforms (no build impact, see the contract):
+    ///   hairScale: uniform per-axis scale of the WHOLE drawable mesh, applied
+    ///     in GTA coordinates BEFORE the Z-up->Y-up rotation. X and Y collapse
+    ///     toward the drawable's OWN horizontal centre ((minX+maxX)/2,
+    ///     (minY+maxY)/2 over its vertices), so the hair stays put on the head
+    ///     instead of drifting toward the world origin (0,0). Z stays pinned to
+    ///     the drawable's GTA-Z floor (min p.Z) so the hair collapses DOWN onto
+    ///     the head root. Uniform scale leaves normal DIRECTIONS unchanged, so
+    ///     the normal path is untouched.
+    ///   yLift: global +metres on the glTF-up channel (Y), applied AFTER the
+    ///     Y-up rotation. Lifts the whole scene so the ped "stands on heels".
+    /// Both null/0 => the Identity path, byte-identical to before.
     /// </summary>
-    private static void AppendDrawable(Drawable drawable, MeshAccumulator mesh, List<Primitive> primitives, PoseData? pose = null)
+    private static void AppendDrawable(
+        Drawable drawable,
+        MeshAccumulator mesh,
+        List<Primitive> primitives,
+        PoseData? pose = null,
+        Vector3? hairScale = null,
+        float yLift = 0f)
     {
         var blocks = drawable.DrawableModels;
         var models = FirstWithGeometry(blocks?.High, blocks?.Med, blocks?.Low, blocks?.VLow);
         if (models == null) return;
+
+        // For a hair shrink the anchor is the drawable's OWN bounds: the
+        // horizontal centre (X/Y) keeps the hair on the head while it shrinks,
+        // and the GTA-Z floor (min Z) lets it collapse down onto the head root.
+        // A single prepass over the selected LOD derives all three at once.
+        var scaleVec = hairScale ?? Vector3.Zero;
+        var anchor = Vector3.Zero;
+        if (hairScale != null)
+            anchor = ComputeDrawableAnchor(models, pose);
 
         foreach (var model in models)
         {
@@ -365,9 +422,28 @@ public static class GlbBuilder
 
                     var p = vd.GetVector3(v, (int)VertexSemantics.Position);
                     if (pose != null) p = Vector3.TransformCoordinate(p, skinMatrix);
+                    // Hair shrink (3D-preview only): uniform scale in GTA space,
+                    // BEFORE the Y-up rotation. X/Y collapse toward the mesh's
+                    // OWN horizontal centre (anchor.X/Y) so the hair stays on the
+                    // head, and Z pins to the drawable's lowest vertex (anchor.Z)
+                    // so it collapses down onto the head root.
+                    if (hairScale != null)
+                    {
+                        p.X = anchor.X + (p.X - anchor.X) * scaleVec.X;
+                        p.Y = anchor.Y + (p.Y - anchor.Y) * scaleVec.Y;
+                        p.Z = anchor.Z + (p.Z - anchor.Z) * scaleVec.Z;
+                    }
                     // GTA is Z-up, glTF is Y-up (rotate -90deg around X).
+                    // Heel lift (3D-preview only) adds metres on the glTF-up (Y)
+                    // channel AFTER the rotation, raising the WHOLE scene
+                    // uniformly. This is a DELIBERATE optical approximation, not
+                    // the real effect: in-game high heels come from the
+                    // creaturemetadata expression (built separately), not from
+                    // moving the ped up. grzy fakes it the other way — it lowers
+                    // the rendered floor; we render no floor, so we raise the ped
+                    // instead. The relative ped/garment geometry is unchanged.
                     mesh.Positions.Add(p.X);
-                    mesh.Positions.Add(p.Z);
+                    mesh.Positions.Add(p.Z + yLift);
                     mesh.Positions.Add(-p.Y);
 
                     if (hasNormals)
@@ -430,6 +506,68 @@ public static class GlbBuilder
                 mesh.VertexBase += (uint)vd.VertexCount;
             }
         }
+    }
+
+    /// <summary>
+    /// Hair-anchor prepass: the scale anchor over all vertices of the selected
+    /// LOD models, in the SAME space the hair scale is applied (post-skin when
+    /// posed, so the anchor tracks the posed head). X/Y are the horizontal
+    /// CENTRE ((min+max)/2) so the hair shrinks in place on the head; Z is the
+    /// FLOOR (min Z) so it collapses down onto the head root. Min and max are
+    /// gathered in one pass. Returns the origin when there is no geometry, which
+    /// collapses the scale around (0,0,0) — but the caller only reaches this
+    /// with renderable geometry.
+    /// </summary>
+    private static Vector3 ComputeDrawableAnchor(DrawableModel[] models, PoseData? pose)
+    {
+        float minX = float.PositiveInfinity, minY = float.PositiveInfinity, minZ = float.PositiveInfinity;
+        float maxX = float.NegativeInfinity, maxY = float.NegativeInfinity;
+        foreach (var model in models)
+        {
+            if (model?.Geometries == null) continue;
+
+            var modelMatrix = Matrix.Identity;
+            if (pose != null)
+            {
+                int modelBone = model.BoneIndex;
+                if (modelBone >= 0 && modelBone < pose.SkinTransforms.Length)
+                    modelMatrix = pose.SkinTransforms[modelBone];
+            }
+
+            foreach (var geom in model.Geometries)
+            {
+                var vd = geom?.VertexData;
+                if (vd == null || vd.VertexCount <= 0) continue;
+
+                var hasBlend = pose != null
+                    && HasSemantic(vd, VertexSemantics.BlendWeights)
+                    && HasSemantic(vd, VertexSemantics.BlendIndices);
+                var geomBoneIds = geom!.BoneIds;
+                var remapBoneIds = geomBoneIds != null && pose != null
+                    && geomBoneIds.Length != pose.SkinTransforms.Length;
+
+                for (var v = 0; v < vd.VertexCount; v++)
+                {
+                    var p = vd.GetVector3(v, (int)VertexSemantics.Position);
+                    if (pose != null)
+                    {
+                        var skinMatrix = hasBlend
+                            ? BlendSkinMatrix(vd, v, remapBoneIds ? geomBoneIds : null, pose.SkinTransforms, modelMatrix)
+                            : modelMatrix;
+                        p = Vector3.TransformCoordinate(p, skinMatrix);
+                    }
+                    if (p.X < minX) minX = p.X;
+                    if (p.Y < minY) minY = p.Y;
+                    if (p.Z < minZ) minZ = p.Z;
+                    if (p.X > maxX) maxX = p.X;
+                    if (p.Y > maxY) maxY = p.Y;
+                }
+            }
+        }
+        if (!float.IsFinite(minX) || !float.IsFinite(maxX)) return Vector3.Zero;
+        // X/Y: horizontal centre keeps the hair on the head; Z: floor so it
+        // collapses down onto the head root.
+        return new Vector3((minX + maxX) * 0.5f, (minY + maxY) * 0.5f, minZ);
     }
 
     private static DrawableModel[]? FirstWithGeometry(params DrawableModel[]?[] lodLevels)

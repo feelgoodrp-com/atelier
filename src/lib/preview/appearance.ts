@@ -76,6 +76,17 @@ export const EYE_COLOUR_MAX = 31;
  */
 export const EYE_COLOUR_UNSET = 255;
 
+/**
+ * Vertical scene lift (meters, glTF up = Y) applied to the WHOLE preview scene
+ * — ped body + every garment — when a rendered feet item has highHeels=true.
+ * SHARED CONTRACT with the sidecar (used 1:1 as the yLift transform): the
+ * client sends this numeric value as `heelLift`, the sidecar offsets every
+ * vertex's Y by it. The schema carries no real heel height (highHeels is a
+ * bool), so this is a deliberate fixed constant (~grzy UI 1.0 / 10 ≈ 0.1 m).
+ * If a real height field is ever added it replaces this constant in ONE place.
+ */
+export const HEEL_LIFT_M = 0.08;
+
 /** True when an extras eye-colour value is a real atlas index (0..31), not unset. */
 function isEyeColourSet(value: number): boolean {
   return Number.isInteger(value) && value >= 0 && value <= EYE_COLOUR_MAX;
@@ -255,16 +266,40 @@ export function extrasToFace(
  *   2. n = round(clamp(v,0,1)*100) in 0..100 -> "<n/100>.<two digits of n%100>".
  * Verified byte-identical to F2 across 0.000..1.000 (step 0.001).
  * Examples: 0.005 -> "0.01", 0.50 -> "0.50", 1 -> "1.00".
+ *
+ * Exported so the preview store reuses the EXACT same quantization for the
+ * hairScale cache-key segment — re-implementing it there would risk a silent
+ * divergence from the sidecar's F2.
  */
-function f2(value: number): string {
-  // Collapse to the 32-bit float the sidecar holds, then clamp to [0,1]
-  // (also collapses -0 -> 0) so the integer can never escape 0..100.
-  const f = Math.fround(value);
-  const v = f > 0 ? (f < 1 ? f : 1) : 0;
-  const n = Math.round(Math.fround(v * 100)); // 0..100, mirrors (float)v*100f
+export function f2(value: number): string {
+  const n = f2Hundredths(value); // 0..100, mirrors (float)v*100f
   const whole = (n / 100) | 0; // 0 or 1
   const frac = n % 100; // 0..99
   return `${whole}.${frac < 10 ? "0" : ""}${frac}`;
+}
+
+/**
+ * The shared 0..100 integer behind {@link f2}: collapse to the 32-bit float the
+ * sidecar holds, clamp to [0,1] (also collapses -0 -> 0 so it can never escape
+ * 0..100), then round (float)v*100f.
+ */
+function f2Hundredths(value: number): number {
+  const f = Math.fround(value);
+  const v = f > 0 ? (f < 1 ? f : 1) : 0;
+  return Math.round(Math.fround(v * 100));
+}
+
+/**
+ * Numeric F2-quantization of a 0..1 preview scale: the float value the client
+ * must SEND so the rendered mesh matches its {@link f2} cache-key bucket. The
+ * sidecar transforms with the raw request value, so the request and the key
+ * would otherwise disagree for sub-0.01 inputs (two values in one F2 bucket key
+ * the same but render differently). Quantizing here BEFORE building both the
+ * request body and the key keeps render-value == key-value. Idempotent:
+ * f2(quantizeScale(x)) === f2(x).
+ */
+export function quantizeScale(value: number): number {
+  return f2Hundredths(value) / 100;
 }
 
 /**

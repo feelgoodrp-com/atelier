@@ -35,6 +35,8 @@ import type {
 import {
   appearanceKey,
   extrasToFace,
+  f2,
+  quantizeScale,
   normalizeAppearance,
   sanitizeAppearance,
   sanitizeAppearanceExtras,
@@ -220,13 +222,23 @@ export function glbCacheKey(
   pose: string | null,
   poseSkeleton: PedModel | null = null,
   appearance: string = "default",
+  hairScale: number | null = null,
+  heelLift: boolean = false,
 ): string {
   const body = pedModel ?? (poseSkeleton ? `skel-${poseSkeleton}` : "off");
   const base = `${yddHash}|${textureHash ?? "none"}|${body}|${pose ?? "none"}`;
   // Appearance changes the bytes ONLY when the ped body is merged — garment-
   // only and "skel-" keys stay untouched (appending there would invalidate
   // every cached GLB for nothing).
-  return pedModel ? `${base}|app:${appearance}` : base;
+  let key = pedModel ? `${base}|app:${appearance}` : base;
+  // hairScale/heelLift mutate the GARMENT mesh itself, so they apply in BOTH
+  // variants (garment-only AND body-merged), unlike appearance. Appended last
+  // and ONLY when active, so a request without them stays byte-identical to a
+  // pre-feature key — exactly mirroring the conditional request body. f2 is
+  // the SHARED quantizer with the sidecar (byte-identical to F2).
+  if (hairScale != null) key += `|hs:${f2(hairScale)}`;
+  if (heelLift) key += `|hl1`;
+  return key;
 }
 
 /**
@@ -236,19 +248,38 @@ export function glbCacheKey(
  * entries too.
  */
 export function outfitCacheKey(
-  parts: Array<{ yddHash: string; textureHash: string | null }>,
+  parts: Array<{
+    yddHash: string;
+    textureHash: string | null;
+    /** Per-item uniform scale (hair/p_head only) — folded into the part string. */
+    hairScale?: number | null;
+  }>,
   pedModel: PedModel | null,
   pose: string | null,
   appearance: string = "default",
+  /** GLOBAL heel lift (any feet item has highHeels) — appended once at the end. */
+  heelLift: boolean = false,
 ): string {
   const sorted = parts
-    .map((p) => `${p.yddHash}:${p.textureHash ?? "none"}`)
+    // hairScale is PER ITEM, so it must travel INSIDE the sorted part string
+    // (an item with a shrunk hair mesh is a different cache entry). Only
+    // appended when set, so heel-/hair-free outfits keep their old part hashes.
+    .map(
+      (p) =>
+        `${p.yddHash}:${p.textureHash ?? "none"}${
+          p.hairScale != null ? `:h${f2(p.hairScale)}` : ""
+        }`,
+    )
     .sort()
     .join("+");
   const base = `outfit|${sorted}|${pedModel ?? "off"}|${pose ?? "none"}`;
   // Same rule as glbCacheKey: the appearance segment exists only when the
   // ped body is part of the request.
-  return pedModel ? `${base}|app:${appearance}` : base;
+  let key = pedModel ? `${base}|app:${appearance}` : base;
+  // heelLift lifts the WHOLE scene -> global, appended once and only when
+  // active (an outfit without heels keeps its pre-feature key).
+  if (heelLift) key += `|hl1`;
+  return key;
 }
 
 /** Clamps a stored texture selection to the drawable's current variants. */
@@ -259,6 +290,32 @@ export function clampTextureIndex(
   if (drawable.textures.length === 0) return 0;
   const index = raw ?? 0;
   return Math.max(0, Math.min(drawable.textures.length - 1, index));
+}
+
+/**
+ * Preview-only hairScale of a drawable (null = feature off). Mirrors the
+ * inspector's gating: only hair (component 2) and p_head (prop) carry it. The
+ * value is the stored slider (flags.hairScaleValue 0..1); the build path writes
+ * it for p_head only, but the preview shows it for both, matching the inspector
+ * which exposes the slider on both. Shared by the pane AND the prefetch hook so
+ * their cache keys / requests cannot diverge.
+ *
+ * The slider value is F2-quantized HERE so the value that travels into the
+ * request body is EXACTLY the value the cache key buckets it into (f2). Without
+ * this, the sidecar would render with the raw value while the key uses f2(raw)
+ * — two distinct sub-0.01 inputs in one bucket would key identically yet render
+ * differently, serving a stale GLB. {@link quantizeScale} is idempotent w.r.t.
+ * {@link f2}, so the key segment is unchanged for already-quantized values.
+ */
+export function drawableHairScale(drawable: ProjectDrawable): number | null {
+  if (drawable.type !== "hair" && drawable.type !== "p_head") return null;
+  if (drawable.flags.hairScaleValue == null) return null;
+  return quantizeScale(drawable.flags.hairScaleValue);
+}
+
+/** True when a drawable is a feet item flagged highHeels (drives the scene lift). */
+export function drawableHasHeelLift(drawable: ProjectDrawable): boolean {
+  return drawable.type === "feet" && drawable.flags.highHeels;
 }
 
 export interface PreviewSelection {

@@ -520,6 +520,13 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
                   </span>
                 </div>
               )}
+              {hairScale !== null && drawable.type === "hair" && (
+                <p className="text-[10px] leading-relaxed text-white/30">
+                  Nur Vorschau: Hair Scale wirkt im Build primär für Hut-Props
+                  (p_head). Auf einem reinen Haar-Slot zeigt die 3D-Vorschau den
+                  Effekt, der gebaute Pack erzeugt ihn dort nicht.
+                </p>
+              )}
             </div>
           )}
         </div>
