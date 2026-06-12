@@ -20,6 +20,8 @@ import { startAutosave } from "@/lib/project/autosave";
 
 function App() {
   const screen = useUiStore((s) => s.screen);
+  const rerunOnboarding = useUiStore((s) => s.rerunOnboarding);
+  const setRerunOnboarding = useUiStore((s) => s.setRerunOnboarding);
   const bootstrap = useAuthStore((s) => s.bootstrap);
   const bootstrapping = useAuthStore((s) => s.bootstrapping);
   const authStatus = useAuthStore((s) => s.status);
@@ -76,15 +78,23 @@ function App() {
 
   // HARD GATE: without a logged-in AND approved account the tool is unusable.
   const authorized = authStatus === "loggedIn" && user?.status === "approved";
-  // First run (never configured + truly logged out) → setup wizard before login.
-  const showOnboarding = authStatus === "loggedOut" && onboardingDone === false;
+  // Setup wizard: first run (never configured + logged out) OR an explicit
+  // re-run from Settings (works while logged in too).
+  const showOnboarding =
+    rerunOnboarding || (authStatus === "loggedOut" && onboardingDone === false);
 
   return (
     <TooltipProvider delayDuration={200}>
       {bootstrapping || onboardingDone === null ? (
         <BootSplash />
       ) : showOnboarding ? (
-        <OnboardingWizard onDone={() => setOnboardingDone(true)} />
+        <OnboardingWizard
+          onDone={() => {
+            setOnboardingDone(true);
+            setRerunOnboarding(false);
+          }}
+          onCancel={rerunOnboarding ? () => setRerunOnboarding(false) : undefined}
+        />
       ) : !authorized ? (
         <LoginGate />
       ) : (

@@ -47,6 +47,7 @@ import {
 import { cn } from "@/lib/utils";
 import { CreditsPanel } from "@/components/settings/credits-panel";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { useUiStore } from "@/lib/stores/ui-store";
 import { useSidecarStore } from "@/lib/stores/sidecar-store";
 import { restartSidecar } from "@/lib/sidecar/client";
 import { pushGtaPathToSidecar } from "@/lib/sidecar/gta-path";
@@ -230,7 +231,29 @@ function GeneralTab() {
       </Card>
 
       <LogsCard />
+      <SetupCard />
     </div>
+  );
+}
+
+/** Re-run the first-run setup wizard (server address, GTA path, logs). */
+function SetupCard() {
+  const setRerunOnboarding = useUiStore((s) => s.setRerunOnboarding);
+  return (
+    <Card className="glass-border-subtle border-white/10 bg-transparent">
+      <CardHeader>
+        <CardTitle className="text-white">Einrichtung</CardTitle>
+        <CardDescription className="text-white/50">
+          Den Einrichtungs-Assistenten erneut durchlaufen (Server-Adresse, GTA-Pfad, Logs).
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button variant="outline" onClick={() => setRerunOnboarding(true)}>
+          <RotateCcw className="h-4 w-4" />
+          Einrichtung erneut durchlaufen
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 

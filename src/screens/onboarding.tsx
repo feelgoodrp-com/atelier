@@ -74,7 +74,14 @@ function StepDots({ index }: { index: number }) {
   );
 }
 
-export function OnboardingWizard({ onDone }: { onDone: () => void }) {
+export function OnboardingWizard({
+  onDone,
+  onCancel,
+}: {
+  onDone: () => void;
+  /** When set (re-run from Settings), shows an "Abbrechen" exit on step 1. */
+  onCancel?: () => void;
+}) {
   const setApiUrl = useAuthStore((s) => s.setApiUrl);
   const [stepIdx, setStepIdx] = useState(0);
 
@@ -279,15 +286,22 @@ export function OnboardingWizard({ onDone }: { onDone: () => void }) {
           </div>
 
           <div className="mt-7 flex items-center justify-between border-t border-white/10 pt-5">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(stepIdx === 0 && "invisible")}
-              onClick={() => setStepIdx((i) => Math.max(0, i - 1))}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Zurück
-            </Button>
+            {stepIdx > 0 ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setStepIdx((i) => Math.max(0, i - 1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Zurück
+              </Button>
+            ) : onCancel ? (
+              <Button variant="ghost" size="sm" onClick={onCancel}>
+                Abbrechen
+              </Button>
+            ) : (
+              <span />
+            )}
 
             {isLast ? (
               <Button
