@@ -35,15 +35,55 @@ public sealed record PedAppearanceComponentDto(int Drawable, int Texture, int? A
 public sealed record PedAppearancePropDto(string? Anchor, int Drawable, int Texture);
 
 /// <summary>
+/// One head-overlay layer of the face block (eyebrows, beard, makeup, ...).
+/// Slot follows the SetPedHeadOverlay slot index (0..12); only head slots
+/// 0..9 are rendered (body slots 10..12 are honestly excluded in stage 2).
+/// Index 255 (or absent) means "overlay off". Colour/colourSecondary are
+/// palette indices (hair palette for brow/beard/chest hair, makeup palette
+/// for makeup/blush/lipstick) — null when the layer is untintable / no tint.
+/// </summary>
+public sealed record PedFaceOverlayDto(
+    int Slot,
+    int? Index,
+    float? Opacity,
+    int? Colour,
+    int? ColourSecondary);
+
+/// <summary>
+/// Optional face block of an appearance: HeadBlend shape + skin tone (parent
+/// indices 0..45 + blend mixes 0..1), head overlays, and the eye-colour atlas
+/// tile (0..31). Mirrors the Menyoo HeadBlend/Overlays/EyeColour data; all
+/// numeric fields are CLAMPED into range (never a 400) by the endpoint and
+/// only take effect when the ped body is rendered (same gating as components).
+/// FaceFeatures are intentionally NOT part of this DTO — they are engine
+/// micro-morphs without assets and are honestly excluded from rendering.
+/// </summary>
+public sealed record PedFaceDto(
+    int ShapeFirst,
+    int ShapeSecond,
+    int ShapeThird,
+    float ShapeMix,
+    float ThirdMix,
+    int SkinFirst,
+    int SkinSecond,
+    int SkinThird,
+    float SkinMix,
+    List<PedFaceOverlayDto>? Overlays,
+    int? EyeColour);
+
+/// <summary>
 /// Optional ped appearance for POST /preview/glb and /preview/outfit-glb.
 /// Only changes the output when the ped body is rendered (includePedBody);
 /// unlisted slots keep the ped defaults. Unresolvable drawable indices (DLC)
 /// fall back to the slot default and are reported via the
-/// X-FG-Appearance-Fallbacks response header.
+/// X-FG-Appearance-Fallbacks response header. The optional <see cref="Face"/>
+/// block re-composites the head/uppr/lowr/feet diffuse (HeadBlend skin tone +
+/// overlays + eye colour) — same render gating as Components.
 /// </summary>
 public sealed record PedAppearanceDto(
     Dictionary<string, PedAppearanceComponentDto>? Components,
-    List<PedAppearancePropDto>? Props);
+    List<PedAppearancePropDto>? Props,
+    PedFaceDto? Face = null);
 
 /// <summary>
 /// Canonical appearance cache-key string — MUST stay byte-identical with the
@@ -55,9 +95,23 @@ public sealed record PedAppearanceDto(
 /// null/empty appearance — INCLUDING one where every component was skipped
 /// and no props remain — maps to "default".
 /// Example: "hair=2:1,jbib=5:0|p_head=1:0".
+///
+/// When a face block is present a THIRD segment is appended after the props
+/// (separated by "|"):
+///   "f=&lt;shapeFirst&gt;:&lt;shapeSecond&gt;:&lt;shapeThird&gt;:&lt;shapeMix F2&gt;:&lt;thirdMix F2&gt;,
+///    k=&lt;skinFirst&gt;:&lt;skinSecond&gt;:&lt;skinThird&gt;:&lt;skinMix F2&gt;,
+///    o&lt;slot&gt;=&lt;index&gt;:&lt;opacity F2&gt;:&lt;colour|-&gt;:&lt;colourSecondary|-&gt;  (per active overlay,
+///        ascending by slot, only index != 255),
+///    e=&lt;eyeColour|-&gt;"
+/// joined with ",". F2 = invariant "0.00" format. A missing face block omits
+/// the segment entirely — keys produced before the face contract stay valid.
+/// Example with face: "...|p_head=1:0|f=0:0:0:0.00:0.00,k=3:3:0:0.50,o2=4:0.85:1:-,e=2".
 /// </summary>
 public static class PedAppearanceKey
 {
+    /// <summary>Overlay index sentinel for "layer off" — never written to the key.</summary>
+    public const int OverlayOff = 255;
+
     public static string Canonical(PedAppearanceDto? appearance)
     {
         // All-default normalization (shared contract): drawable=0/texture=0/
@@ -73,8 +127,65 @@ public static class PedAppearanceKey
                 $"{p.Anchor}={p.Drawable}:{p.Texture}"))
             .OrderBy(p => p, StringComparer.Ordinal)
             .ToList();
-        if (componentParts.Count == 0 && propParts.Count == 0) return "default";
-        return string.Join(",", componentParts) + "|" + string.Join(",", propParts);
+
+        var faceSegment = FaceSegment(appearance?.Face);
+        if (componentParts.Count == 0 && propParts.Count == 0 && faceSegment == null) return "default";
+        var key = string.Join(",", componentParts) + "|" + string.Join(",", propParts);
+        if (faceSegment != null) key += "|" + faceSegment;
+        return key;
+    }
+
+    /// <summary>
+    /// Builds the "f=...,k=...,o&lt;slot&gt;=...,e=..." segment for a face block, or
+    /// null when there is no face. Numbers use the invariant "0.00" format so
+    /// the C# and TypeScript keys stay byte-identical.
+    /// </summary>
+    private static string? FaceSegment(PedFaceDto? face)
+    {
+        if (face == null) return null;
+        var ci = System.Globalization.CultureInfo.InvariantCulture;
+        var parts = new List<string>(4 + (face.Overlays?.Count ?? 0))
+        {
+            string.Create(ci, $"f={face.ShapeFirst}:{face.ShapeSecond}:{face.ShapeThird}:{F2(face.ShapeMix)}:{F2(face.ThirdMix)}"),
+            string.Create(ci, $"k={face.SkinFirst}:{face.SkinSecond}:{face.SkinThird}:{F2(face.SkinMix)}"),
+        };
+
+        var overlays = (face.Overlays ?? Enumerable.Empty<PedFaceOverlayDto>())
+            .Where(o => (o.Index ?? OverlayOff) != OverlayOff)
+            .OrderBy(o => o.Slot)
+            .Select(o => string.Create(ci,
+                $"o{o.Slot}={o.Index ?? OverlayOff}:{F2(o.Opacity ?? 1f)}:{ColourPart(o.Colour)}:{ColourPart(o.ColourSecondary)}"));
+        parts.AddRange(overlays);
+
+        parts.Add($"e={ColourPart(face.EyeColour)}");
+        return string.Join(",", parts);
+    }
+
+    /// <summary>"-" for an absent palette index, the value otherwise (invariant).</summary>
+    private static string ColourPart(int? colour) =>
+        colour.HasValue ? colour.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "-";
+
+    /// <summary>
+    /// Invariant 2-decimal format — byte-identical with the client (f2 in
+    /// atelier/src/lib/preview/appearance.ts). We DELIBERATELY avoid
+    /// float.ToString("0.00") / JS toFixed(2): those round a 32-bit float resp.
+    /// a 64-bit double and diverge at .xx5 half-steps (48 values across
+    /// 0.000..1.000). BOTH sides instead quantize to whole hundredths first
+    /// (round-half-away-from-zero on a non-negative value) and build the string
+    /// from the integer, so no float formatter is left to disagree.
+    ///   n = round(clamp(v,0,1)*100) in 0..100 -> "&lt;n/100&gt;.&lt;two digits of n%100&gt;"
+    /// Examples: 0.005f -> "0.01", 0.50f -> "0.50", 1f -> "1.00".
+    /// </summary>
+    private static string F2(float value)
+    {
+        // Callers clamp to [0,1]; clamp defensively so a stray -0 or tiny
+        // overshoot can never escape the 0..100 integer range.
+        var v = value > 0f ? (value < 1f ? value : 1f) : 0f;
+        var n = (int)Math.Round(v * 100f, MidpointRounding.AwayFromZero); // 0..100
+        var whole = n / 100; // 0 or 1
+        var frac = n % 100;  // 0..99
+        return string.Create(System.Globalization.CultureInfo.InvariantCulture,
+            $"{whole}.{frac:00}");
     }
 }
 

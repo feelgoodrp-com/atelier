@@ -27,6 +27,7 @@ import type {
 } from "@/lib/sidecar/types";
 import {
   APPEARANCE_INDEX_MAX,
+  EYE_COLOUR_UNSET,
   FACE_FEATURE_COUNT,
   OVERLAY_SLOT_COUNT,
   defaultExtras,
@@ -42,13 +43,28 @@ export interface MenyooPed {
   name: string;
   appearance: PedAppearance;
   extras: PedAppearanceExtras;
-  /** German per-ped warnings (unsupported slots, clamped values, …). */
+  /**
+   * German FACE-RELEVANT per-ped warnings (clamped HeadBlend/overlay/eye
+   * values …). These survive the FACE-ONLY import because the face IS applied.
+   */
   warnings: string[];
+  /**
+   * German CLOTHING/PROP/MODEL warnings (unsupported component or prop slots,
+   * out-of-range garment indices, non-freemode ModelHash …). The FACE-ONLY
+   * import DROPS these — the clothing/props they refer to are deliberately not
+   * applied, so surfacing them would only confuse (hard product rule: no
+   * clothing/hair/prop/DLC warnings on import). Kept separate (not merged into
+   * {@link warnings}) so a future "full import" path could still show them.
+   */
+  clothingWarnings: string[];
 }
 
 export interface MenyooParseResult {
   peds: MenyooPed[];
-  /** German file-level warnings (broken XML, no peds, …). */
+  /**
+   * German file-level warnings (broken XML, no peds, …). These are import-
+   * blocking / structural, NOT clothing-related, so they always surface.
+   */
   warnings: string[];
 }
 
@@ -349,7 +365,18 @@ function parseHeadFeatures(
     63,
     0,
   );
-  extras.eyeColour = track.int(textOf(child(hf, "EyeColour")), 0, 31, 0);
+  // EyeColour: index 0 is a VALID eye colour, so an ABSENT/unparseable field
+  // must map to the unset sentinel (255), NOT to 0 — otherwise a character
+  // with eye colour 0 would be indistinguishable from "no eye colour set".
+  // A present "0" stays 0 (the fallback is only returned when the text is
+  // absent/unparseable, never via the clamp). Out-of-range (e.g. 32) still
+  // clamps to 31 and flags the aggregated face warning.
+  extras.eyeColour = track.int(
+    textOf(child(hf, "EyeColour")),
+    0,
+    31,
+    EYE_COLOUR_UNSET,
+  );
 
   for (const { index, el } of indexedChildren(child(hf, "FacialFeatures"))) {
     if (index < 0 || index >= FACE_FEATURE_COUNT) continue;
@@ -384,7 +411,10 @@ function parseEntityPed(entity: XmlElement, fallbackName: string): MenyooPed | n
   const pedProperties = child(entity, "PedProperties");
   if (!pedProperties) return null;
 
+  // Face-relevant warnings (surface on the FACE-ONLY import) vs clothing/prop/
+  // model warnings (dropped on import — the clothing they refer to is ignored).
   const warnings: string[] = [];
+  const clothingWarnings: string[] = [];
   const track = new ClampTracker();
 
   const modelText = textOf(child(entity, "ModelHash"));
@@ -396,7 +426,9 @@ function parseEntityPed(entity: XmlElement, fallbackName: string): MenyooPed | n
         ? "mp_f_freemode_01"
         : null;
   if (pedModel === null) {
-    warnings.push(
+    // Purely about component-index matching — irrelevant for a face-only
+    // import (no components are taken), so it goes to the clothing bucket.
+    clothingWarnings.push(
       `Kein Freemode-Ped (ModelHash ${modelText || "unbekannt"}) — Komponenten-Indizes passen eventuell nicht zur Vorschau.`,
     );
   }
@@ -406,12 +438,12 @@ function parseEntityPed(entity: XmlElement, fallbackName: string): MenyooPed | n
     {};
   for (const { index, el } of indexedChildren(child(pedProperties, "PedComps"))) {
     if (index < 0 || index >= COMPONENT_SLOT_IDS.length) {
-      warnings.push(`Unbekannter Komponenten-Slot „_${index}“ ignoriert.`);
+      clothingWarnings.push(`Unbekannter Komponenten-Slot „_${index}“ ignoriert.`);
       continue;
     }
     const pair = parsePair(textOf(el));
     if (!pair) {
-      warnings.push(`Komponenten-Slot „_${index}“ ist unlesbar und wird ignoriert.`);
+      clothingWarnings.push(`Komponenten-Slot „_${index}“ ist unlesbar und wird ignoriert.`);
       continue;
     }
     const [drawable, rawTexture] = pair;
@@ -420,7 +452,7 @@ function parseEntityPed(entity: XmlElement, fallbackName: string): MenyooPed | n
     // Corrupt/hand-edited indices beyond any real inventory would 400 the
     // whole sidecar request (int32 overflow) — fall back to the slot default.
     if (drawable > APPEARANCE_INDEX_MAX || texture > APPEARANCE_INDEX_MAX) {
-      warnings.push(
+      clothingWarnings.push(
         `Komponenten-Slot „_${index}“: Wert außerhalb des gültigen Bereichs — Standard wird verwendet.`,
       );
       continue;
@@ -436,20 +468,20 @@ function parseEntityPed(entity: XmlElement, fallbackName: string): MenyooPed | n
   for (const { index, el } of indexedChildren(child(pedProperties, "PedProps"))) {
     const pair = parsePair(textOf(el));
     if (!pair) {
-      warnings.push(`Prop-Slot „_${index}“ ist unlesbar und wird ignoriert.`);
+      clothingWarnings.push(`Prop-Slot „_${index}“ ist unlesbar und wird ignoriert.`);
       continue;
     }
     const [drawable, rawTexture] = pair;
     if (drawable < 0) continue;
     const anchor = PROP_ANCHOR_BY_SLOT[index];
     if (!anchor) {
-      warnings.push(`Prop-Slot „_${index}“ wird nicht unterstützt und ignoriert.`);
+      clothingWarnings.push(`Prop-Slot „_${index}“ wird nicht unterstützt und ignoriert.`);
       continue;
     }
     const texture = Math.max(0, rawTexture);
     // Same upper-bound guard as components (sidecar int32 + 400 contract).
     if (drawable > APPEARANCE_INDEX_MAX || texture > APPEARANCE_INDEX_MAX) {
-      warnings.push(
+      clothingWarnings.push(
         `Prop-Slot „_${index}“: Wert außerhalb des gültigen Bereichs — wird ignoriert.`,
       );
       continue;
@@ -457,7 +489,7 @@ function parseEntityPed(entity: XmlElement, fallbackName: string): MenyooPed | n
     // Duplicate _N entries map to the same anchor — the sidecar rejects
     // duplicate anchors (400), so only the first one wins.
     if (props.some((p) => p.anchor === anchor)) {
-      warnings.push(`Prop-Slot „_${index}“ ist doppelt angegeben und wird ignoriert.`);
+      clothingWarnings.push(`Prop-Slot „_${index}“ ist doppelt angegeben und wird ignoriert.`);
       continue;
     }
     props.push({ anchor, drawable, texture });
@@ -476,6 +508,10 @@ function parseEntityPed(entity: XmlElement, fallbackName: string): MenyooPed | n
   if (tattoos.length > 0) extras.tattoos = tattoos;
 
   if (track.clamped) {
+    // ClampTracker only fires on HEAD data (HeadBlend ids/mixes, hair/eye
+    // colour, FacialFeatures, overlays) — the garment indices are guarded
+    // separately above — so this is a face-relevant warning that survives the
+    // face-only import.
     warnings.push(
       "Einige Werte lagen außerhalb des gültigen Bereichs und wurden angepasst.",
     );
@@ -487,6 +523,7 @@ function parseEntityPed(entity: XmlElement, fallbackName: string): MenyooPed | n
     appearance: normalizeAppearance({ components, props }) ?? {},
     extras,
     warnings,
+    clothingWarnings,
   };
 }
 

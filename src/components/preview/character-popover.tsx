@@ -14,11 +14,13 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import {
   CircleUser,
+  Eraser,
   Loader2,
   Minus,
   Plus,
   RotateCcw,
   Save,
+  Smile,
   Trash2,
   TriangleAlert,
   Upload,
@@ -96,8 +98,59 @@ const SLOT_LABELS: Record<ComponentSlotId, string> = Object.fromEntries(
   GTA_COMPONENTS.map((slot) => [slot.id, slot.label]),
 ) as Record<ComponentSlotId, string>;
 
+/**
+ * Highest overlay slot the sidecar actually RENDERS in Stufe 2. Slots 10..12
+ * (chest hair / body blemishes) live on the body, not the head diffuse, and
+ * are honestly excluded (Dtos.cs PedFaceOverlayDto + FaceCalibration
+ * Render=false). The "Gesicht" status must only count/name 0..9 so it does not
+ * claim e.g. "Brusthaar" as an active, visible overlay. (The canonical key
+ * still carries 10..12 — both sides agree on that — so this is a display-only
+ * filter, never a key change.)
+ */
+const RENDERED_OVERLAY_SLOT_MAX = 9;
+
+/** German labels for the 13 SET_PED_HEAD_OVERLAY slots (status display). */
+const OVERLAY_SLOT_LABELS: Record<number, string> = {
+  0: "Hautunreinheiten",
+  1: "Bart",
+  2: "Augenbrauen",
+  3: "Alterung",
+  4: "Make-up",
+  5: "Rouge",
+  6: "Teint",
+  7: "Sonnenschäden",
+  8: "Lippenstift",
+  9: "Sommersprossen",
+  10: "Brusthaar",
+  11: "Körper-Makel",
+  12: "Zusatz-Makel",
+};
+
 function genderLabel(pedModel: PedModel): string {
   return pedModel === "mp_m_freemode_01" ? "männlich" : "weiblich";
+}
+
+/**
+ * Maps one X-FG-Appearance-Fallbacks entry to a German hint. Face labels
+ * ("skin", "eye", "overlay:<slot>") get a face-specific message; everything
+ * else is a garment component slot whose drawable index was not resolvable
+ * (DLC). Keep the label set in sync with the sidecar FaceCompositor fallbacks.
+ */
+function faceFallbackHint(slot: string): string {
+  if (slot === "skin") {
+    return "Hautton konnte nicht vollständig gerendert werden — eine Eltern-Hauttextur fehlt; Standard-Haut wird verwendet.";
+  }
+  if (slot === "eye") {
+    return "Augenfarbe konnte nicht gerendert werden — die Augen-Textur fehlt; Standard-Augen werden verwendet.";
+  }
+  const overlayMatch = /^overlay:(\d+)$/.exec(slot);
+  if (overlayMatch) {
+    const index = Number.parseInt(overlayMatch[1], 10);
+    const label = OVERLAY_SLOT_LABELS[index] ?? `Slot ${index}`;
+    return `Overlay „${label}“ wurde übersprungen — die gewählte Variante ist nicht verfügbar.`;
+  }
+  // Component-slot fallback (garment drawable not resolvable, e.g. DLC).
+  return `Slot „${slot}“ nutzt den Standard — Drawable-Index nicht verfügbar (DLC-Kleidung?).`;
 }
 
 /** Compact -/+ stepper used for drawable + texture indices. */
@@ -168,6 +221,8 @@ export function CharacterPopover({
   const applyImportedAppearance = usePreview3dStore(
     (s) => s.applyImportedAppearance,
   );
+  const applyPresetAction = usePreview3dStore((s) => s.applyPreset);
+  const removeFace = usePreview3dStore((s) => s.removeFace);
   const resetAppearance = usePreview3dStore((s) => s.resetAppearance);
   const saveAppearancePreset = usePreview3dStore((s) => s.saveAppearancePreset);
   const deleteAppearancePreset = usePreview3dStore(
@@ -199,25 +254,37 @@ export function CharacterPopover({
     // the canonical key normalized (matches the Menyoo parser + sidecar).
     if (drawable === 0 && texture === 0 && alt === 0) delete components[slot];
     else components[slot] = { drawable, texture, ...(alt !== 0 ? { alt } : {}) };
+    // The rendered face (Menyoo face import / preset) and the manual component
+    // steppers are SEPARATE features — a stepper edit must not wipe the face.
     setAppearance(
-      normalizeAppearance({ components, props: appearance?.props ?? [] }),
+      normalizeAppearance({
+        components,
+        props: appearance?.props ?? [],
+        ...(appearance?.face ? { face: appearance.face } : {}),
+      }),
     );
   };
 
   const applyPed = (ped: MenyooPed, fileWarnings: string[]) => {
-    applyImportedAppearance(normalizeAppearance(ped.appearance), ped.extras, [
-      ...fileWarnings,
-      ...ped.warnings,
-    ]);
+    // FACE-ONLY import (hard product rule): the store takes ONLY the head
+    // features (extras -> face) and ignores the XML's clothing/hair + props.
+    // We deliberately pass NO components — appearance.components/props keep
+    // whatever the user set manually. So we surface ONLY the face-relevant
+    // warnings (ped.warnings: clamped HeadBlend/overlay/eye values) plus the
+    // structural file warnings — ped.clothingWarnings (unknown/oversized
+    // component+prop slots, non-freemode ModelHash) are DROPPED, since the
+    // clothing/props they refer to are not applied (no DLC/clothing warnings
+    // on a face-only import, per the hard product rule).
+    applyImportedAppearance(ped.extras, [...fileWarnings, ...ped.warnings]);
     setPendingImport(null);
     if (ped.pedModel && pedModel && ped.pedModel !== pedModel) {
       toast.info("Geschlecht weicht ab", {
         description: `Die XML ist für einen ${genderLabel(ped.pedModel)}en Ped, die Vorschau zeigt gerade einen ${genderLabel(pedModel)}en Body.`,
       });
     }
-    toast.success(`„${ped.name}“ importiert`, {
+    toast.success(`Gesicht aus „${ped.name}“ importiert`, {
       description:
-        "Komponenten werden angewendet — Props und Gesichts-Merkmale folgen in einer späteren Version.",
+        "Nur das Gesicht wird übernommen (Form, Hautton, Augenbrauen/Bart, Augenfarbe). Kleidung und Haare aus der Datei werden ignoriert — die stellst du im Tool selbst ein.",
     });
   };
 
@@ -250,11 +317,9 @@ export function CharacterPopover({
   };
 
   const applyPreset = (preset: AppearancePreset) => {
-    applyImportedAppearance(
-      normalizeAppearance(preset.appearance),
-      preset.extras,
-      [],
-    );
+    // Presets are authored in the tool, so their clothing IS intentional —
+    // apply components + face (unlike the face-only Menyoo import).
+    applyPresetAction(normalizeAppearance(preset.appearance), preset.extras);
     if (preset.pedModel && pedModel && preset.pedModel !== pedModel) {
       toast.info("Geschlecht weicht ab", {
         description: `Das Preset ist für ${genderLabel(preset.pedModel)} gespeichert, die Vorschau zeigt gerade ${genderLabel(pedModel)}.`,
@@ -262,10 +327,54 @@ export function CharacterPopover({
     }
   };
 
-  // "Face only" imports (appearance=null, head features in extras) are
-  // saveable too — the preset then applies default clothing + extras.
+  // "Face only" imports (no components, face in appearance) are saveable too —
+  // the preset then applies default clothing + the head data.
   const canSavePreset =
     appearance !== null || hasUnrenderedExtras(appearanceExtras);
+
+  // Rendered face status (HeadBlend + overlays + eye colour) — what the user
+  // actually sees on the body, read from the live appearance.face block.
+  const face = appearance?.face ?? null;
+  const faceLines: string[] = [];
+  if (face) {
+    // Shape: dominant parent when the mix collapses to an end, else a blend.
+    if (face.shapeMix <= 0.05) {
+      faceLines.push(`Form: Elternteil ${face.shapeFirst} (dominant)`);
+    } else if (face.shapeMix >= 0.95) {
+      faceLines.push(`Form: Elternteil ${face.shapeSecond} (dominant)`);
+    } else {
+      faceLines.push(
+        `Form-Mix: ${face.shapeFirst} ↔ ${face.shapeSecond} (${Math.round(
+          face.shapeMix * 100,
+        )} %)`,
+      );
+    }
+    faceLines.push(`Hautton-Mix: ${Math.round(face.skinMix * 100)} %`);
+    // Only count/name the overlays the sidecar renders (head slots 0..9). Body
+    // overlays 10..12 are stored + keyed but not drawn, so claiming them as
+    // "active overlays" here would be dishonest.
+    const renderedOverlays = (face.overlays ?? []).filter(
+      (o) => o.slot <= RENDERED_OVERLAY_SLOT_MAX,
+    );
+    const overlayCount = renderedOverlays.length;
+    if (overlayCount > 0) {
+      const names = renderedOverlays
+        .map((o) => OVERLAY_SLOT_LABELS[o.slot] ?? `Slot ${o.slot}`)
+        .join(", ");
+      faceLines.push(
+        `${overlayCount} aktive${overlayCount === 1 ? "s" : ""} Overlay${
+          overlayCount === 1 ? "" : "s"
+        }: ${names}`,
+      );
+    }
+    if (face.eyeColour !== undefined) {
+      faceLines.push(`Augenfarbe: ${face.eyeColour}`);
+    }
+  }
+  // FaceFeatures are stored but NOT rendered (honest exclusion) — only flag it
+  // when the imported data actually carries non-zero micro-morphs.
+  const hasFaceFeatures =
+    appearanceExtras?.faceFeatures.some((f) => f !== 0) ?? false;
 
   const savePreset = () => {
     const name = presetName.trim();
@@ -288,22 +397,25 @@ export function CharacterPopover({
 
   // Static hints (derived, survive restarts) + import warnings + the
   // fallback slots of the rendered entry (drawable fallbacks only — texture
-  // clamps are silent server-side) — rendered as one unobtrusive list.
+  // clamps are silent server-side) — rendered as one unobtrusive list. The
+  // HeadBlend/overlays/eye-colour are NOW rendered (Stufe 2), so the only
+  // honest face caveat left is the micro-morph FaceFeatures.
   const hints: string[] = [
     ...((appearance?.props?.length ?? 0) > 0
       ? [
           "Props (Hüte, Brillen, Uhren …) werden in der Vorschau noch nicht angezeigt.",
         ]
       : []),
-    ...(hasUnrenderedExtras(appearanceExtras)
+    ...(hasFaceFeatures
       ? [
-          "Gesichts-Merkmale (HeadBlend, Overlays, Haar-/Augenfarbe) werden in der Vorschau noch nicht dargestellt.",
+          "Feinregler (FaceFeatures, z. B. Nasenbreite) werden in der Vorschau nicht dargestellt — sie bleiben gespeichert.",
         ]
       : []),
-    ...fallbackSlots.map(
-      (slot) =>
-        `Slot „${slot}“ nutzt den Standard — Drawable-Index nicht verfügbar (DLC-Kleidung?).`,
-    ),
+    // The sidecar reports two kinds of fallback in X-FG-Appearance-Fallbacks:
+    // component-slot names (a garment drawable index could not be resolved) and
+    // FACE labels ("skin", "eye", "overlay:<slot>" — a face source was skipped,
+    // e.g. an out-of-range overlay index). Translate each to an honest message.
+    ...fallbackSlots.map(faceFallbackHint),
     ...appearanceWarnings,
   ];
 
@@ -481,6 +593,56 @@ export function CharacterPopover({
                   </TooltipContent>
                 </Tooltip>
               </div>
+
+              <p className="text-[10px] leading-snug text-white/40">
+                Aus der Menyoo-Datei wird nur das Gesicht übernommen (Form,
+                Hautton, Augenbrauen/Bart, Augenfarbe). Kleidung und Haare aus
+                der Datei werden ignoriert — die stellst du im Tool selbst ein.
+              </p>
+
+              {/* Face status: what the rendered head actually shows. Only when
+                  a face block is active (after a Menyoo face import / a preset
+                  carrying head data). */}
+              {face && (
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Smile className="h-3 w-3 shrink-0 text-white/40" />
+                    <span className={sectionLabel}>Gesicht</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="ml-auto">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            aria-label="Gesicht entfernen"
+                            className="h-6 w-6 p-0 text-white/45 hover:text-white"
+                            onClick={removeFace}
+                          >
+                            <Eraser className="h-3.5 w-3.5" />
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        Gesicht entfernen (manuell gesetzte Komponenten bleiben)
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <ul className="flex flex-col gap-0.5 rounded-[8px] border border-white/8 bg-black/20 px-2.5 py-1.5">
+                    {faceLines.map((line, index) => (
+                      <li
+                        key={index}
+                        className="text-[11px] leading-snug text-white/65"
+                      >
+                        {line}
+                      </li>
+                    ))}
+                    <li className="mt-0.5 text-[10px] leading-snug text-white/35">
+                      Feinregler (FaceFeatures) werden in der Vorschau nicht
+                      dargestellt.
+                    </li>
+                  </ul>
+                </div>
+              )}
 
               <div className="flex flex-col gap-1.5">
                 <span className={sectionLabel}>Presets</span>

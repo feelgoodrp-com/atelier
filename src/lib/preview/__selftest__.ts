@@ -14,12 +14,17 @@
 
 import {
   appearanceKey,
+  EYE_COLOUR_UNSET,
+  extrasToFace,
   hasUnrenderedExtras,
+  normalizeAppearance,
   sanitizeAppearance,
   sanitizeAppearancePresets,
+  sanitizeFace,
   STANDARD_APPEARANCE_PRESETS,
 } from "./appearance";
 import { parseMenyooXml, parseMenyooXmlText } from "./menyoo";
+import type { PedAppearanceExtras } from "./appearance";
 
 let passed = 0;
 const failures: string[] = [];
@@ -124,8 +129,13 @@ checkEq(
   ],
 );
 check(
-  "unsupported prop slot produced a warning",
-  ped.warnings.some((w) => w.includes("_9")),
+  "unsupported prop slot produced a CLOTHING warning (dropped on face-only import)",
+  ped.clothingWarnings.some((w) => w.includes("_9")),
+  JSON.stringify(ped.clothingWarnings),
+);
+check(
+  "…and it did NOT leak into the face-relevant warnings",
+  !ped.warnings.some((w) => w.includes("_9")),
   JSON.stringify(ped.warnings),
 );
 checkEq("ShapeFatherId 46 clamps to 45", ped.extras.headBlend?.shapeFatherId, 45);
@@ -224,14 +234,16 @@ checkEq(
   { hair: { drawable: 4, texture: 0 } },
 );
 checkEq(
-  "WasInArray=false keeps blend but defaults the rest",
+  "WasInArray=false keeps blend but defaults the rest (eye colour = unset 255)",
   [
     spooner.peds[0].extras.headBlend?.shapeFatherId,
     spooner.peds[0].extras.headBlend?.shapeMix,
     spooner.peds[0].extras.eyeColour,
     spooner.peds[0].extras.overlays[1].index,
   ],
-  [21, 0.5, 0, null],
+  // eyeColour 255 = unset (absent EyeColour field): index 0 is now a valid
+  // eye colour, so the "no eye colour" default can no longer be 0.
+  [21, 0.5, 255, null],
 );
 checkEq(
   "hex ModelHash resolves mp_m",
@@ -405,10 +417,17 @@ checkEq(
   [{ anchor: "p_lwrist", drawable: 2, texture: 1 }],
 );
 check(
-  "overflow produced per-slot warnings",
-  (overflow.peds[0]?.warnings ?? []).filter((w) =>
+  "overflow produced per-slot CLOTHING warnings (dropped on face-only import)",
+  (overflow.peds[0]?.clothingWarnings ?? []).filter((w) =>
     w.includes("außerhalb des gültigen Bereichs"),
   ).length >= 3,
+  JSON.stringify(overflow.peds[0]?.clothingWarnings),
+);
+check(
+  "…and the garment-index overflow did NOT surface as a face warning",
+  !(overflow.peds[0]?.warnings ?? []).some((w) =>
+    w.includes("außerhalb des gültigen Bereichs"),
+  ),
   JSON.stringify(overflow.peds[0]?.warnings),
 );
 
@@ -440,9 +459,11 @@ checkEq(
   [{ anchor: "p_head", drawable: 1, texture: 0 }],
 );
 check(
-  "…and warns about the duplicate",
-  (duplicateProps.peds[0]?.warnings ?? []).some((w) => w.includes("doppelt")),
-  JSON.stringify(duplicateProps.peds[0]?.warnings),
+  "…and warns about the duplicate (in the clothing bucket — prop-related)",
+  (duplicateProps.peds[0]?.clothingWarnings ?? []).some((w) =>
+    w.includes("doppelt"),
+  ),
+  JSON.stringify(duplicateProps.peds[0]?.clothingWarnings),
 );
 
 checkEq(
@@ -504,6 +525,386 @@ checkEq(
   "face-only preset keeps appearance=null + extras",
   [persistedPresets[0]?.appearance, persistedPresets[0]?.extras?.hairColour],
   [null, 7],
+);
+
+// ---------------------------------------------------------------------------
+console.log("\n[10] extrasToFace mapping + face key segment + clamps");
+// ---------------------------------------------------------------------------
+
+// A FULL Menyoo head (HeadFeatures WasInArray=true) so overlays/eye colour map.
+const FACE_XML = `<OutfitPedData><ModelHash>0x705E61F2</ModelHash><Type>1</Type><HashName>FaceMap</HashName><PedProperties>
+  <PedComps><_3>7,0</_3></PedComps>
+  <HeadFeatures WasInArray="true">
+    <ShapeAndSkinTone>
+      <ShapeFatherId>21</ShapeFatherId>
+      <ShapeMotherId>25</ShapeMotherId>
+      <ShapeOverrideId>3</ShapeOverrideId>
+      <ToneFatherId>11</ToneFatherId>
+      <ToneMotherId>33</ToneMotherId>
+      <ToneOverrideId>0</ToneOverrideId>
+      <ShapeVal>0.500000</ShapeVal>
+      <ToneVal>0.750000</ToneVal>
+      <OverrideVal>0.250000</OverrideVal>
+      <IsP>false</IsP>
+    </ShapeAndSkinTone>
+    <HairColour>5</HairColour>
+    <EyeColour>3</EyeColour>
+    <Overlays>
+      <_1 index="4" colour="12" colourSecondary="7" opacity="0.80" />
+      <_2 index="6" colour="9" colourSecondary="2" opacity="1" />
+      <_0 index="2" colour="0" colourSecondary="0" opacity="0.50" />
+      <_3 index="255" colour="0" colourSecondary="0" opacity="1" />
+    </Overlays>
+  </HeadFeatures>
+</PedProperties></OutfitPedData>`;
+
+const faceImport = parseMenyooXmlText(FACE_XML);
+const faceExtras = faceImport.peds[0]!.extras;
+const mappedFace = extrasToFace(faceExtras);
+
+checkEq(
+  "extrasToFace maps the head blend (Shape*->shape*, Tone*->skin*)",
+  mappedFace && {
+    shapeFirst: mappedFace.shapeFirst,
+    shapeSecond: mappedFace.shapeSecond,
+    shapeThird: mappedFace.shapeThird,
+    shapeMix: mappedFace.shapeMix,
+    thirdMix: mappedFace.thirdMix,
+    skinFirst: mappedFace.skinFirst,
+    skinSecond: mappedFace.skinSecond,
+    skinThird: mappedFace.skinThird,
+    skinMix: mappedFace.skinMix,
+    eyeColour: mappedFace.eyeColour,
+  },
+  {
+    shapeFirst: 21,
+    shapeSecond: 25,
+    shapeThird: 3,
+    shapeMix: 0.5,
+    thirdMix: 0.25,
+    skinFirst: 11,
+    skinSecond: 33,
+    skinThird: 0,
+    skinMix: 0.75,
+    eyeColour: 3,
+  },
+);
+checkEq(
+  "overlays: 255 dropped, tinted slots (1,2) keep colour, untinted (0) drops it, sorted",
+  mappedFace?.overlays,
+  [
+    { slot: 0, index: 2, opacity: 0.5 },
+    { slot: 1, index: 4, opacity: 0.8, colour: 12, colourSecondary: 7 },
+    { slot: 2, index: 6, opacity: 1, colour: 9, colourSecondary: 2 },
+  ],
+);
+
+// Makeup (slot 4) is a TINTED slot too (must match the sidecar's tintable set,
+// FaceCalibration Tintable=true for 1,2,4,5,8,10) — its colour must survive.
+const makeupExtras = parseMenyooXmlText(
+  `<OutfitPedData><ModelHash>0x705E61F2</ModelHash><Type>1</Type><HashName>Makeup</HashName><PedProperties>
+  <HeadFeatures WasInArray="true">
+    <Overlays>
+      <_4 index="5" colour="3" colourSecondary="6" opacity="0.50" />
+      <_6 index="2" colour="9" colourSecondary="9" opacity="1" />
+    </Overlays>
+  </HeadFeatures>
+</PedProperties></OutfitPedData>`,
+).peds[0]!.extras;
+checkEq(
+  "makeup (slot 4) keeps colour (tinted); complexion (slot 6) drops it (untinted)",
+  extrasToFace(makeupExtras)?.overlays,
+  [
+    { slot: 4, index: 5, opacity: 0.5, colour: 3, colourSecondary: 6 },
+    { slot: 6, index: 2, opacity: 1 },
+  ],
+);
+checkEq(
+  "face key segment is byte-exact (f=/k=/o<slot>=/e=, F2 floats, '-' for missing colour)",
+  appearanceKey({ face: mappedFace! }),
+  "||f=21:25:3:0.50:0.25,k=11:33:0:0.75,o0=2:0.50:-:-,o1=4:0.80:12:7,o2=6:1.00:9:2,e=3",
+);
+
+// F2 quantization cross-check — the .xx5 half-steps that diverged between the
+// old `toFixed(2)` (JS double) and the sidecar `float.ToString("0.00")` (C#
+// 32-bit float). The expected strings are the SIDECAR's output (32-bit float +
+// round-half-away-from-zero); the client must now produce them byte-identically
+// after the Math.fround + integer-quantize rewrite. These are the values an
+// overlay opacity or a HeadBlend mix can carry from a hand-edited/foreign XML.
+// (See sidecar/Api/Dtos.cs F2 — keep this list in sync if F2 ever changes.)
+const F2_XX5: Array<[number, string]> = [
+  [0.005, "0.01"],
+  [0.015, "0.02"],
+  [0.045, "0.05"],
+  [0.145, "0.15"],
+  [0.175, "0.18"],
+  [0.245, "0.25"],
+  [0.295, "0.29"],
+  [0.525, "0.52"],
+  [0.565, "0.57"],
+  [0.745, "0.75"],
+  [0.995, "1.00"],
+  [0, "0.00"],
+  [0.5, "0.50"],
+  [1, "1.00"],
+];
+for (const [opacity, expectedF2] of F2_XX5) {
+  // Drive f2 through the public key: an active overlay's opacity field is the
+  // only single-float key slot, so the segment "o0=1:<F2>:-:-" isolates it.
+  // (faceKeySegment reads every field directly, so we pass a complete face.)
+  checkEq(
+    `F2(${opacity}) is byte-identical to the sidecar -> "${expectedF2}"`,
+    appearanceKey({
+      face: {
+        shapeFirst: 0,
+        shapeSecond: 0,
+        shapeThird: 0,
+        shapeMix: 0,
+        thirdMix: 0,
+        skinFirst: 0,
+        skinSecond: 0,
+        skinThird: 0,
+        skinMix: 0,
+        overlays: [{ slot: 0, index: 1, opacity }],
+      },
+    }),
+    `||f=0:0:0:0.00:0.00,k=0:0:0:0.00,o0=1:${expectedF2}:-:-,e=-`,
+  );
+}
+
+// Face-only with NO head blend + NO overlays + NO eye colour -> null face.
+const emptyExtras: PedAppearanceExtras = {
+  ...faceExtras,
+  headBlend: null,
+  overlays: faceExtras.overlays.map(() => ({
+    index: null,
+    opacity: 1,
+    colour: 0,
+    colourSecondary: 0,
+  })),
+  // 255 = unset (NOT 0 — index 0 is a valid eye colour now).
+  eyeColour: EYE_COLOUR_UNSET,
+};
+checkEq("extrasToFace returns null when nothing renderable", extrasToFace(emptyExtras), null);
+
+// Eye colour only (no blend) -> neutral default blend + eyeColour, no overlays.
+const eyeOnly = extrasToFace({ ...emptyExtras, eyeColour: 7 });
+checkEq("eye-only face carries a neutral blend + eyeColour", eyeOnly, {
+  shapeFirst: 0,
+  shapeSecond: 0,
+  shapeThird: 0,
+  shapeMix: 0,
+  thirdMix: 0,
+  skinFirst: 0,
+  skinSecond: 0,
+  skinThird: 0,
+  skinMix: 0,
+  eyeColour: 7,
+});
+
+// Eye colour INDEX 0 is a VALID atlas tile — importing it must NOT be swallowed
+// as "unset". It produces a face with eyeColour=0 and lands in the key as e=0.
+const eyeZero = extrasToFace({ ...emptyExtras, eyeColour: 0 });
+checkEq("eye colour index 0 is importable (valid eye colour, not unset)", eyeZero, {
+  shapeFirst: 0,
+  shapeSecond: 0,
+  shapeThird: 0,
+  shapeMix: 0,
+  thirdMix: 0,
+  skinFirst: 0,
+  skinSecond: 0,
+  skinThird: 0,
+  skinMix: 0,
+  eyeColour: 0,
+});
+checkEq(
+  "eye colour 0 reaches the canonical key as e=0",
+  appearanceKey({ face: eyeZero! }),
+  "||f=0:0:0:0.00:0.00,k=0:0:0:0.00,e=0",
+);
+// Clean baseline (no hairColour/blend/overlay) so ONLY eyeColour drives the
+// result — emptyExtras still carries the parsed hairColour=5.
+const cleanExtras: PedAppearanceExtras = {
+  ...emptyExtras,
+  hairColour: 0,
+  hairHighlightColour: 0,
+  faceFeatures: emptyExtras.faceFeatures.map(() => 0),
+  tattoos: undefined,
+};
+check(
+  "hasUnrenderedExtras: eye colour 0 counts as set, 255 does not",
+  hasUnrenderedExtras({ ...cleanExtras, eyeColour: 0 }) === true &&
+    hasUnrenderedExtras({ ...cleanExtras, eyeColour: EYE_COLOUR_UNSET }) === false,
+);
+
+// sanitizeFace clamps out-of-range ids/mix/overlay/eye and drops 255 overlays.
+checkEq(
+  "sanitizeFace clamps ids/mix, drops index 255 + untinted colour, clamps eye",
+  sanitizeFace({
+    shapeFirst: 99,
+    shapeSecond: -3,
+    shapeThird: 4,
+    shapeMix: 2,
+    thirdMix: -1,
+    skinFirst: 5,
+    skinSecond: 6,
+    skinThird: 7,
+    skinMix: 0.4,
+    eyeColour: 99,
+    overlays: [
+      { slot: 2, index: 255, opacity: 1, colour: 5, colourSecondary: 5 },
+      { slot: 1, index: 3, opacity: 9, colour: 99, colourSecondary: -2 },
+      { slot: 0, index: 1, opacity: 0.5, colour: 40, colourSecondary: 40 },
+    ],
+  }),
+  {
+    shapeFirst: 45,
+    shapeSecond: 0,
+    shapeThird: 4,
+    shapeMix: 1,
+    thirdMix: 0,
+    skinFirst: 5,
+    skinSecond: 6,
+    skinThird: 7,
+    skinMix: 0.4,
+    overlays: [
+      { slot: 0, index: 1, opacity: 0.5 },
+      { slot: 1, index: 3, opacity: 1, colour: 63, colourSecondary: 0 },
+    ],
+    eyeColour: 31,
+  },
+);
+checkEq(
+  "sanitizeFace returns null when nothing renderable remains",
+  sanitizeFace({ overlays: [{ slot: 2, index: 255, opacity: 1 }] }),
+  null,
+);
+
+// A face block survives sanitizeAppearance even with no components/props, and
+// the resulting key keeps the empty component+prop separators ("||").
+checkEq(
+  "sanitizeAppearance keeps a face-only appearance",
+  appearanceKey(
+    sanitizeAppearance({ face: { skinFirst: 11, skinMix: 0.5, eyeColour: 3 } }),
+  ),
+  "||f=0:0:0:0.00:0.00,k=11:0:0:0.50,e=3",
+);
+
+// ---------------------------------------------------------------------------
+console.log("\n[11] FACE-ONLY import: clothing/hair from the XML is IGNORED");
+// ---------------------------------------------------------------------------
+
+// A Menyoo XML with FILLED clothing/hair PedComps (hair=5, jbib=3) AND head
+// features — mirrors the store's applyImportedAppearance (face-only).
+const FACE_ONLY_IMPORT_XML = `<OutfitPedData><ModelHash>0x705E61F2</ModelHash><Type>1</Type><HashName>NurGesicht</HashName><PedProperties>
+  <PedComps><_2>5,1</_2><_11>3,0</_11><_4>2,0</_4></PedComps>
+  <PedProps><_0>1,0</_0></PedProps>
+  <HeadFeatures WasInArray="true">
+    <ShapeAndSkinTone>
+      <ShapeFatherId>21</ShapeFatherId>
+      <ShapeMotherId>25</ShapeMotherId>
+      <ShapeOverrideId>0</ShapeOverrideId>
+      <ToneFatherId>21</ToneFatherId>
+      <ToneMotherId>25</ToneMotherId>
+      <ToneOverrideId>0</ToneOverrideId>
+      <ShapeVal>0.500000</ShapeVal>
+      <ToneVal>0.500000</ToneVal>
+      <OverrideVal>0.000000</OverrideVal>
+      <IsP>false</IsP>
+    </ShapeAndSkinTone>
+    <HairColour>5</HairColour>
+    <EyeColour>4</EyeColour>
+  </HeadFeatures>
+</PedProperties></OutfitPedData>`;
+
+const faceOnlyImport = parseMenyooXmlText(FACE_ONLY_IMPORT_XML);
+const importedPed = faceOnlyImport.peds[0]!;
+// Sanity: the parser DID read the clothing (hair=5, jbib=3) + the prop.
+checkEq(
+  "parser still reads the XML clothing (proves it is later ignored on purpose)",
+  importedPed.appearance.components,
+  { hair: { drawable: 5, texture: 1 }, jbib: { drawable: 3, texture: 0 }, lowr: { drawable: 2, texture: 0 } },
+);
+
+// Mirror of preview-3d-store.applyImportedAppearance: start from the user's
+// manually set components (here: just a manually picked uppr) and write ONLY
+// the face — NOTHING from the XML's components/props is taken.
+const userComponents = { uppr: { drawable: 4, texture: 2 } };
+const importedFace = extrasToFace(importedPed.extras);
+const afterImport = normalizeAppearance({
+  components: userComponents,
+  ...(importedFace ? { face: importedFace } : {}),
+});
+check(
+  "face-only import sets appearance.face",
+  afterImport?.face != null && afterImport.face.skinMix === 0.5,
+);
+checkEq(
+  "face-only import keeps ONLY the user's manual components — no XML clothing",
+  afterImport?.components,
+  { uppr: { drawable: 4, texture: 2 } },
+);
+check(
+  "face-only import takes NO prop from the XML",
+  afterImport?.props === undefined,
+);
+check(
+  "none of the XML PedComps (hair/jbib/lowr) leaked into the appearance",
+  afterImport?.components?.hair === undefined &&
+    afterImport?.components?.jbib === undefined &&
+    afterImport?.components?.lowr === undefined,
+);
+
+// ---------------------------------------------------------------------------
+console.log("\n[12] FACE-ONLY import: clothing/prop/model warnings are dropped");
+// ---------------------------------------------------------------------------
+
+// One XML that triggers EVERY clothing-warning kind (unknown comp slot _40,
+// oversized garment index, unsupported prop slot _9) AND a face-relevant clamp
+// (EyeColour 32 -> 31). Face-only import must surface ONLY the face warning.
+const MIXED_WARNINGS_XML = `<OutfitPedData><ModelHash>0x705E61F2</ModelHash><Type>1</Type><HashName>Gemischt</HashName><PedProperties>
+  <PedComps><_40>1,0</_40><_2>99999,0</_2><_4>3,0</_4></PedComps>
+  <PedProps><_9>1,0</_9></PedProps>
+  <HeadFeatures WasInArray="true">
+    <EyeColour>32</EyeColour>
+  </HeadFeatures>
+</PedProperties></OutfitPedData>`;
+
+const mixed = parseMenyooXmlText(MIXED_WARNINGS_XML);
+const mixedPed = mixed.peds[0]!;
+check(
+  "face clamp warning is in the face bucket (survives the import)",
+  mixedPed.warnings.some((w) => w.includes("außerhalb des gültigen Bereichs")),
+  JSON.stringify(mixedPed.warnings),
+);
+check(
+  "the face bucket carries NO clothing/prop/model warnings",
+  !mixedPed.warnings.some(
+    (w) =>
+      w.includes("Komponenten-Slot") ||
+      w.includes("Prop-Slot") ||
+      w.includes("Freemode-Ped"),
+  ),
+  JSON.stringify(mixedPed.warnings),
+);
+check(
+  "unknown component slot, oversized garment + unsupported prop are all in the clothing bucket",
+  mixedPed.clothingWarnings.some((w) => w.includes("_40")) &&
+    mixedPed.clothingWarnings.some((w) => w.includes("_2")) &&
+    mixedPed.clothingWarnings.some((w) => w.includes("_9")),
+  JSON.stringify(mixedPed.clothingWarnings),
+);
+
+// A non-freemode ped: the ModelHash hint must be a clothing warning, never face.
+const NON_FREEMODE_XML = `<OutfitPedData><ModelHash>0xDEADBEEF</ModelHash><Type>1</Type><HashName>Fremd</HashName><PedProperties>
+  <PedComps><_2>1,0</_2></PedComps>
+</PedProperties></OutfitPedData>`;
+const nonFreemode = parseMenyooXmlText(NON_FREEMODE_XML).peds[0]!;
+check(
+  "non-freemode ModelHash hint is a clothing warning, not a face warning",
+  nonFreemode.clothingWarnings.some((w) => w.includes("Freemode-Ped")) &&
+    !nonFreemode.warnings.some((w) => w.includes("Freemode-Ped")),
+  JSON.stringify([nonFreemode.warnings, nonFreemode.clothingWarnings]),
 );
 
 // ---------------------------------------------------------------------------

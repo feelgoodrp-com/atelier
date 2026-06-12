@@ -34,6 +34,8 @@ import type {
 } from "@/lib/sidecar/types";
 import {
   appearanceKey,
+  extrasToFace,
+  normalizeAppearance,
   sanitizeAppearance,
   sanitizeAppearanceExtras,
   sanitizeAppearancePresets,
@@ -168,12 +170,28 @@ interface Preview3dState {
   requestFrame: () => void;
   /** Sets the active appearance (stepper edits) — keeps extras/warnings. */
   setAppearance: (appearance: PedAppearance | null) => void;
-  /** Applies a Menyoo import / preset: appearance + extras + warnings. */
+  /**
+   * FACE-ONLY Menyoo import (hard product rule): applies ONLY the face derived
+   * from the imported head features and stores the raw extras + warnings. The
+   * imported clothing/hair (components) and props are IGNORED on purpose — they
+   * never touch appearance.components/props, which keep whatever the user set
+   * manually. Only appearance.face is (re)written from {@link extrasToFace}.
+   */
   applyImportedAppearance: (
-    appearance: PedAppearance | null,
     extras: PedAppearanceExtras | null,
     warnings: string[],
   ) => void;
+  /**
+   * Applies a SAVED preset: replaces components/props with the preset's
+   * appearance AND sets face from the preset's extras (presets are authored in
+   * the tool, so their clothing is intentional — unlike the face-only import).
+   */
+  applyPreset: (
+    appearance: PedAppearance | null,
+    extras: PedAppearanceExtras | null,
+  ) => void;
+  /** Drops the rendered face but keeps the manually set components/props. */
+  removeFace: () => void;
   /** Back to the game default (clears extras, warnings and fallbacks). */
   resetAppearance: () => void;
   /** Upserts a user preset by name (case-insensitive). */
@@ -553,12 +571,56 @@ const createPreview3dState: StateCreator<
     // fallback hints travel with the entries (no transient state to clear).
     setAppearance: (appearance) => set({ appearance }),
 
-    applyImportedAppearance: (appearance, extras, warnings) =>
-      set({
-        appearance,
-        appearanceExtras: extras,
-        appearanceWarnings: warnings,
+    // FACE-ONLY import: the imported components/props are deliberately dropped
+    // — only the face (derived from the head features) is written, merged onto
+    // whatever the user already set manually. The raw extras stay stored so a
+    // preset save keeps the full head data; warnings surface in the popover.
+    applyImportedAppearance: (extras, warnings) =>
+      set((state) => {
+        const face = extrasToFace(extras) ?? undefined;
+        const next = normalizeAppearance({
+          ...(state.appearance?.components
+            ? { components: state.appearance.components }
+            : {}),
+          ...(state.appearance?.props ? { props: state.appearance.props } : {}),
+          ...(face ? { face } : {}),
+        });
+        return {
+          appearance: next,
+          appearanceExtras: extras,
+          appearanceWarnings: warnings,
+        };
       }),
+
+    // Saved presets carry intentional clothing — apply components AND face,
+    // clear transient import warnings.
+    applyPreset: (appearance, extras) => {
+      const face = extrasToFace(extras);
+      set({
+        appearance: normalizeAppearance({
+          ...(appearance ?? {}),
+          ...(face ? { face } : {}),
+        }),
+        appearanceExtras: extras,
+        appearanceWarnings: [],
+      });
+    },
+
+    removeFace: () =>
+      set((state) => ({
+        appearance: state.appearance
+          ? normalizeAppearance({
+              ...(state.appearance.components
+                ? { components: state.appearance.components }
+                : {}),
+              ...(state.appearance.props
+                ? { props: state.appearance.props }
+                : {}),
+            })
+          : null,
+        appearanceExtras: null,
+        appearanceWarnings: [],
+      })),
 
     resetAppearance: () =>
       set({
@@ -602,7 +664,10 @@ export const usePreview3dStore = create<Preview3dState>()(
     }),
     // v1 -> v2 (appearance fields): old blobs pass through unchanged — the
     // new fields are simply absent and the validating merge below defaults
-    // them. Newly written blobs carry version 2.
+    // them. Newly written blobs carry version 2. The Stufe-2 `face` block is a
+    // PURELY ADDITIVE field inside the existing appearance object: persisted v2
+    // blobs without it stay valid (sanitizeAppearance leaves face undefined),
+    // so no version bump / migrate step is needed.
     migrate: (persisted) => persisted as Preview3dPersisted,
     // Validating merge — a stale/tampered blob must never yield an unknown
     // camera preset (the toolbar select would render empty). A persisted

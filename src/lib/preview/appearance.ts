@@ -15,6 +15,8 @@ import {
 import type {
   PedAppearance,
   PedAppearanceComponent,
+  PedAppearanceFace,
+  PedAppearanceOverlay as PedAppearanceFaceOverlay,
   PedAppearanceProp,
   PedModel,
 } from "@/lib/sidecar/types";
@@ -55,6 +57,46 @@ export const FACE_FEATURE_COUNT = 20;
  * to the slot default instead.
  */
 export const APPEARANCE_INDEX_MAX = 4095;
+
+/** Inclusive head-blend parent/override id bound (SET_PED_HEAD_BLEND_DATA). */
+export const FACE_BLEND_ID_MAX = 45;
+/** Inclusive overlay variation index bound (255 = off, dropped before send). */
+export const OVERLAY_INDEX_MAX = 255;
+/** Inclusive overlay/hair tint palette bound. */
+export const OVERLAY_COLOUR_MAX = 63;
+/** Inclusive eye-colour atlas row bound. */
+export const EYE_COLOUR_MAX = 31;
+/**
+ * Sentinel for "eye colour not set" in {@link PedAppearanceExtras.eyeColour}.
+ * Index 0 is a VALID eye-colour tile (menyoo-spec.md §4: game data 0..31), so
+ * it must NOT double as "unset" — only a missing/255 field means unset. 255
+ * mirrors the game's GET_PED_*-returns-255-when-unset convention and stays out
+ * of the 0..31 atlas range. extrasToFace/sanitize treat 0..31 as a real index
+ * and anything else (255 / out of range) as unset (no eye colour in the key).
+ */
+export const EYE_COLOUR_UNSET = 255;
+
+/** True when an extras eye-colour value is a real atlas index (0..31), not unset. */
+function isEyeColourSet(value: number): boolean {
+  return Number.isInteger(value) && value >= 0 && value <= EYE_COLOUR_MAX;
+}
+
+/**
+ * Head-overlay slots that carry a tint colour. MUST match the sidecar's
+ * tintable slots (FaceCalibration.Slots with Tintable=true) so both sides
+ * agree which overlays forward colour into the face block / canonical key:
+ *   beard (1) + eyebrows (2) + chest hair (10)  -> hair palette  (ColourType 1)
+ *   makeup (4) + blush (5) + lipstick (8)        -> makeup palette (Menyoo
+ *     derives makeup as ColourType 1, blush/lipstick as 2 — both tinted).
+ * This mirrors GetPedHeadOverlayColourType (menyoo-spec.md §1.e/§3): everything
+ * except 0/3/6/7/9/11/12 is tinted. Slot 4 (makeup) was missing before — it is
+ * a tinted slot per the spec, so an imported makeup colour is now kept. The
+ * remaining overlays (blemishes, ageing, complexion, sun damage, moles, body
+ * blemishes) ignore tint, so sending it would only bloat the canonical key.
+ */
+export const OVERLAY_TINTED_SLOTS: ReadonlySet<number> = new Set([
+  1, 2, 4, 5, 8, 10,
+]);
 
 /**
  * Head features parsed from a Menyoo XML. Stored in presets from day one but
@@ -101,9 +143,163 @@ export function defaultExtras(): PedAppearanceExtras {
     })),
     hairColour: 0,
     hairHighlightColour: 0,
-    eyeColour: 0,
+    // 255 = unset (index 0 is a real eye colour, so it can't be the default).
+    eyeColour: EYE_COLOUR_UNSET,
     faceFeatures: new Array<number>(FACE_FEATURE_COUNT).fill(0),
   };
+}
+
+function clampInt(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, Math.trunc(value)));
+}
+
+/**
+ * Maps the stored Menyoo {@link PedAppearanceExtras} to the RENDERED
+ * {@link PedAppearanceFace} block — SHARED CONTRACT mapping:
+ *   ShapeFatherId   -> shapeFirst    ShapeMotherId  -> shapeSecond
+ *   ShapeOverrideId -> shapeThird    ShapeVal       -> shapeMix
+ *   OverrideVal     -> thirdMix
+ *   ToneFatherId    -> skinFirst     ToneMotherId   -> skinSecond
+ *   ToneOverrideId  -> skinThird     ToneVal        -> skinMix
+ *   overlays[slot]  -> overlays (only index != 255 / non-null; colour +
+ *     colourSecondary ONLY for {@link OVERLAY_TINTED_SLOTS} brow/beard/makeup)
+ *   eyeColour       -> eyeColour
+ * FaceFeatures are DELIBERATELY excluded — they need engine micro-morph assets
+ * the preview cannot honestly render, so they remain stored-only in extras.
+ * HairColour is NOT applied either (the hair STYLE is a tool-set component).
+ * Returns null when there is no head blend AND no active overlay AND no eye
+ * colour, i.e. nothing the face renderer could show.
+ */
+export function extrasToFace(
+  extras: PedAppearanceExtras | null,
+): PedAppearanceFace | null {
+  if (!extras) return null;
+
+  const overlays: PedAppearanceFaceOverlay[] = [];
+  for (let slot = 0; slot < extras.overlays.length; slot++) {
+    const o = extras.overlays[slot];
+    // index null / 255 = overlay off — never sent (mirrors the key contract).
+    if (o.index === null) continue;
+    const tinted = OVERLAY_TINTED_SLOTS.has(slot);
+    overlays.push({
+      slot,
+      index: clampInt(o.index, 0, OVERLAY_INDEX_MAX),
+      opacity: clamp(o.opacity, 0, 1),
+      // Only tinted slots forward colour — others ignore it (key + bytes).
+      ...(tinted
+        ? {
+            colour: clampInt(o.colour, 0, OVERLAY_COLOUR_MAX),
+            colourSecondary: clampInt(o.colourSecondary, 0, OVERLAY_COLOUR_MAX),
+          }
+        : {}),
+    });
+  }
+
+  const blend = extras.headBlend;
+  // Index 0 is a valid eye colour — only 255/out-of-range means "unset".
+  const eyeColour = isEyeColourSet(extras.eyeColour)
+    ? extras.eyeColour
+    : undefined;
+
+  // Nothing renderable -> no face block (keeps the key at "default").
+  if (!blend && overlays.length === 0 && eyeColour === undefined) return null;
+
+  const face: PedAppearanceFace = blend
+    ? {
+        shapeFirst: clampInt(blend.shapeFatherId, 0, FACE_BLEND_ID_MAX),
+        shapeSecond: clampInt(blend.shapeMotherId, 0, FACE_BLEND_ID_MAX),
+        shapeThird: clampInt(blend.shapeOverrideId, 0, FACE_BLEND_ID_MAX),
+        shapeMix: clamp(blend.shapeMix, 0, 1),
+        thirdMix: clamp(blend.overrideMix, 0, 1),
+        skinFirst: clampInt(blend.toneFatherId, 0, FACE_BLEND_ID_MAX),
+        skinSecond: clampInt(blend.toneMotherId, 0, FACE_BLEND_ID_MAX),
+        skinThird: clampInt(blend.toneOverrideId, 0, FACE_BLEND_ID_MAX),
+        skinMix: clamp(blend.toneMix, 0, 1),
+      }
+    : // Overlays/eye colour without an explicit head blend: send the neutral
+      // default blend so the sidecar still applies the overlays/eyes.
+      {
+        shapeFirst: 0,
+        shapeSecond: 0,
+        shapeThird: 0,
+        shapeMix: 0,
+        thirdMix: 0,
+        skinFirst: 0,
+        skinSecond: 0,
+        skinThird: 0,
+        skinMix: 0,
+      };
+
+  return {
+    ...face,
+    ...(overlays.length > 0 ? { overlays } : {}),
+    ...(eyeColour !== undefined ? { eyeColour } : {}),
+  };
+}
+
+/**
+ * Invariant 2-decimal formatting — SHARED CONTRACT with the sidecar
+ * (PedAppearanceKey.F2 in sidecar/Api/Dtos.cs, byte-identical). We DO NOT use
+ * `toFixed(2)` / `float.ToString("0.00")` directly: those round a JS 64-bit
+ * double resp. a C# 32-bit float and diverge at .xx5 half-steps (48 values
+ * across 0.000..1.000, e.g. 0.015 -> JS "0.01" / C# "0.02"). Instead BOTH
+ * sides quantize to whole hundredths and build the 2-decimal string
+ * DETERMINISTICALLY from that integer, so no float formatter is left to
+ * disagree. Two things make the integer identical on both sides:
+ *   1. The sidecar's DTO field is a 32-bit `float`; the same logical value is
+ *      a 64-bit double here. So we `Math.fround` FIRST to collapse to the
+ *      exact 32-bit value the sidecar will receive (and again on `v*100`, to
+ *      mirror C#'s `(float)v * 100f`), THEN round-half-away-from-zero — which
+ *      `Math.round` is for the non-negative inputs here, == MidpointRounding.
+ *      AwayFromZero in C#.
+ *   2. n = round(clamp(v,0,1)*100) in 0..100 -> "<n/100>.<two digits of n%100>".
+ * Verified byte-identical to F2 across 0.000..1.000 (step 0.001).
+ * Examples: 0.005 -> "0.01", 0.50 -> "0.50", 1 -> "1.00".
+ */
+function f2(value: number): string {
+  // Collapse to the 32-bit float the sidecar holds, then clamp to [0,1]
+  // (also collapses -0 -> 0) so the integer can never escape 0..100.
+  const f = Math.fround(value);
+  const v = f > 0 ? (f < 1 ? f : 1) : 0;
+  const n = Math.round(Math.fround(v * 100)); // 0..100, mirrors (float)v*100f
+  const whole = (n / 100) | 0; // 0 or 1
+  const frac = n % 100; // 0..99
+  return `${whole}.${frac < 10 ? "0" : ""}${frac}`;
+}
+
+/**
+ * Canonical face-key segment — SHARED CONTRACT with the sidecar
+ * (PedAppearanceFaceKey in sidecar/Api/Dtos.cs, byte-identical). Layout:
+ *   f=<shapeFirst>:<shapeSecond>:<shapeThird>:<shapeMix>:<thirdMix>,
+ *   k=<skinFirst>:<skinSecond>:<skinThird>:<skinMix>,
+ *   o<slot>=<index>:<opacity>:<colour|->:<colourSecondary|->  (ascending slot,
+ *     active slots only — index 255 entries are dropped before this point),
+ *   e=<eyeColour|->
+ * All mix/opacity floats use {@link f2} ("0.00"); a missing colour/eyeColour
+ * renders as "-". The whole segment is prefixed with "|" by the caller; an
+ * absent face block appends NOTHING, so Stufe-1 keys stay byte-identical.
+ */
+function faceKeySegment(face: PedAppearanceFace): string {
+  const parts = [
+    `f=${face.shapeFirst}:${face.shapeSecond}:${face.shapeThird}:${f2(
+      face.shapeMix,
+    )}:${f2(face.thirdMix)}`,
+    `k=${face.skinFirst}:${face.skinSecond}:${face.skinThird}:${f2(
+      face.skinMix,
+    )}`,
+  ];
+  const overlays = [...(face.overlays ?? [])].sort((a, b) => a.slot - b.slot);
+  for (const o of overlays) {
+    const colour = o.colour ?? null;
+    const colourSecondary = o.colourSecondary ?? null;
+    parts.push(
+      `o${o.slot}=${o.index}:${f2(o.opacity)}:${colour ?? "-"}:${
+        colourSecondary ?? "-"
+      }`,
+    );
+  }
+  parts.push(`e=${face.eyeColour ?? "-"}`);
+  return parts.join(",");
 }
 
 /**
@@ -113,9 +309,12 @@ export function defaultExtras(): PedAppearanceExtras {
  * alt 0/absent) are skipped; the rest is sorted alphabetically as
  * "slot=drawable:texture" joined with ",", then "|", then props sorted
  * alphabetically as "anchor=drawable:texture" joined with ","; `alt` is
- * appended as ":a<alt>" ONLY when != 0; empty/null appearance — including one
- * where every component was skipped and no props remain — -> "default".
- * Example: "hair=2:1,jbib=5:0|p_head=1:0".
+ * appended as ":a<alt>" ONLY when != 0. A {@link PedAppearanceFace} appends a
+ * THIRD segment "|f=…,k=…,o<slot>=…,e=…" (see {@link faceKeySegment}); when
+ * `face` is absent the key ends after the props segment, so every Stufe-1 key
+ * stays byte-identical. Empty/null appearance — every component skipped, no
+ * props, no face — -> "default".
+ * Example: "hair=2:1,jbib=5:0|p_head=1:0|f=21:25:0:0.50:0.00,k=21:25:0:0.50,o2=3:0.75:5:-,e=3".
  */
 export function appearanceKey(
   appearance: PedAppearance | null | undefined,
@@ -137,11 +336,18 @@ export function appearanceKey(
     .map((p) => `${p.anchor}=${p.drawable}:${p.texture}`)
     .sort()
     .join(",");
-  if (components === "" && props === "") return "default";
-  return `${components}|${props}`;
+  if (components === "" && props === "" && !appearance.face) return "default";
+  const base = `${components}|${props}`;
+  // The face segment NEVER alters the first two segments — without a face the
+  // key ends here, identical to Stufe 1.
+  return appearance.face ? `${base}|${faceKeySegment(appearance.face)}` : base;
 }
 
-/** Drops empty components/props blocks; null when nothing is left. */
+/**
+ * Drops empty components/props blocks; null when nothing is left. A `face`
+ * block keeps the appearance ALIVE even with no components/props — a face-only
+ * appearance (Menyoo face import) is a valid, renderable payload.
+ */
 export function normalizeAppearance(
   appearance: PedAppearance | null,
 ): PedAppearance | null {
@@ -149,10 +355,12 @@ export function normalizeAppearance(
   const components = appearance.components ?? {};
   const props = appearance.props ?? [];
   const hasComponents = Object.keys(components).length > 0;
-  if (!hasComponents && props.length === 0) return null;
+  const face = appearance.face;
+  if (!hasComponents && props.length === 0 && !face) return null;
   return {
     ...(hasComponents ? { components } : {}),
     ...(props.length > 0 ? { props } : {}),
+    ...(face ? { face } : {}),
   };
 }
 
@@ -167,15 +375,97 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /**
+ * Validates an untrusted face blob (persisted state OR a freshly mapped face)
+ * — every field is clamped to its contract range, overlays with index 255 (or
+ * null/out-of-range) are dropped, tint colours survive only on
+ * {@link OVERLAY_TINTED_SLOTS}, overlays are deduped + sorted by slot. Returns
+ * null when nothing renderable remains (so it never produces an empty `face`
+ * that would still alter the canonical key).
+ */
+export function sanitizeFace(value: unknown): PedAppearanceFace | null {
+  if (typeof value !== "object" || value === null) return null;
+  const raw = value as Record<string, unknown>;
+  const id = (v: unknown) => clamp(asInt(v) ?? 0, 0, FACE_BLEND_ID_MAX);
+  const mix = (v: unknown) => asClampedNumber(v, 0, 1, 0);
+
+  const overlays: PedAppearanceFaceOverlay[] = [];
+  const seenSlots = new Set<number>();
+  if (Array.isArray(raw.overlays)) {
+    for (const entry of raw.overlays) {
+      if (typeof entry !== "object" || entry === null) continue;
+      const o = entry as Record<string, unknown>;
+      const slot = asInt(o.slot);
+      if (slot === null || slot < 0 || slot >= OVERLAY_SLOT_COUNT) continue;
+      if (seenSlots.has(slot)) continue;
+      const index = asInt(o.index);
+      // 255 / null / out-of-range = off — dropped (mirrors the key contract).
+      if (index === null || index < 0 || index >= OVERLAY_INDEX_MAX) continue;
+      seenSlots.add(slot);
+      const tinted = OVERLAY_TINTED_SLOTS.has(slot);
+      overlays.push({
+        slot,
+        index,
+        opacity: asClampedNumber(o.opacity, 0, 1, 1),
+        ...(tinted
+          ? {
+              colour: clamp(asInt(o.colour) ?? 0, 0, OVERLAY_COLOUR_MAX),
+              colourSecondary: clamp(
+                asInt(o.colourSecondary) ?? 0,
+                0,
+                OVERLAY_COLOUR_MAX,
+              ),
+            }
+          : {}),
+      });
+    }
+  }
+  overlays.sort((a, b) => a.slot - b.slot);
+
+  // The face block's eyeColour is a real index when present — index 0 IS a
+  // valid eye colour (the old `> 0` test silently dropped it). A present
+  // non-negative value is CLAMPED into 0..31 (mirrors the sidecar's
+  // NormalizeFace Math.Clamp); a missing/negative value stays unset.
+  const eyeRaw = asInt(raw.eyeColour);
+  const eyeColour =
+    eyeRaw !== null && eyeRaw >= 0 ? clamp(eyeRaw, 0, EYE_COLOUR_MAX) : undefined;
+
+  const hasBlend =
+    typeof raw.shapeFirst === "number" ||
+    typeof raw.skinFirst === "number" ||
+    typeof raw.shapeMix === "number" ||
+    typeof raw.skinMix === "number";
+
+  // Nothing renderable -> no face (keeps the key normalized to "default").
+  if (!hasBlend && overlays.length === 0 && eyeColour === undefined) {
+    return null;
+  }
+
+  return {
+    shapeFirst: id(raw.shapeFirst),
+    shapeSecond: id(raw.shapeSecond),
+    shapeThird: id(raw.shapeThird),
+    shapeMix: mix(raw.shapeMix),
+    thirdMix: mix(raw.thirdMix),
+    skinFirst: id(raw.skinFirst),
+    skinSecond: id(raw.skinSecond),
+    skinThird: id(raw.skinThird),
+    skinMix: mix(raw.skinMix),
+    ...(overlays.length > 0 ? { overlays } : {}),
+    ...(eyeColour !== undefined ? { eyeColour } : {}),
+  };
+}
+
+/**
  * Validates an untrusted appearance blob (persisted localStorage state) —
  * unknown slots/anchors, malformed entries, indices beyond
  * {@link APPEARANCE_INDEX_MAX} and duplicate prop anchors are dropped, never
  * thrown (out-of-bound values would 400 the sidecar request, duplicate
- * anchors are rejected there too).
+ * anchors are rejected there too). A `face` block is sanitized via
+ * {@link sanitizeFace} and survives even when components/props are empty.
  */
 export function sanitizeAppearance(value: unknown): PedAppearance | null {
   if (typeof value !== "object" || value === null) return null;
-  const raw = value as { components?: unknown; props?: unknown };
+  const raw = value as { components?: unknown; props?: unknown; face?: unknown };
   const inRange = (n: number) => n >= 0 && n <= APPEARANCE_INDEX_MAX;
 
   const components: Partial<Record<ComponentSlotId, PedAppearanceComponent>> =
@@ -227,9 +517,12 @@ export function sanitizeAppearance(value: unknown): PedAppearance | null {
     }
   }
 
+  const face = sanitizeFace(raw.face);
+
   return normalizeAppearance({
     ...(Object.keys(components).length > 0 ? { components } : {}),
     ...(props.length > 0 ? { props } : {}),
+    ...(face ? { face } : {}),
   });
 }
 
@@ -287,7 +580,13 @@ export function sanitizeAppearanceExtras(
 
   extras.hairColour = clamp(asInt(raw.hairColour) ?? 0, 0, 63);
   extras.hairHighlightColour = clamp(asInt(raw.hairHighlightColour) ?? 0, 0, 63);
-  extras.eyeColour = clamp(asInt(raw.eyeColour) ?? 0, 0, 31);
+  // Eye colour: 0..31 is a real index, anything else collapses to the unset
+  // sentinel (index 0 must NOT be turned into "unset" by a clamp/default).
+  {
+    const eye = asInt(raw.eyeColour);
+    extras.eyeColour =
+      eye !== null && isEyeColourSet(eye) ? eye : EYE_COLOUR_UNSET;
+  }
 
   if (Array.isArray(raw.faceFeatures)) {
     for (let i = 0; i < FACE_FEATURE_COUNT; i++) {
@@ -352,7 +651,8 @@ export function hasUnrenderedExtras(
     extras.overlays.some((o) => o.index !== null) ||
     extras.hairColour > 0 ||
     extras.hairHighlightColour > 0 ||
-    extras.eyeColour > 0 ||
+    // 0..31 is a set eye colour (index 0 included); 255 = unset.
+    isEyeColourSet(extras.eyeColour) ||
     extras.faceFeatures.some((f) => f !== 0) ||
     (extras.tattoos?.length ?? 0) > 0
   );

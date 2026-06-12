@@ -65,9 +65,7 @@ public static class GlbBuilder
                 AppendDrawable(component.Drawable, mesh, componentPrimitives, pose);
                 if (componentPrimitives.Count == 0) continue;
 
-                var materialIndex = component.Texture != null
-                    ? TryAddTexture(component.Texture, textures, log)
-                    : -1;
+                var materialIndex = ResolveComponentMaterial(component, textures, log);
                 foreach (var primitive in componentPrimitives)
                     primitive.MaterialIndex = materialIndex;
                 garmentPrimitives.AddRange(componentPrimitives);
@@ -148,9 +146,7 @@ public static class GlbBuilder
                 AppendDrawable(component.Drawable, mesh, componentPrimitives, pose);
                 if (componentPrimitives.Count == 0) continue;
 
-                var materialIndex = component.Texture != null
-                    ? TryAddTexture(component.Texture, textures, log)
-                    : -1;
+                var materialIndex = ResolveComponentMaterial(component, textures, log);
                 foreach (var primitive in componentPrimitives)
                     primitive.MaterialIndex = materialIndex;
                 allPrimitives.AddRange(componentPrimitives);
@@ -225,6 +221,46 @@ public static class GlbBuilder
             primitive.MaterialIndex = materialByHash.TryGetValue(primitive.TextureHash, out var m)
                 ? m
                 : fallbackMaterial;
+        }
+    }
+
+    /// <summary>
+    /// Picks a component's material: the face compositor's pre-decoded diffuse
+    /// override wins (head/uppr/lowr/feet skin); otherwise the component's own
+    /// GTA texture is decoded as before. -1 leaves the component untextured.
+    /// </summary>
+    private static int ResolveComponentMaterial(
+        PedBodyService.PedComponent component,
+        List<GlbWriter.TextureSpec> textures,
+        ILogger log)
+    {
+        if (component.DiffuseOverride != null)
+            return TryAddRgbaTexture(component.DiffuseOverride, textures, log);
+        return component.Texture != null ? TryAddTexture(component.Texture, textures, log) : -1;
+    }
+
+    /// <summary>
+    /// Appends a pre-decoded straight-RGBA8 image (already R-first, no DDSIO
+    /// swizzle needed) as an embedded PNG; -1 on a malformed buffer. Used for
+    /// the composited face skin diffuses.
+    /// </summary>
+    private static int TryAddRgbaTexture(
+        PedBodyService.DiffuseOverride diffuse,
+        List<GlbWriter.TextureSpec> textures,
+        ILogger log)
+    {
+        try
+        {
+            var width = Math.Max(1, diffuse.Width);
+            var height = Math.Max(1, diffuse.Height);
+            if (diffuse.Rgba.Length < width * height * 4) return -1;
+            textures.Add(new GlbWriter.TextureSpec(PngEncoder.EncodeRgba(diffuse.Rgba, width, height)));
+            return textures.Count - 1;
+        }
+        catch (Exception ex)
+        {
+            log.LogWarning(ex, "Face diffuse override encode failed ({Width}x{Height})", diffuse.Width, diffuse.Height);
+            return -1;
         }
     }
 

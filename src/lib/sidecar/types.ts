@@ -139,6 +139,54 @@ export interface PedAppearanceProp {
 }
 
 /**
+ * One SET_PED_HEAD_OVERLAY slot of the rendered face (Stufe 2) — mirror of the
+ * sidecar PedAppearanceOverlayDto. `index` 255 means "off"; such slots are
+ * dropped before the request (they never reach this type). `colour`/
+ * `colourSecondary` index the 64-entry hair-tint palette and only matter for
+ * the tinted brow/beard/makeup slots (others ignore them server-side).
+ */
+export interface PedAppearanceOverlay {
+  /** Overlay slot id 0..12 (eyebrows=2, beard=1, …). */
+  slot: number;
+  /** Variation index 0..255 (255 = off — omitted, not sent). */
+  index: number;
+  /** 0..1 */
+  opacity: number;
+  /** Palette index 0..63 — only for tinted slots; omitted otherwise. */
+  colour?: number;
+  colourSecondary?: number;
+}
+
+/**
+ * Rendered head/face block (Stufe 2) — mirror of the sidecar PedAppearanceFace
+ * DTO. Drives SET_PED_HEAD_BLEND_DATA (shape + skin tone), the head overlays
+ * and the eye-colour atlas. FaceFeatures (micro-morphs) are intentionally NOT
+ * part of this contract — they need engine morph assets the tool has no honest
+ * way to render, so they stay stored-only. Only effective with a rendered ped
+ * body (same gating as {@link PedAppearance.components}).
+ */
+export interface PedAppearanceFace {
+  /** SET_PED_HEAD_BLEND_DATA shape parents/override (0..45). */
+  shapeFirst: number;
+  shapeSecond: number;
+  shapeThird: number;
+  /** Shape blend 0..1 (0 = 100% first, 1 = 100% second). */
+  shapeMix: number;
+  /** Override (third) shape blend 0..1. */
+  thirdMix: number;
+  /** SET_PED_HEAD_BLEND_DATA skin-tone parents/override (0..45). */
+  skinFirst: number;
+  skinSecond: number;
+  skinThird: number;
+  /** Skin-tone blend 0..1. */
+  skinMix: number;
+  /** Active head overlays (index != 255), ascending by slot. */
+  overlays?: PedAppearanceOverlay[];
+  /** Eye-colour atlas row 0..31. */
+  eyeColour?: number;
+}
+
+/**
  * Mirror of sidecar PedAppearanceDto: component variations + props of the
  * freemode ped body. Only effective when the ped body is rendered; slots the
  * sidecar cannot resolve (DLC indices) fall back to default and are reported
@@ -147,6 +195,12 @@ export interface PedAppearanceProp {
 export interface PedAppearance {
   components?: Partial<Record<ComponentSlotId, PedAppearanceComponent>>;
   props?: PedAppearanceProp[];
+  /**
+   * Rendered face (Stufe 2 — HeadBlend + overlays + eye colour). Only effective
+   * when the ped body is rendered; absent face keeps the Stufe-1 keys
+   * byte-identical (no `|f=…` segment is appended).
+   */
+  face?: PedAppearanceFace;
 }
 
 /** One selectable preview pose (GET /preview/poses) — label is German. */

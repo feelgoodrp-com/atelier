@@ -235,9 +235,62 @@ public static class PreviewEndpoints
             }
         }
 
-        if (components == null && props == null) return null; // empty appearance == default
-        normalized = new PedAppearanceDto(components, props);
+        // Face block: out-of-range NUMERIC fields are CLAMPED (never a 400);
+        // the whole block is dropped only when JSON-structurally absent.
+        var face = NormalizeFace(raw.Face);
+
+        if (components == null && props == null && face == null) return null; // empty appearance == default
+        normalized = new PedAppearanceDto(components, props, face);
         return null;
+    }
+
+    /// <summary>
+    /// Clamps every face field into its contract range (parents 0..45, mixes
+    /// 0..1, overlay slot 0..12 / index 0..255 / opacity 0..1 / colours 0..63,
+    /// eye colour 0..31) and drops overlays that are off (index 255). Per the
+    /// contract a structurally present but out-of-range face is corrected, not
+    /// rejected — so this only returns null when there is no face at all.
+    /// </summary>
+    private static PedFaceDto? NormalizeFace(PedFaceDto? raw)
+    {
+        if (raw == null) return null;
+
+        List<PedFaceOverlayDto>? overlays = null;
+        if (raw.Overlays is { Count: > 0 })
+        {
+            overlays = new List<PedFaceOverlayDto>(raw.Overlays.Count);
+            var seenSlots = new HashSet<int>();
+            foreach (var overlay in raw.Overlays)
+            {
+                if (overlay == null) continue;
+                var slot = Math.Clamp(overlay.Slot, 0, 12);
+                var index = Math.Clamp(overlay.Index ?? PedAppearanceKey.OverlayOff, 0, 255);
+                if (index == PedAppearanceKey.OverlayOff) continue; // layer off — never rendered/keyed
+                // Duplicate slots would make the canonical key ambiguous; the
+                // first wins (later ones are ignored, mirroring component slots).
+                if (!seenSlots.Add(slot)) continue;
+                overlays.Add(new PedFaceOverlayDto(
+                    slot,
+                    index,
+                    overlay.Opacity.HasValue ? Math.Clamp(overlay.Opacity.Value, 0f, 1f) : null,
+                    overlay.Colour.HasValue ? Math.Clamp(overlay.Colour.Value, 0, 63) : null,
+                    overlay.ColourSecondary.HasValue ? Math.Clamp(overlay.ColourSecondary.Value, 0, 63) : null));
+            }
+            if (overlays.Count == 0) overlays = null;
+        }
+
+        return new PedFaceDto(
+            Math.Clamp(raw.ShapeFirst, 0, 45),
+            Math.Clamp(raw.ShapeSecond, 0, 45),
+            Math.Clamp(raw.ShapeThird, 0, 45),
+            Math.Clamp(raw.ShapeMix, 0f, 1f),
+            Math.Clamp(raw.ThirdMix, 0f, 1f),
+            Math.Clamp(raw.SkinFirst, 0, 45),
+            Math.Clamp(raw.SkinSecond, 0, 45),
+            Math.Clamp(raw.SkinThird, 0, 45),
+            Math.Clamp(raw.SkinMix, 0f, 1f),
+            overlays,
+            raw.EyeColour.HasValue ? Math.Clamp(raw.EyeColour.Value, 0, 31) : null);
     }
 
     private static void MapOutfitEndpoint(IEndpointRouteBuilder app)

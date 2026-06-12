@@ -2,6 +2,7 @@ using System.Diagnostics;
 using CodeWalker.GameFiles;
 using CodeWalker.World;
 using Feelgood.Atelier.Sidecar.Api;
+using Feelgood.Atelier.Sidecar.Engine.Face;
 
 namespace Feelgood.Atelier.Sidecar.Engine;
 
@@ -18,8 +19,19 @@ public sealed class PedBodyService
     /// One ped component drawable plus its matching diffuse texture (may be
     /// null). ComponentIndex is the GTA component slot (0=head .. 11=jbib) —
     /// outfit previews use it to REPLACE defaults with selected garments.
+    /// DiffuseOverride, when set, is a straight RGBA8 image (width*height*4)
+    /// that REPLACES the component's diffuse on the GLB — used by the face
+    /// compositor for head/uppr/lowr/feet skin. The GLB builder prefers it over
+    /// <see cref="Texture"/> and skips DDSIO decoding for that component.
     /// </summary>
-    public sealed record PedComponent(int ComponentIndex, Drawable Drawable, Texture? Texture);
+    public sealed record PedComponent(
+        int ComponentIndex,
+        Drawable Drawable,
+        Texture? Texture,
+        DiffuseOverride? DiffuseOverride = null);
+
+    /// <summary>Pre-decoded straight-RGBA8 diffuse that overrides a component's texture.</summary>
+    public sealed record DiffuseOverride(byte[] Rgba, int Width, int Height);
 
     /// <summary>
     /// Default components + the ped's bind-pose skeleton (from its YFT), plus
@@ -87,6 +99,12 @@ public sealed class PedBodyService
     /// <summary>True once the background prewarm finished for the current path.</summary>
     public bool IsPrewarmed { get; private set; }
 
+    // Face rendering (stage 2b): the assets loader + compositor are bound to
+    // the current GameFileCache and rebuilt when the install path changes.
+    // Guarded by _gate together with _cache so they stay consistent.
+    private Face.FaceAssets? _faceAssets;
+    private Face.FaceCompositor? _faceCompositor;
+
     public PedBodyService(ILogger<PedBodyService> log) => _log = log;
 
     /// <summary>
@@ -153,7 +171,9 @@ public sealed class PedBodyService
     {
         var pedData = LoadPed(gtaPath, pedModel);
         var overrides = appearance?.Components;
-        if (overrides == null || overrides.Count == 0)
+        var face = appearance?.Face;
+        // Fast path: nothing to override AND no face -> the prewarmed defaults.
+        if ((overrides == null || overrides.Count == 0) && face == null)
             return new AppearanceComponents(pedData.Components, Array.Empty<string>());
 
         var cache = GetOrCreateCache(gtaPath);
@@ -161,35 +181,118 @@ public sealed class PedBodyService
         var fallbacks = new List<string>();
         var hadTransientFailure = false;
 
-        foreach (var (slot, request) in overrides)
+        if (overrides != null)
         {
-            if (request == null) continue; // validated upstream; defensive
-            if (!Build.GtaSlots.ComponentIds.TryGetValue(slot, out var slotIndex))
+            foreach (var (slot, request) in overrides)
             {
-                // Validated upstream (400) — defensive: report as fallback.
-                fallbacks.Add(slot);
-                continue;
+                if (request == null) continue; // validated upstream; defensive
+                if (!Build.GtaSlots.ComponentIds.TryGetValue(slot, out var slotIndex))
+                {
+                    // Validated upstream (400) — defensive: report as fallback.
+                    fallbacks.Add(slot);
+                    continue;
+                }
+
+                var alt = request.Alt ?? 0;
+                if (request.Drawable == 0 && request.Texture == 0 && alt == 0)
+                    continue; // exactly the ped default — keep the prewarmed component
+
+                var resolved = TryResolveComponent(cache, pedData, gtaPath, pedModel, slot, slotIndex,
+                    request.Drawable, request.Texture, alt, out var transientFailure);
+                hadTransientFailure |= transientFailure;
+                if (resolved == null)
+                {
+                    fallbacks.Add(slot);
+                    continue;
+                }
+
+                bySlot[slotIndex] = new PedComponent(slotIndex, resolved.Drawable, resolved.Texture);
             }
-
-            var alt = request.Alt ?? 0;
-            if (request.Drawable == 0 && request.Texture == 0 && alt == 0)
-                continue; // exactly the ped default — keep the prewarmed component
-
-            var resolved = TryResolveComponent(cache, pedData, gtaPath, pedModel, slot, slotIndex,
-                request.Drawable, request.Texture, alt, out var transientFailure);
-            hadTransientFailure |= transientFailure;
-            if (resolved == null)
-            {
-                fallbacks.Add(slot);
-                continue;
-            }
-
-            bySlot[slotIndex] = new PedComponent(slotIndex, resolved.Drawable, resolved.Texture);
         }
+
+        // Face compositing (stage 2b): re-texture the head/uppr/lowr/feet skin
+        // diffuses from the HeadBlend skin tone + overlays + eye colour. The
+        // garment/prop slots are never touched. A region without a resolvable
+        // parent skin keeps its (already merged) component diffuse. A TRANSIENT
+        // face-asset miss (IO contention) flags hadTransientFailure so the GLB
+        // is not cached (same poisoning guard as components).
+        if (face != null)
+            hadTransientFailure |= ApplyFace(gtaPath, pedModel, face, bySlot, fallbacks);
 
         var merged = bySlot.Values.OrderBy(c => c.ComponentIndex).ToList();
         fallbacks.Sort(StringComparer.Ordinal);
         return new AppearanceComponents(merged, fallbacks, hadTransientFailure);
+    }
+
+    /// <summary>
+    /// Runs the face compositor and merges its composited diffuses onto the
+    /// head/uppr/lowr/feet components as RGBA overrides. Adds the compositor's
+    /// granular fallback labels ("skin", "overlay:&lt;slot&gt;", "eye") so the
+    /// client can name WHICH face source could not be rendered (an out-of-range
+    /// overlay slot is skipped, not clamped to a wrong decal). A hard exception
+    /// degrades to a single "face" fallback. The compositor itself is
+    /// deterministic + LRU-cached, so this never causes a transient cache
+    /// poison — only honest, repeatable fallbacks.
+    /// </summary>
+    /// <summary>Returns true when a TRANSIENT face-asset miss means the GLB must not be cached.</summary>
+    private bool ApplyFace(
+        string gtaPath,
+        string pedModel,
+        PedFaceDto face,
+        Dictionary<int, PedComponent> bySlot,
+        List<string> fallbacks)
+    {
+        var compositor = GetFaceCompositor(gtaPath);
+        var isFemale = string.Equals(pedModel, "mp_f_freemode_01", StringComparison.OrdinalIgnoreCase);
+        var faceKeyPart = PedAppearanceKey.Canonical(new PedAppearanceDto(null, null, face));
+
+        FaceCompositor.FaceResult result;
+        try
+        {
+            result = compositor.Composite(pedModel, isFemale, face, faceKeyPart);
+        }
+        catch (Exception ex)
+        {
+            // Face rendering must never break the ped-body preview — degrade to
+            // the untextured/default skin and report a fallback. A bare
+            // exception is treated as deterministic (it would recur); only the
+            // classified TransientFaceLoadException is handled inside Composite.
+            _log.LogWarning(ex, "Face compositing failed for {Ped} — keeping default skin", pedModel);
+            if (!fallbacks.Contains("face")) fallbacks.Add("face");
+            return false;
+        }
+
+        foreach (var (componentIndex, composited) in result.ByComponent)
+        {
+            if (!bySlot.TryGetValue(componentIndex, out var component)) continue;
+            bySlot[componentIndex] = component with
+            {
+                DiffuseOverride = new DiffuseOverride(composited.Rgba, composited.Width, composited.Height),
+            };
+        }
+
+        foreach (var label in result.Fallbacks)
+            if (!fallbacks.Contains(label)) fallbacks.Add(label);
+
+        return result.HadTransientFailure;
+    }
+
+    /// <summary>
+    /// Lazily builds the face assets loader + compositor against the current
+    /// GameFileCache (rebuilt when the install path changes). Guarded by _gate
+    /// so it stays consistent with the cache it wraps.
+    /// </summary>
+    private FaceCompositor GetFaceCompositor(string gtaPath)
+    {
+        var cache = GetOrCreateCache(gtaPath);
+        lock (_gate)
+        {
+            if (_faceCompositor != null && ReferenceEquals(_cache, cache))
+                return _faceCompositor;
+            _faceAssets = new Face.FaceAssets(cache, _log);
+            _faceCompositor = new Face.FaceCompositor(_faceAssets, _log);
+            return _faceCompositor;
+        }
     }
 
     /// <summary>
@@ -549,6 +652,10 @@ public sealed class PedBodyService
 
             _cachePath = gtaPath;
             _cache = cache;
+            // Face loader/compositor are bound to this cache instance; drop the
+            // old ones so they get rebuilt against the new install.
+            _faceAssets = null;
+            _faceCompositor = null;
 
             // CodeWalker loads queued files (ydd/ytd/ymt requests from
             // Ped.SetComponentDrawable -> TryLoadEnqueue) on a "content
