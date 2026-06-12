@@ -8,6 +8,7 @@ import { WorkbenchScreen } from "@/screens/workbench";
 import { SettingsScreen } from "@/screens/settings";
 import { BootSplash, LoginGate } from "@/screens/login";
 import { OnboardingWizard } from "@/screens/onboarding";
+import { HeroBackdrop } from "@/components/shell/hero-backdrop";
 import { useUiStore } from "@/lib/stores/ui-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useSidecarHealth } from "@/lib/sidecar/client";
@@ -98,8 +99,14 @@ function App() {
       ) : !authorized ? (
         <LoginGate />
       ) : (
-        /* No solid bg here — the translucent body tint + OS acrylic blur show through. */
-        <div className="grid-background flex h-full flex-col text-foreground">
+        <div className="relative flex h-full flex-col overflow-hidden text-foreground">
+          {/* Hero video backdrop on Home + Settings; the workbench keeps a
+              plain grid so the 3D preview stays distraction free. */}
+          {screen === "workbench" ? (
+            <div className="grid-background absolute inset-0" aria-hidden="true" />
+          ) : (
+            <HeroBackdrop strong />
+          )}
           <TopBar />
           <main className="relative z-10 min-h-0 flex-1 overflow-hidden">
             {screen === "launcher" && <LauncherScreen />}

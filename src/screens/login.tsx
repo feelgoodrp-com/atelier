@@ -19,7 +19,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import atelierLogo from "@/assets/atelier-logo.png";
-import heroVideo from "@/assets/hero-desktop.webm";
+import { HeroBackdrop } from "@/components/shell/hero-backdrop";
 import { WindowControls } from "@/components/shell/top-bar";
 import { GrzybeekCredits } from "@/components/shell/credits";
 import { useAuthStore, type LoginPhase } from "@/lib/stores/auth-store";
@@ -80,23 +80,8 @@ function LoginProgress({ phase }: { phase: Exclude<LoginPhase, "idle"> }) {
 export function GateShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-[#0b0b0b] text-foreground">
-      {/* Hero video background, a darkening gradient veil over it (so the card
-          + text stay readable), and the subtle grid on top for brand texture. */}
-      <video
-        className="absolute inset-0 z-0 h-full w-full object-cover"
-        autoPlay
-        loop
-        muted
-        playsInline
-        aria-hidden="true"
-      >
-        <source src={heroVideo} type="video/webm" />
-      </video>
-      <div
-        className="absolute inset-0 z-0 bg-gradient-to-b from-[#0b0b0b]/75 via-[#0b0b0b]/55 to-[#0b0b0b]/92"
-        aria-hidden="true"
-      />
-      <div className="grid-background absolute inset-0 z-0 opacity-50" aria-hidden="true" />
+      {/* Hero video + gradient veil + subtle grid (shared with launcher/settings). */}
+      <HeroBackdrop />
 
       {/* Minimal title strip: draggable, window controls only. */}
       <div
