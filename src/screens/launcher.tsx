@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
-import { Clock, Folder, FolderOpen, Loader2, PackageOpen, Plus } from "lucide-react";
+import {
+  Clock,
+  Cloud,
+  CloudOff,
+  Folder,
+  FolderOpen,
+  Loader2,
+  PackageOpen,
+  Plus,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
@@ -31,6 +40,10 @@ import {
   type RecentProject,
 } from "@/lib/recents";
 import { useWorkbenchStore } from "@/lib/stores/workbench-store";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { listMyPacks, type Pack } from "@/lib/sync/api-client";
+import { clonePackToLocal } from "@/lib/sync/clone";
+import { formatRelativeTime } from "@/lib/format";
 
 function errorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -51,6 +64,16 @@ export function LauncherScreen() {
   /** Which recent entry is currently loading (spinner on that row). */
   const [openingPath, setOpeningPath] = useState<string | null>(null);
 
+  // Cloud projects: every approved team member sees all packs and can clone
+  // one into a fresh local project with a single click.
+  const apiReady = useAuthStore(
+    (s) => s.status === "loggedIn" && s.user?.status === "approved",
+  );
+  /** null = still loading, [] = loaded but empty/unavailable. */
+  const [cloudPacks, setCloudPacks] = useState<Pack[] | null>(null);
+  /** packId of the pack currently being cloned (spinner on that row). */
+  const [cloningId, setCloningId] = useState<string | null>(null);
+
   useEffect(() => {
     getRecentProjects()
       .then(setRecents)
@@ -58,6 +81,18 @@ export function LauncherScreen() {
         /* store plugin unavailable (plain browser dev) */
       });
   }, []);
+
+  useEffect(() => {
+    if (!apiReady) {
+      setCloudPacks(null);
+      return;
+    }
+    setCloudPacks(null);
+    listMyPacks()
+      .then(setCloudPacks)
+      // Sidecar/API unreachable — render the empty hint rather than an error.
+      .catch(() => setCloudPacks([]));
+  }, [apiReady]);
 
   const openFromDir = useCallback(async (dirPath: string) => {
     setOpening(true);
@@ -97,6 +132,35 @@ export function LauncherScreen() {
     }
   }, []);
 
+  const cloneCloudPack = useCallback(async (pack: Pack) => {
+    let parentDir: string | null;
+    try {
+      const selected = await openDialog({
+        directory: true,
+        title: "Speicherort für den Klon wählen",
+      });
+      parentDir = typeof selected === "string" ? selected : null;
+    } catch (e) {
+      toast.error("Ordner konnte nicht gewählt werden", {
+        description: errorMessage(e),
+      });
+      return;
+    }
+    if (!parentDir) return;
+
+    setCloningId(pack.packId);
+    try {
+      await clonePackToLocal(pack, parentDir);
+      toast.success(`„${pack.name}“ geklont und geöffnet`);
+    } catch (e) {
+      toast.error("Cloud-Projekt konnte nicht geklont werden", {
+        description: errorMessage(e),
+      });
+    } finally {
+      setCloningId(null);
+    }
+  }, []);
+
   const actions = [
     {
       title: "Neues Projekt",
@@ -129,7 +193,7 @@ export function LauncherScreen() {
           Willkommen im atelier
         </h1>
         <p className="mt-1 text-sm text-white/50">
-          Das feelgood-Werkzeug für GTA&nbsp;V Addon-Kleidung.
+          Das beste Werkzeug für GTA&nbsp;V Addon-Kleidung.
         </p>
 
         <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -160,6 +224,72 @@ export function LauncherScreen() {
             </Card>
           ))}
         </div>
+
+        {apiReady && (
+          <>
+            <h2 className="mt-12 text-sm font-medium uppercase tracking-wider text-white/40">
+              Cloud-Projekte
+            </h2>
+            {cloudPacks === null ? (
+              <div className="glass-border-subtle mt-3 flex flex-col gap-2 rounded-[10px] p-2">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="h-12 animate-pulse rounded-[10px] bg-white/5"
+                  />
+                ))}
+              </div>
+            ) : cloudPacks.length === 0 ? (
+              <div className="glass-border-subtle mt-3 flex flex-col items-center justify-center rounded-[10px] px-6 py-12 text-center">
+                <CloudOff className="h-8 w-8 text-white/25" />
+                <p className="mt-3 text-sm font-medium text-white/60">
+                  Keine Cloud-Projekte
+                </p>
+                <p className="mt-1 max-w-sm text-xs text-white/40">
+                  Sobald ein Team-Mitglied ein Pack in die Cloud lädt, erscheint
+                  es hier zum Klonen.
+                </p>
+              </div>
+            ) : (
+              <div className="glass-border-subtle mt-3 flex flex-col rounded-[10px] p-2">
+                {cloudPacks.map((pack) => {
+                  const cloning = cloningId === pack.packId;
+                  return (
+                    <button
+                      key={pack.packId}
+                      type="button"
+                      disabled={cloningId !== null}
+                      onClick={() => void cloneCloudPack(pack)}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left transition-colors hover:bg-white/10 disabled:opacity-50",
+                        cloning && "bg-[#5865F2]/10 !opacity-100",
+                      )}
+                    >
+                      {cloning ? (
+                        <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[#7289DA]" />
+                      ) : (
+                        <Cloud className="h-4 w-4 shrink-0 text-[#7289DA]" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-white/85">
+                          {pack.name}
+                        </p>
+                        <p className="truncate text-xs text-white/40">
+                          {cloning
+                            ? "Wird geklont…"
+                            : `Rev ${pack.headRevision}`}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-xs text-white/35">
+                        {formatRelativeTime(pack.updatedAt)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        )}
 
         <h2 className="mt-12 text-sm font-medium uppercase tracking-wider text-white/40">
           Zuletzt geöffnet

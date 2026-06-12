@@ -56,6 +56,17 @@ export function joinPath(...parts: string[]): string {
     .join("/");
 }
 
+/** Turns a project name into a safe Windows folder name. */
+export function sanitizeFolderName(name: string): string {
+  return (
+    name
+      .trim()
+      .replace(/[\\/:*?"<>|]+/g, "-")
+      .replace(/[. ]+$/g, "")
+      .trim() || "atelier-projekt"
+  );
+}
+
 function serializeProject(project: AtelierProject): string {
   return `${JSON.stringify(project, null, 2)}\n`;
 }

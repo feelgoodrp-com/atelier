@@ -438,11 +438,17 @@ export async function createPack(name: string, description?: string): Promise<Pa
   return res.pack;
 }
 
-/** Packs the current user owns or is a member of (admins see all). */
+/**
+ * All non-archived team packs — every approved user has access (team-wide
+ * model: the server lists all packs regardless of owner/membership).
+ */
 export async function listMyPacks(): Promise<Pack[]> {
   const res = await request<{ packs: Pack[] }>("/api/v1/packs");
   return res.packs;
 }
+
+/** Semantic alias for {@link listMyPacks} (team-wide pack access). */
+export const listTeamPacks = listMyPacks;
 
 export async function getPack(packId: string): Promise<Pack> {
   const res = await request<{ pack: Pack }>(`/api/v1/packs/${encodeURIComponent(packId)}`);

@@ -13,19 +13,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { joinPath } from "@/lib/project/io";
+import { joinPath, sanitizeFolderName } from "@/lib/project/io";
 import { createAndOpenProject } from "@/lib/project/session";
-
-/** Turns a project name into a safe Windows folder name. */
-function sanitizeFolderName(name: string): string {
-  return (
-    name
-      .trim()
-      .replace(/[\\/:*?"<>|]+/g, "-")
-      .replace(/[. ]+$/g, "")
-      .trim() || "atelier-projekt"
-  );
-}
 
 function errorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
