@@ -352,9 +352,15 @@ Checkout entweder `sidecar:publish` ausführen oder eine 0-Byte-Platzhalterdatei
 - **CI** (`.github/workflows/ci.yml`, PRs + master): Frontend-Typecheck +
   Bundle, Projekt-Selftest, Sidecar-`dotnet build`, `cargo check` des
   Tauri-Hosts (mit Platzhalter-Sidecar-Exe — die echte baut nur das Release).
-- **Release** (`.github/workflows/release.yml`): Tag `vX.Y.Z` pushen
-  (muss der Version in `src-tauri/tauri.conf.json` entsprechen) →
-  Sidecar-Publish + `tauri build` auf `windows-latest` → GitHub-Release
-  mit NSIS-Installer (`*-setup.exe`) und MSI.
+- **Release** (`.github/workflows/release.yml`, `windows-latest`) — zwei Wege:
+  - **Actions → „Release" → „Run workflow"** und `patch`/`minor`/`major`
+    wählen: bumpt die Version überall (`package.json`,
+    `src-tauri/tauri.conf.json`, `Cargo.toml`/`Cargo.lock`), committet
+    `chore: release vX.Y.Z` auf master, taggt und baut.
+  - **Tag `vX.Y.Z` selbst pushen** (muss `src-tauri/tauri.conf.json`
+    entsprechen): baut diesen Tag ohne Bump.
+  Ergebnis am GitHub-Release: **NSIS-Installer** (`*-setup.exe`), **MSI** und
+  eine **Portable-ZIP** (App-Exe + Sidecar, ohne Installation —
+  `atelier-X.Y.Z-portable.zip`).
 - `sidecar/publish.ps1` findet dotnet selbst: `ATELIER_DOTNET`-Override →
   `~/.dotnet8` (lokale Maschine) → `dotnet` im PATH (CI).
