@@ -4,10 +4,10 @@
 
 # atelier
 
-**Das kostenlose, quelloffene GTA-V-Addon-Clothing-Tool.**
+**The free, open-source GTA-V addon-clothing tool.**
 
-Kleidung verwalten, in Echtzeit-3D prüfen und mit einem Klick für
-**FiveM · Singleplayer · RageMP · alt:V** bauen.
+Manage clothing, preview it in real-time 3D, and build it in one click for
+**FiveM · Singleplayer · RageMP · alt:V**.
 
 [![License: PolyForm NC 1.0.0](https://img.shields.io/badge/License-PolyForm%20NC%201.0.0-5865F2)](LICENSE.md)
 &nbsp;![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-1f1f1f)
@@ -15,123 +15,122 @@ Kleidung verwalten, in Echtzeit-3D prüfen und mit einem Klick für
 
 [**⬇ Download**](https://github.com/feelgoodrp-com/atelier/releases) ·
 [Backend](https://github.com/feelgoodrp-com/atelier-api) ·
-[Im Geiste von grzyClothTool](https://github.com/grzybeek/grzyClothTool)
+[In the spirit of grzyClothTool](https://github.com/grzybeek/grzyClothTool)
 
 </div>
 
 ---
 
-## Was ist atelier?
+## What is atelier?
 
-atelier ist eine Windows-Desktop-App zum Bauen, Prüfen und Veröffentlichen von
-GTA-V-Addon-Kleidung — eigenständig neu gebaut im Geiste von grzyClothTool. Du
-verwaltest Drawables in einer Werkbank, prüfst alles in Echtzeit-3D und baust
-mit einem Klick ein in-game-taugliches Addon. Optional arbeitet ihr im Team über
-eine Cloud.
+atelier is a Windows desktop app for building, validating and publishing GTA-V
+addon clothing — built from scratch in the spirit of grzyClothTool. You manage
+drawables in a workbench, review everything in real-time 3D, and build an
+in-game-ready addon in one click. Optionally, you collaborate as a team over a
+cloud.
 
 ## Features
 
-- **3D-Echtzeit-Vorschau** — mehrere Drawables gleichzeitig, Kamera-Presets
-  (Kopf/Torso/Beine/Füße), Animations-Posen, Hair-Shrink & Heel-Height live,
-  optional auf dem echten Ped-Body. Texturen und Ped-Props inklusive.
-- **Werkbank** — Kategoriebaum (12 Komponenten- + 6 Prop-Slots mit Warn-Badges),
-  durchsuchbare Drawable-Liste (Reorder, Multi-Select), Inspector und
-  Texturen-Panel (a–z) mit Duplikat-Erkennung.
-- **Bauen** — echte binäre `CPedVariationInfo`-YMTs via CodeWalker für **FiveM**,
-  **Singleplayer**, **RageMP** und **alt:V**; automatischer 128er-Split,
-  Shop-Metas und `fxmanifest.lua`.
-- **Textur-Optimierung** — BC1/BC3/BC7-Re-Encode, Downscale & Mips, einzeln oder
-  als Batch über alle übergroßen Texturen.
-- **Team-Cloud** _(optional)_ — Push/Pull gegen versionierte Pack-Revisionen,
-  Live-Presence und Advisory-Locks (über [atelier-api](https://github.com/feelgoodrp-com/atelier-api)).
-- **Import-Wizard** — bestehende Packs sowie `.ydd`/`.ytd`/`.yld` per Drag & Drop,
-  mit automatischer Klassifizierung.
+- **Real-time 3D preview** — multiple drawables at once, camera presets
+  (head/torso/legs/feet), animation poses, hair-shrink & heel-height live,
+  optionally on the real ped body. Textures and ped props included.
+- **Workbench** — category tree (12 component + 6 prop slots with warning
+  badges), searchable drawable list (reorder, multi-select), inspector and
+  texture panel (a–z) with duplicate detection.
+- **Build** — real binary `CPedVariationInfo` YMTs via CodeWalker for **FiveM**,
+  **Singleplayer**, **RageMP** and **alt:V**; automatic 128-split, shop metas
+  and `fxmanifest.lua`.
+- **Texture optimization** — BC1/BC3/BC7 re-encode, downscale & mips, individually
+  or as a batch across all oversized textures.
+- **Team cloud** _(optional)_ — push/pull against versioned pack revisions, live
+  presence and advisory locks (via [atelier-api](https://github.com/feelgoodrp-com/atelier-api)).
+- **Import wizard** — existing packs as well as `.ydd`/`.ytd`/`.yld` via drag &
+  drop, with automatic classification.
 
 ## Installation
 
-Neueste Version aus den
-[**GitHub-Releases**](https://github.com/feelgoodrp-com/atelier/releases):
+Grab the latest version from the
+[**GitHub releases**](https://github.com/feelgoodrp-com/atelier/releases):
 
-| Variante | Datei | Wann |
+| Variant | File | When |
 | --- | --- | --- |
-| Installer | `atelier-*-setup.exe` | Standardweg |
-| MSI | `atelier-*.msi` | verwaltete Umgebungen |
-| Portable | `atelier-*-portable.zip` | entpacken & starten (App + Sidecar enthalten) |
+| Installer | `atelier-*-setup.exe` | the default |
+| MSI | `atelier-*.msi` | managed environments |
+| Portable | `atelier-*-portable.zip` | unzip & run (app + sidecar included) |
 
-Beim ersten Start führt dich ein kurzer Assistent durch Server-Adresse
-(optional, für die Cloud), GTA-V-Pfad und Logs.
+On first launch a short wizard walks you through the server address (optional,
+for the cloud), the GTA-V path and logs.
 
-## Aus dem Quellcode bauen
+## Build from source
 
-Voraussetzungen: [Bun](https://bun.sh), Rust (stable) und das .NET 8 SDK
-(Details im [`sidecar/README.md`](sidecar/README.md)).
+Requirements: [Bun](https://bun.sh), Rust (stable) and the .NET 8 SDK
+(details in [`sidecar/README.md`](sidecar/README.md)).
 
 ```powershell
 bun install
-bun run tauri dev        # startet die App und spawnt den .NET-Sidecar automatisch
+bun run tauri dev        # starts the app and spawns the .NET sidecar automatically
 ```
 
-Nützliche Skripte:
+Useful scripts:
 
 ```powershell
-bun run build             # Frontend-Typecheck + Vite-Build
-bun run selftest:project  # Projektformat-/Sync-Selbsttest
-bun run sidecar:publish   # baut den Sidecar (src-tauri/binaries/…)
-bun run tauri:build       # Release-Bundle (Installer + Portable)
+bun run build             # frontend typecheck + Vite build
+bun run selftest:project  # project-format / sync self-test
+bun run sidecar:publish   # builds the sidecar (src-tauri/binaries/…)
+bun run tauri:build       # release bundle (installer + portable)
 ```
 
-> `src-tauri/binaries/` ist gitignored. Bei frischem Checkout entweder
-> `bun run sidecar:publish` ausführen oder eine 0-Byte-Platzhalterdatei
-> `fg-atelier-sidecar-x86_64-pc-windows-msvc.exe` anlegen, damit
-> `tauri dev`/`tauri build` grün bleiben.
+> `src-tauri/binaries/` is gitignored. On a fresh checkout either run
+> `bun run sidecar:publish` or create a 0-byte placeholder
+> `fg-atelier-sidecar-x86_64-pc-windows-msvc.exe` so that
+> `tauri dev`/`tauri build` stay green.
 
-## Architektur
+## Architecture
 
 ```
 ┌────────────────────────────┐  spawn   ┌──────────────────────────────┐
-│  atelier (Desktop-App)     │ ───────► │  fg-atelier-sidecar (.NET 8) │
-│  Tauri 2 · React 19 · TS   │ ◄─────── │  CodeWalker.Core — YDD/YTD-  │
-│                            │  stdout  │  Parsing, 3D-GLB, YMT-Build  │
+│  atelier (desktop app)     │ ───────► │  fg-atelier-sidecar (.NET 8) │
+│  Tauri 2 · React 19 · TS   │ ◄─────── │  CodeWalker.Core — YDD/YTD    │
+│                            │  stdout  │  parsing, 3D GLB, YMT build   │
 └──────────────┬─────────────┘          └──────────────────────────────┘
-               │ HTTPS (optional, fürs Team)
+               │ HTTPS (optional, for teams)
                ▼
         ┌────────────────────┐
-        │  atelier-api (Bun) │  Discord-Login, Cloud-Sync, Storage
+        │  atelier-api (Bun) │  Discord login, cloud sync, storage
         └────────────────────┘
 ```
 
 - **App** — Tauri 2 (Rust) + React 19 + Vite + Tailwind (dark-only:
-  `#0b0b0b`, Blurple `#5865F2`, Sora).
-- **Sidecar** — .NET-8-Minimal-API, lokal von der App gespawnt; nutzt
-  CodeWalker.Core fürs Parsen, die 3D-Vorschau und echte binäre YMTs.
+  `#0b0b0b`, blurple `#5865F2`, Sora).
+- **Sidecar** — .NET 8 minimal API, spawned locally by the app; uses
+  CodeWalker.Core for parsing, the 3D preview and real binary YMTs.
 - **API** _(optional)_ — [atelier-api](https://github.com/feelgoodrp-com/atelier-api),
-  nur für Login & Team-Cloud nötig.
+  only needed for login & the team cloud.
 
-## Lizenz
+## License
 
-atelier steht unter der **[PolyForm Noncommercial License 1.0.0](LICENSE.md)**.
+atelier is released under the **[PolyForm Noncommercial License 1.0.0](LICENSE.md)**.
 
-✅ Du darfst es **nutzen, verändern, weitergeben und Forks/eigene Builds
-erstellen** — für **nicht-kommerzielle** Zwecke (Hobby, Community, Lernen).
-🚫 **Verkauf und kommerzielle Nutzung sind nicht gestattet.**
-Behalte den Copyright-Hinweis (`Required Notice` in der Lizenz) bei.
+✅ You may **use, modify, share and create forks/your own builds** — for
+**noncommercial** purposes (hobby, community, learning).
+🚫 **Selling and commercial use are not permitted.**
+Keep the copyright line (`Required Notice` in the license) intact.
 
-### Drittanbieter-Komponenten
+### Third-party components
 
-- **CodeWalker.Core** ([dexyfex](https://github.com/dexyfex/CodeWalker)) — im
-  Sidecar als Bibliothek gelinkt (vendored unter
-  `sidecar/third_party/CodeWalker.Core/`, unverändert), unter der Lizenz des
-  Originalprojekts.
+- **CodeWalker.Core** ([dexyfex](https://github.com/dexyfex/CodeWalker)) — linked
+  as a library in the sidecar (vendored under
+  `sidecar/third_party/CodeWalker.Core/`, unmodified), under the original
+  project's license.
 - **grzyClothTool** ([grzybeek](https://github.com/grzybeek/grzyClothTool)) —
-  **GPL-3.0**, dient ausschließlich als *Referenz & Inspiration*. Es wird
-  **kein Code kopiert oder gelinkt**.
-- Tauri, React, three.js und weitere Abhängigkeiten unter ihren jeweiligen
-  Lizenzen.
+  **GPL-3.0**, used solely as a *reference & inspiration*. **No code is copied
+  or linked.**
+- Tauri, React, three.js and other dependencies under their respective licenses.
 
 ## Credits
 
-- **[dexyfex](https://github.com/dexyfex/CodeWalker)** — CodeWalker, das Herz
-  der 3D-Vorschau und der YMT-Pipeline. ❤️
-- **[grzybeek](https://github.com/grzybeek/grzyClothTool)** — grzyClothTool, die
-  Inspiration und Vorlage.
-- Entwickelt vom **feelgood-Team**.
+- **[dexyfex](https://github.com/dexyfex/CodeWalker)** — CodeWalker, the heart of
+  the 3D preview and the YMT pipeline. ❤️
+- **[grzybeek](https://github.com/grzybeek/grzyClothTool)** — grzyClothTool, the
+  inspiration and blueprint.
+- Built by the **feelgood team**.
