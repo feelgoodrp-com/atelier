@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="src/assets/atelier-logo.png" width="116" alt="atelier by feelgood" />
+<img src="src/assets/atelier-logo.png" width="116" alt="atelier" />
 
-# atelier <sub>· by feelgood</sub>
+# atelier
 
-**Das kostenlose GTA-V-Addon-Clothing-Tool der feelgood-Community.**
+**Das kostenlose, quelloffene GTA-V-Addon-Clothing-Tool.**
 
 Kleidung verwalten, in Echtzeit-3D prüfen und mit einem Klick für
 **FiveM · Singleplayer · RageMP · alt:V** bauen.
@@ -134,4 +134,4 @@ Behalte den Copyright-Hinweis (`Required Notice` in der Lizenz) bei.
   der 3D-Vorschau und der YMT-Pipeline. ❤️
 - **[grzybeek](https://github.com/grzybeek/grzyClothTool)** — grzyClothTool, die
   Inspiration und Vorlage.
-- Die **feelgood-Community** — für alle. Fuck Gatekeeping.
+- Entwickelt vom **feelgood-Team**.
