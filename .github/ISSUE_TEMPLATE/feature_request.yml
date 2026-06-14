@@ -1,0 +1,16 @@
+name: ✨ Feature request
+description: Suggest an idea or improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What would you like atelier to do?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why / use case
+      description: What problem does it solve, or what does it make easier?

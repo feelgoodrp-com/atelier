@@ -1,0 +1,29 @@
+name: 🐛 Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+  - type: input
+    id: version
+    attributes:
+      label: atelier version
+      placeholder: e.g. v0.2.0 (or the installer filename)
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: App or sidecar logs (Settings → Logs) and/or screenshots, if any.
