@@ -131,6 +131,13 @@ export interface PedAppearanceExtras {
 /** Named appearance preset (character popover). */
 export interface AppearancePreset {
   name: string;
+  /**
+   * i18n key for built-in presets ("preview:presets.*") — rendered at display
+   * time instead of {@link name}, which stays the STABLE identity (lookups,
+   * isStandardPresetName, persisted user-preset shadowing). User presets carry
+   * no key and render their literal {@link name}.
+   */
+  nameKey?: string;
   /** Gender the preset was authored for (null = either). */
   pedModel: PedModel | null;
   /**
@@ -702,6 +709,7 @@ export function hasUnrenderedExtras(
 export const STANDARD_APPEARANCE_PRESETS: ReadonlyArray<AppearancePreset> = [
   {
     name: "Standard (männlich)",
+    nameKey: "presets.standardMale",
     pedModel: "mp_m_freemode_01",
     appearance: {
       components: {
@@ -717,6 +725,7 @@ export const STANDARD_APPEARANCE_PRESETS: ReadonlyArray<AppearancePreset> = [
   },
   {
     name: "Standard (weiblich)",
+    nameKey: "presets.standardFemale",
     pedModel: "mp_f_freemode_01",
     appearance: {
       components: {

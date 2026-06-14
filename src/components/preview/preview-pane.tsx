@@ -8,6 +8,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ChevronDown,
   Focus,
@@ -105,16 +106,16 @@ function OverlayChip({
 }
 
 function SidecarUnavailableHint() {
+  const { t } = useTranslation("preview");
   const [restarting, setRestarting] = useState(false);
   return (
     <div className="flex h-full flex-col items-center justify-center px-6 text-center">
       <div className="rounded-[10px] border border-red-500/25 bg-red-500/10 px-5 py-4">
         <p className="text-sm font-medium text-red-300">
-          Sidecar nicht verbunden
+          {t("pane.sidecarUnavailable.heading")}
         </p>
         <p className="mt-1 max-w-72 text-xs text-red-200/70">
-          Die 3D-Vorschau benötigt den lokalen Sidecar-Prozess. Starte ihn neu
-          oder prüfe Einstellungen → Sidecar.
+          {t("pane.sidecarUnavailable.body")}
         </p>
         <Button
           size="sm"
@@ -124,9 +125,9 @@ function SidecarUnavailableHint() {
           onClick={() => {
             setRestarting(true);
             restartSidecar()
-              .then(() => toast.success("Sidecar wird neu gestartet"))
+              .then(() => toast.success(t("pane.sidecarUnavailable.restarting")))
               .catch((e: unknown) =>
-                toast.error("Neustart fehlgeschlagen", {
+                toast.error(t("pane.sidecarUnavailable.restartFailed"), {
                   description: e instanceof Error ? e.message : String(e),
                 }),
               )
@@ -134,7 +135,7 @@ function SidecarUnavailableHint() {
           }}
         >
           <RotateCcw className="h-3.5 w-3.5" />
-          Sidecar neu starten
+          {t("pane.sidecarUnavailable.restart")}
         </Button>
       </div>
     </div>
@@ -142,24 +143,26 @@ function SidecarUnavailableHint() {
 }
 
 function EmptySelectionHint({ withoutYdd }: { withoutYdd: number }) {
+  const { t } = useTranslation("preview");
   return (
     <div className="flex h-full flex-col items-center justify-center px-6 text-center">
       <div className="glass-border-subtle flex h-12 w-12 items-center justify-center rounded-[10px]">
         <Rotate3d className="h-5 w-5 text-white/30" />
       </div>
       <p className="mt-3 text-sm font-medium text-white/60">
-        {withoutYdd > 0 ? "Kein YDD-Mesh in der Auswahl" : "Nichts ausgewählt"}
+        {withoutYdd > 0 ? t("pane.empty.noYdd") : t("pane.empty.nothing")}
       </p>
       <p className="mt-1 max-w-64 text-xs text-white/35">
         {withoutYdd > 0
-          ? "Die ausgewählten Drawables haben kein YDD-Mesh — weise zuerst eines zu."
-          : "Wähle Drawables in der Liste aus, um sie hier in 3D zu sehen (Mehrfachauswahl = Outfit)."}
+          ? t("pane.empty.noYddHint")
+          : t("pane.empty.nothingHint")}
       </p>
     </div>
   );
 }
 
 export function PreviewPane() {
+  const { t } = useTranslation("preview");
   const project = useProjectStore((s) => s.project);
   const projectDir = useProjectStore((s) => s.projectDir);
   const selection = useProjectStore((s) => s.selection);
@@ -238,8 +241,8 @@ export function PreviewPane() {
   const lastOverCap = useRef(0);
   useEffect(() => {
     if (overCap > 0 && lastOverCap.current === 0) {
-      toast.info(`Vorschau zeigt maximal ${PREVIEW_MAX_MODELS} Drawables`, {
-        description: `${overCap} weitere ausgewählte Drawables werden nicht gerendert.`,
+      toast.info(t("pane.capToast.title", { count: PREVIEW_MAX_MODELS }), {
+        description: t("pane.capToast.description", { count: overCap }),
       });
     }
     lastOverCap.current = overCap;
@@ -453,8 +456,8 @@ export function PreviewPane() {
       if (entry?.status === "error") {
         chips.push({
           id: drawable.id,
-          label: drawable.label || "(ohne Namen)",
-          message: entry.error ?? "Unbekannter Fehler",
+          label: drawable.label || t("pane.noName"),
+          message: entry.error ?? t("pane.unknownError"),
           retry: () => retryGlb(key, request),
         });
         continue;
@@ -463,14 +466,14 @@ export function PreviewPane() {
       if (parseError) {
         chips.push({
           id: drawable.id,
-          label: drawable.label || "(ohne Namen)",
+          label: drawable.label || t("pane.noName"),
           message: parseError,
           retry: () => retryGlb(key, request),
         });
       }
     }
     return chips;
-  }, [requests, entries, parseErrors, retryGlb]);
+  }, [requests, entries, parseErrors, retryGlb, t]);
 
   /** Poly/vertex totals — GLB headers first, /parse/ydd stats as fallback. */
   const stats = useMemo(() => {
@@ -507,14 +510,16 @@ export function PreviewPane() {
       const meta = drawable.ydd ? yddMeta[drawable.ydd.hash] : undefined;
       if (meta?.status !== "ready") continue;
       const missing: string[] = [];
-      if (meta.drawables.some((info) => !info.lods.med)) missing.push("Med");
-      if (meta.drawables.some((info) => !info.lods.low)) missing.push("Low");
+      if (meta.drawables.some((info) => !info.lods.med))
+        missing.push(t("lod.med"));
+      if (meta.drawables.some((info) => !info.lods.low))
+        missing.push(t("lod.low"));
       if (missing.length > 0) {
-        warnings.push({ label: drawable.label || "(ohne Namen)", missing });
+        warnings.push({ label: drawable.label || t("pane.noName"), missing });
       }
     }
     return warnings;
-  }, [rendered, yddMeta]);
+  }, [rendered, yddMeta, t]);
 
   const untextured = useMemo(
     () => rendered.filter((d) => d.textures.length === 0),
@@ -530,7 +535,7 @@ export function PreviewPane() {
       <div className="flex h-10 shrink-0 items-center gap-2 border-b border-white/8 px-3">
         <Rotate3d className="h-3.5 w-3.5 shrink-0 text-white/40" />
         <span className="text-xs font-semibold uppercase tracking-wider text-white/50">
-          3D-Vorschau
+          {t("pane.title")}
         </span>
         {rendered.length > 0 && (
           <span className="font-mono text-[10px] text-white/30">
@@ -549,7 +554,7 @@ export function PreviewPane() {
             <SelectContent>
               {CAMERA_PRESETS.map((preset) => (
                 <SelectItem key={preset.id} value={preset.id}>
-                  {preset.label}
+                  {t(`camera.${preset.id}`)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -566,7 +571,7 @@ export function PreviewPane() {
                   onValueChange={(v) => setPose(v === "none" ? null : v)}
                 >
                   <SelectTrigger
-                    aria-label="Pose"
+                    aria-label={t("pane.pose.ariaLabel")}
                     className="h-7 w-44 border-white/15 bg-white/5 text-xs text-white"
                   >
                     <span className="flex min-w-0 items-center gap-1.5">
@@ -577,10 +582,10 @@ export function PreviewPane() {
                     </span>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Bind-Pose</SelectItem>
+                    <SelectItem value="none">{t("pane.pose.bind")}</SelectItem>
                     {poses.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
-                        {p.label}
+                        {t(`pose.${p.id}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -589,8 +594,8 @@ export function PreviewPane() {
             </TooltipTrigger>
             <TooltipContent side="bottom">
               {gtaPathReady === true
-                ? "Pose der Vorschau (statisch ins Mesh gebacken)"
-                : "GTA-Pfad in den Einstellungen setzen"}
+                ? t("pane.pose.tooltipActive")
+                : t("pane.pose.tooltipDisabled")}
             </TooltipContent>
           </Tooltip>
 
@@ -601,13 +606,13 @@ export function PreviewPane() {
                 size="icon"
                 className={iconButton}
                 onClick={requestFrame}
-                aria-label="Kamera zentrieren"
+                aria-label={t("pane.centerCamera")}
               >
                 <Focus className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              Kamera auf Auswahl zentrieren
+              {t("pane.centerCameraTooltip")}
             </TooltipContent>
           </Tooltip>
 
@@ -621,13 +626,13 @@ export function PreviewPane() {
                   autoRotate && "bg-white/10 text-[#7289DA]",
                 )}
                 onClick={() => setAutoRotate(!autoRotate)}
-                aria-label="Autorotation"
+                aria-label={t("pane.autoRotate")}
               >
                 <Orbit className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              Autorotation {autoRotate ? "aus" : "an"}
+              {autoRotate ? t("pane.autoRotateOff") : t("pane.autoRotateOn")}
             </TooltipContent>
           </Tooltip>
 
@@ -640,7 +645,7 @@ export function PreviewPane() {
                   checked={includePedBody}
                   disabled={gtaPathReady !== true}
                   onCheckedChange={setIncludePedBody}
-                  aria-label="Ped-Body anzeigen"
+                  aria-label={t("pane.pedBodyAria")}
                 />
                 <span
                   className={cn(
@@ -648,14 +653,14 @@ export function PreviewPane() {
                     gtaPathReady === true ? "text-white/55" : "text-white/30",
                   )}
                 >
-                  Ped-Body
+                  {t("pane.pedBody")}
                 </span>
               </span>
             </TooltipTrigger>
             <TooltipContent side="bottom">
               {gtaPathReady === true
-                ? "Freemode-Körper unter der Kleidung anzeigen"
-                : "GTA-Pfad in den Einstellungen setzen"}
+                ? t("pane.pedBodyTooltipActive")
+                : t("pane.pedBodyTooltipDisabled")}
             </TooltipContent>
           </Tooltip>
 
@@ -674,12 +679,12 @@ export function PreviewPane() {
                 size="icon"
                 className={iconButton}
                 onClick={() => setPreviewOpen(false)}
-                aria-label="Vorschau einklappen"
+                aria-label={t("pane.collapse")}
               >
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">Vorschau einklappen</TooltipContent>
+            <TooltipContent side="bottom">{t("pane.collapse")}</TooltipContent>
           </Tooltip>
         </div>
       </div>
@@ -704,33 +709,39 @@ export function PreviewPane() {
             <div className="pointer-events-none absolute left-2 top-2 flex max-w-[65%] flex-wrap gap-1.5">
               {stats && (
                 <OverlayChip
-                  title={`Summe der ${rendered.length} gerenderten Drawables`}
+                  title={t("pane.statsTitle", { count: rendered.length })}
                 >
-                  {NUMBER_FORMAT.format(stats.polys)} Polys ·{" "}
-                  {NUMBER_FORMAT.format(stats.verts)} Verts
+                  {t("pane.stats", {
+                    polys: NUMBER_FORMAT.format(stats.polys),
+                    verts: NUMBER_FORMAT.format(stats.verts),
+                  })}
                 </OverlayChip>
               )}
               {lodWarnings.length > 0 && (
                 <OverlayChip
                   tone="warn"
                   title={lodWarnings
-                    .map((w) => `${w.label}: ${w.missing.join("/")}-LOD fehlt`)
+                    .map((w) =>
+                      t("pane.lodMissing", {
+                        label: w.label,
+                        missing: w.missing.join("/"),
+                      }),
+                    )
                     .join("\n")}
                 >
                   <TriangleAlert className="h-3 w-3 shrink-0" />
-                  {lodWarnings.length} LOD-Warnung
-                  {lodWarnings.length === 1 ? "" : "en"}
+                  {t("pane.lodWarning", { count: lodWarnings.length })}
                 </OverlayChip>
               )}
               {untextured.length > 0 && (
                 <OverlayChip
                   tone="warn"
                   title={untextured
-                    .map((d) => d.label || "(ohne Namen)")
+                    .map((d) => d.label || t("pane.noName"))
                     .join("\n")}
                 >
                   <TriangleAlert className="h-3 w-3 shrink-0" />
-                  {untextured.length} ohne Textur
+                  {t("pane.untextured", { count: untextured.length })}
                 </OverlayChip>
               )}
             </div>
@@ -740,7 +751,7 @@ export function PreviewPane() {
               {loadingCount > 0 && (
                 <OverlayChip>
                   <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
-                  Lädt {loadingCount} Modell{loadingCount === 1 ? "" : "e"}…
+                  {t("pane.loadingModels", { count: loadingCount })}
                 </OverlayChip>
               )}
               {errorChips.map((chip) => (
@@ -749,7 +760,7 @@ export function PreviewPane() {
                   tone="error"
                   title={
                     chip.retry
-                      ? `${chip.message}\nKlicken zum erneuten Laden`
+                      ? `${chip.message}\n${t("pane.retryHint")}`
                       : chip.message
                   }
                   onClick={chip.retry ?? undefined}

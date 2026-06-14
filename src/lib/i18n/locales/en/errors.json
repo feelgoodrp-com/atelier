@@ -1,0 +1,68 @@
+{
+  "io": {
+    "corruptJson": "{{source}} is corrupt (invalid JSON).",
+    "invalidFormat": "{{source}} has an invalid format{{where}}: {{message}}",
+    "invalidFormatField": " (field: {{field}})",
+    "unknownError": "unknown error",
+    "projectExists": "The selected folder already contains an atelier project.",
+    "createFolderFailed": "Project folder could not be created. Check the path and write permissions.",
+    "readFolderFailed": "Folder could not be read. Check whether the path still exists.",
+    "noProjectFound": "No atelier project found (pack.atelier is missing in this folder).",
+    "readPackFailed": "pack.atelier could not be read.",
+    "saveFailed": "Project could not be saved. Check disk space and write permissions.",
+    "packLabel": "pack.atelier",
+    "autosaveLabel": "Autosave file"
+  },
+  "migration": {
+    "noProjectObject": "pack.atelier does not contain a valid project object.",
+    "newerVersion": "The project was created with a newer atelier version (fgcloth v{{version}}). Please update atelier.",
+    "unknownVersion": "Unknown project version (fgcloth={{version}})."
+  },
+  "import": {
+    "unsupportedFileType": "File type is not supported (only YDD, YTD, YLD).",
+    "yldUnmatched": "YLD could not be matched to a drawable.",
+    "normalSpecularNotVariant": "Normal/Specular maps are not imported as a variant.",
+    "maxTextureVariants": "Maximum of 26 texture variants per drawable (a–z).",
+    "noTexturesFound": "No textures found — the drawable has no variant yet.",
+    "genderNotDetected": "Gender not detected — using default ({{gender}}).",
+    "noMatchingYdd": "No matching YDD file found in the import.",
+    "noProjectOpen": "No project open",
+    "noSupportedFiles": "No supported files (YDD, YTD, YLD) found",
+    "importingOne": "Importing 1 file…",
+    "importingMany": "Importing {{count}} files…",
+    "moreSkipped": "… and {{count}} more",
+    "filesCount": "{{count}} file(s)",
+    "unsupportedFileTypeShort": "File type is not supported.",
+    "addedDrawables": "{{count}} drawable(s) added",
+    "withoutSlot": "{{count}} without slot",
+    "skippedCount": "{{count}} skipped",
+    "assignSlotGender": "Please assign slot and gender.",
+    "nothingImported": "Nothing imported",
+    "importFailed": "Import failed"
+  },
+  "sidecar": {
+    "unavailable": "Sidecar is not connected",
+    "genericError": "Sidecar error ({{status}})",
+    "pedBodyUnavailable": "Ped body not available — set the GTA path in the settings",
+    "poseUnavailable": "Pose not available",
+    "buildBusy": "A build is already running — please wait until it finishes.",
+    "streamFailed": "Sidecar stream could not be opened.",
+    "progressLost": "Connection to the build progress was lost."
+  },
+  "menyoo": {
+    "valuesClamped": "Some values were outside the valid range and were adjusted.",
+    "noPedWithProperties": "The file contains no ped with PedProperties.",
+    "notReadableXml": "The file is not readable XML (Menyoo outfit or Spooner file expected).",
+    "unknownXmlFormat": "Unknown XML format (“{{root}}” instead of OutfitPedData/SpoonerPlacements).",
+    "notFreemodePed": "Not a freemode ped (ModelHash {{hash}}) — component indices may not match the preview.",
+    "modelHashUnknown": "unknown",
+    "unknownComponentSlot": "Unknown component slot “_{{index}}” ignored.",
+    "componentSlotUnreadable": "Component slot “_{{index}}” is unreadable and is ignored.",
+    "componentSlotOutOfRange": "Component slot “_{{index}}”: value out of valid range — default is used.",
+    "propSlotUnreadable": "Prop slot “_{{index}}” is unreadable and is ignored.",
+    "propSlotUnsupported": "Prop slot “_{{index}}” is not supported and is ignored.",
+    "propSlotOutOfRange": "Prop slot “_{{index}}”: value out of valid range — is ignored.",
+    "propSlotDuplicate": "Prop slot “_{{index}}” is specified twice and is ignored.",
+    "pedFallbackName": "Ped {{index}}"
+  }
+}

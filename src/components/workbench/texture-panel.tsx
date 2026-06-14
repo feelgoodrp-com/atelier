@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useTranslation } from "react-i18next";
 import {
   DndContext,
   PointerSensor,
@@ -78,6 +79,7 @@ function TextureThumb({ texture, projectDir }: { texture: AssetRef; projectDir: 
 }
 
 function TextureMetaTooltip({ texture }: { texture: AssetRef }) {
+  const { t } = useTranslation("workbench");
   const preview = usePreviewStore((s) => s.previews[texture.hash]);
   const meta = preview?.textures ?? [];
   return (
@@ -85,15 +87,19 @@ function TextureMetaTooltip({ texture }: { texture: AssetRef }) {
       <span className="font-medium">{baseName(texture.path)}</span>
       <span className="text-white/60">{formatBytes(texture.size)}</span>
       {meta.length === 0 && preview?.status === "ready" && (
-        <span className="text-white/60">Keine Texturen im Dictionary</span>
+        <span className="text-white/60">
+          {t("texturePanel.noTexturesInDictionary")}
+        </span>
       )}
-      {meta.slice(0, 4).map((t) => (
-        <span key={t.name} className="text-white/60">
-          {t.name}: {t.width}×{t.height} · {t.format} · {t.mipCount} Mips
+      {meta.slice(0, 4).map((tex) => (
+        <span key={tex.name} className="text-white/60">
+          {tex.name}: {tex.width}×{tex.height} · {tex.format} · {tex.mipCount} Mips
         </span>
       ))}
       {meta.length > 4 && (
-        <span className="text-white/40">… und {meta.length - 4} weitere</span>
+        <span className="text-white/40">
+          {t("texturePanel.andMore", { count: meta.length - 4 })}
+        </span>
       )}
     </div>
   );
@@ -121,6 +127,7 @@ function TextureRow({
   /** Opens the optimize dialog for this texture (context menu). */
   onOptimize: () => void;
 }) {
+  const { t } = useTranslation("workbench");
   const sortableId = `${index}:${texture.hash}`;
   const {
     attributes,
@@ -143,7 +150,7 @@ function TextureRow({
           ref={setNodeRef}
           style={style}
           onClick={onSelect}
-          title="Klicken: Variante in der 3D-Vorschau anzeigen"
+          title={t("texturePanel.clickToPreview")}
           className={cn(
             "flex cursor-pointer items-center gap-2 rounded-[10px] px-1.5 py-1.5 transition-colors hover:bg-white/5",
             active && "bg-[#5865F2]/10 ring-1 ring-inset ring-[#5865F2]/30",
@@ -156,7 +163,7 @@ function TextureRow({
             {...listeners}
             tabIndex={-1}
             className="flex h-6 w-4 shrink-0 cursor-grab items-center justify-center text-white/25 hover:text-white/60 active:cursor-grabbing"
-            title="Ziehen zum Sortieren"
+            title={t("texturePanel.dragToSort")}
             onClick={(e) => e.stopPropagation()}
           >
             <GripVertical className="h-3.5 w-3.5" />
@@ -177,7 +184,7 @@ function TextureRow({
                     independent of label and source file name. */}
                 <p className="truncate text-xs text-white/70">{canonicalName}</p>
                 <p className="truncate text-[10px] text-white/30">
-                  Quelle: {baseName(texture.path)}
+                  {t("inspector.source", { name: baseName(texture.path) })}
                 </p>
               </div>
             </TooltipTrigger>
@@ -192,7 +199,7 @@ function TextureRow({
               onRemove();
             }}
             className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] text-white/30 transition-colors hover:bg-red-500/15 hover:text-red-400"
-            aria-label="Textur entfernen"
+            aria-label={t("texturePanel.removeTexture")}
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -201,7 +208,7 @@ function TextureRow({
       <ContextMenuContent className="w-44">
         <ContextMenuItem onClick={onOptimize}>
           <Wand2 className="h-4 w-4" />
-          Optimieren…
+          {t("texturePanel.optimize")}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
@@ -209,6 +216,7 @@ function TextureRow({
 }
 
 export function TexturePanel({ drawable }: { drawable: ProjectDrawable }) {
+  const { t } = useTranslation("workbench");
   const projectDir = useProjectStore((s) => s.projectDir);
   const project = useProjectStore((s) => s.project);
   const setTextures = useProjectStore((s) => s.setTextures);
@@ -251,8 +259,8 @@ export function TexturePanel({ drawable }: { drawable: ProjectDrawable }) {
     if (!projectDir) return;
     const selected = await openDialog({
       multiple: true,
-      title: "Textur-Varianten wählen (YTD)",
-      filters: [{ name: "Texturen (YTD)", extensions: ["ytd"] }],
+      title: t("texturePanel.pickTitle"),
+      filters: [{ name: t("texturePanel.pickFilter"), extensions: ["ytd"] }],
     }).catch(() => null);
     const paths = Array.isArray(selected)
       ? selected
@@ -293,13 +301,13 @@ export function TexturePanel({ drawable }: { drawable: ProjectDrawable }) {
       setTextures(drawable.id, next);
       const added = next.length - current.textures.length;
       if (added > 0) {
-        toast.success(`${added} Textur(en) hinzugefügt`, {
+        toast.success(t("texturePanel.addedToast", { count: added }), {
           description:
             errors.length > 0 || skippedMax > 0
               ? [
                   ...errors.slice(0, 3),
                   skippedMax > 0
-                    ? `${skippedMax} über dem Limit von 26 Varianten (a–z)`
+                    ? t("texturePanel.skippedMax", { count: skippedMax })
                     : null,
                 ]
                   .filter(Boolean)
@@ -307,18 +315,16 @@ export function TexturePanel({ drawable }: { drawable: ProjectDrawable }) {
               : undefined,
         });
       } else {
-        toast.error("Keine Textur hinzugefügt", {
+        toast.error(t("texturePanel.noneAdded"), {
           description:
             errors.slice(0, 3).join("\n") ||
-            (skippedMax > 0
-              ? "Maximal 26 Textur-Varianten pro Drawable (a–z)."
-              : undefined),
+            (skippedMax > 0 ? t("texturePanel.maxVariants") : undefined),
         });
       }
     } finally {
       setAdding(false);
     }
-  }, [projectDir, drawable.id, setTextures]);
+  }, [projectDir, drawable.id, setTextures, t]);
 
   if (!projectDir) return null;
 
@@ -326,7 +332,7 @@ export function TexturePanel({ drawable }: { drawable: ProjectDrawable }) {
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
-          Texturen ({drawable.textures.length}/26)
+          {t("texturePanel.textures", { count: drawable.textures.length })}
         </span>
         <Button
           size="sm"
@@ -336,7 +342,7 @@ export function TexturePanel({ drawable }: { drawable: ProjectDrawable }) {
           onClick={() => void addTextures()}
         >
           <Plus className="h-3 w-3" />
-          {adding ? "Lädt…" : "Hinzufügen"}
+          {adding ? t("texturePanel.loading") : t("texturePanel.add")}
         </Button>
       </div>
 
@@ -344,7 +350,7 @@ export function TexturePanel({ drawable }: { drawable: ProjectDrawable }) {
         <div className="glass-border-subtle flex flex-col items-center justify-center rounded-[10px] px-4 py-6 text-center">
           <ImageOff className="h-5 w-5 text-white/25" />
           <p className="mt-2 text-xs text-white/40">
-            Noch keine Texturvarianten — füge YTD-Dateien hinzu.
+            {t("texturePanel.noVariants")}
           </p>
         </div>
       ) : (

@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CircleUser, Folder, Users } from "lucide-react";
 import { fetchPresence, type PresenceUser } from "@/lib/sync/api-client";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -12,6 +13,7 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 const REFRESH_MS = 15_000;
 
 function UserRow({ user, isSelf }: { user: PresenceUser; isSelf: boolean }) {
+  const { t } = useTranslation("launcher");
   return (
     <div className="flex items-start gap-3 rounded-[10px] px-3 py-2.5 transition-colors hover:bg-white/5">
       <div className="relative shrink-0">
@@ -29,7 +31,11 @@ function UserRow({ user, isSelf }: { user: PresenceUser; isSelf: boolean }) {
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-white/85">
           {user.username}
-          {isSelf && <span className="ml-1.5 text-xs font-normal text-white/35">(du)</span>}
+          {isSelf && (
+            <span className="ml-1.5 text-xs font-normal text-white/35">
+              {t("online.you")}
+            </span>
+          )}
         </p>
         {user.project ? (
           <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-[#7289DA]">
@@ -37,7 +43,7 @@ function UserRow({ user, isSelf }: { user: PresenceUser; isSelf: boolean }) {
             <span className="truncate">{user.project.name}</span>
           </p>
         ) : (
-          <p className="mt-0.5 text-xs text-white/35">Im Launcher</p>
+          <p className="mt-0.5 text-xs text-white/35">{t("online.inLauncher")}</p>
         )}
       </div>
     </div>
@@ -45,6 +51,7 @@ function UserRow({ user, isSelf }: { user: PresenceUser; isSelf: boolean }) {
 }
 
 export function OnlinePanel() {
+  const { t } = useTranslation("launcher");
   const [users, setUsers] = useState<PresenceUser[] | null>(null);
   const selfId = useAuthStore((s) => s.user?.discordId);
 
@@ -71,7 +78,7 @@ export function OnlinePanel() {
     <div className="liquid-glass flex h-full max-h-full flex-col rounded-2xl">
       <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
         <Users className="h-4 w-4 text-[#7289DA]" />
-        <h2 className="text-sm font-semibold text-white">Online</h2>
+        <h2 className="text-sm font-semibold text-white">{t("online.title")}</h2>
         {users !== null && (
           <span className="ml-auto rounded-full bg-[#5865F2]/20 px-2 py-0.5 text-xs font-medium text-[#7289DA]">
             {users.length}
@@ -95,10 +102,8 @@ export function OnlinePanel() {
         ) : users.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
             <Users className="h-7 w-7 text-white/20" />
-            <p className="mt-3 text-sm text-white/50">Niemand online</p>
-            <p className="mt-1 text-xs text-white/30">
-              Teammitglieder erscheinen hier, sobald sie atelier öffnen.
-            </p>
+            <p className="mt-3 text-sm text-white/50">{t("online.nobodyOnline")}</p>
+            <p className="mt-1 text-xs text-white/30">{t("online.nobodyHint")}</p>
           </div>
         ) : (
           users.map((u) => (

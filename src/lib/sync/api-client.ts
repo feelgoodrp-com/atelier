@@ -41,6 +41,7 @@
  * no separate `id` field.
  */
 
+import i18n from "@/lib/i18n";
 import type { SlotId } from "@/lib/gta/components";
 import type {
   DrawableFlags,
@@ -127,12 +128,12 @@ export function configureApiClient(c: ApiClientConfig): void {
 }
 
 function requireConfig(): ApiClientConfig {
-  if (!config) throw new Error("ApiClient ist nicht konfiguriert");
+  if (!config) throw new Error(i18n.t("sync:api.notConfigured"));
   return config;
 }
 
 async function parseError(res: Response): Promise<ApiError> {
-  let message = `Anfrage fehlgeschlagen (${res.status})`;
+  let message = i18n.t("sync:api.requestFailed", { status: res.status });
   let details: Record<string, unknown> | null = null;
   try {
     const body = (await res.json()) as Record<string, unknown>;
@@ -206,13 +207,13 @@ export function discordStartUrl(apiUrl: string, redirectUri: string): string {
 
 /**
  * Probes GET {apiUrl}/health and confirms an atelier-api answers there — used
- * by the first-run setup wizard. Throws a German message on any failure
+ * by the first-run setup wizard. Throws a localized message on any failure
  * (unreachable, wrong service, timeout after 5s).
  */
 export async function checkApiHealth(apiUrl: string): Promise<{ version: string | null }> {
   const base = apiUrl.trim().replace(/\/+$/u, "");
   if (!/^https?:\/\//u.test(base)) {
-    throw new Error("Adresse muss mit http:// oder https:// beginnen.");
+    throw new Error(i18n.t("sync:api.invalidUrl"));
   }
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 5000);
@@ -222,18 +223,20 @@ export async function checkApiHealth(apiUrl: string): Promise<{ version: string 
   } catch (e) {
     throw new Error(
       ctrl.signal.aborted
-        ? "Keine Antwort (Zeitüberschreitung) — läuft der Server?"
-        : "Server nicht erreichbar — läuft die atelier-api unter dieser Adresse?",
+        ? i18n.t("sync:api.healthTimeout")
+        : i18n.t("sync:api.healthUnreachable"),
     );
   } finally {
     clearTimeout(timer);
   }
-  if (!res.ok) throw new Error(`Server antwortete mit HTTP ${res.status}.`);
+  if (!res.ok) {
+    throw new Error(i18n.t("sync:api.healthBadStatus", { status: res.status }));
+  }
   const data = (await res.json().catch(() => null)) as
     | { ok?: boolean; service?: string; version?: string }
     | null;
   if (!data || data.service !== "atelier-api") {
-    throw new Error("Hier antwortet eine andere Anwendung, keine atelier-api.");
+    throw new Error(i18n.t("sync:api.healthWrongService"));
   }
   return { version: typeof data.version === "string" ? data.version : null };
 }

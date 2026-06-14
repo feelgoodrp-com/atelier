@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Crosshair, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ interface DuplicatesDialogProps {
 
 /** Groups of drawables that share the exact same ydd hash. */
 export function DuplicatesDialog({ open, onOpenChange }: DuplicatesDialogProps) {
+  const { t } = useTranslation("workbench");
   const project = useProjectStore((s) => s.project);
   const setSelection = useProjectStore((s) => s.setSelection);
   const removeDrawables = useProjectStore((s) => s.removeDrawables);
@@ -62,16 +64,15 @@ export function DuplicatesDialog({ open, onOpenChange }: DuplicatesDialogProps) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="liquid-glass max-h-[80vh] border-white/15 sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle className="text-white">Doppelte Meshes</DialogTitle>
+          <DialogTitle className="text-white">{t("duplicatesDialog.title")}</DialogTitle>
           <DialogDescription className="text-white/50">
-            Diese Drawables verwenden byteidentische YDD-Dateien. Löschen ist
-            mit Strg+Z rückgängig machbar.
+            {t("duplicatesDialog.description")}
           </DialogDescription>
         </DialogHeader>
 
         {groups.length === 0 ? (
           <p className="py-6 text-center text-sm text-white/40">
-            Keine Duplikate mehr vorhanden.
+            {t("duplicatesDialog.noDuplicates")}
           </p>
         ) : (
           <ScrollArea className="max-h-[55vh]">
@@ -83,7 +84,9 @@ export function DuplicatesDialog({ open, onOpenChange }: DuplicatesDialogProps) 
                 >
                   <p className="mb-2 font-mono text-[10px] text-white/35">
                     sha256: {group.hash.slice(0, 16)}… ·{" "}
-                    {group.drawables.length} Drawables
+                    {t("duplicatesDialog.drawablesCount", {
+                      count: group.drawables.length,
+                    })}
                   </p>
                   <div className="flex flex-col gap-1">
                     {group.drawables.map(({ drawable, derivedId }) => (
@@ -102,13 +105,15 @@ export function DuplicatesDialog({ open, onOpenChange }: DuplicatesDialogProps) 
                           className="border-white/15 font-mono text-[10px] text-white/50"
                         >
                           {drawable.gender === "male" ? "mp_m" : "mp_f"} ·{" "}
-                          {getSlotById(drawable.type)?.label ?? drawable.type}
+                          {getSlotById(drawable.type)
+                            ? t(`slot.${drawable.type}`)
+                            : drawable.type}
                         </Badge>
                         <Button
                           size="sm"
                           variant="ghost"
                           className="h-6 w-6 p-0 text-white/40 hover:text-white"
-                          title="Im Workbench anzeigen"
+                          title={t("duplicatesDialog.showInWorkbench")}
                           onClick={() => jumpTo(drawable.id)}
                         >
                           <Crosshair className="h-3.5 w-3.5" />
@@ -117,7 +122,7 @@ export function DuplicatesDialog({ open, onOpenChange }: DuplicatesDialogProps) 
                           size="sm"
                           variant="ghost"
                           className="h-6 w-6 p-0 text-white/40 hover:text-red-400"
-                          title="Drawable löschen"
+                          title={t("duplicatesDialog.deleteDrawable")}
                           onClick={() => removeDrawables([drawable.id])}
                         >
                           <Trash2 className="h-3.5 w-3.5" />

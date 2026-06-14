@@ -5,6 +5,7 @@
  */
 
 import { toast } from "sonner";
+import i18n from "@/lib/i18n";
 import { getSlotById, type SlotId } from "@/lib/gta/components";
 import { useProjectStore } from "@/lib/stores/project-store";
 import { useWorkbenchStore } from "@/lib/stores/workbench-store";
@@ -36,7 +37,9 @@ function describeSkipped(skipped: ImportSkipped[]): string | undefined {
   const lines = skipped
     .slice(0, 3)
     .map((s) => `${s.path.split(/[\\/]/).pop()}: ${s.reason}`);
-  if (skipped.length > 3) lines.push(`… und ${skipped.length - 3} weitere`);
+  if (skipped.length > 3) {
+    lines.push(i18n.t("errors:import.moreSkipped", { count: skipped.length - 3 }));
+  }
   return lines.join("\n");
 }
 
@@ -49,21 +52,21 @@ export async function runFileImport(filePaths: string[]): Promise<void> {
   const { project, projectDir, addDrawable } = useProjectStore.getState();
   const workbench = useWorkbenchStore.getState();
   if (!project || !projectDir) {
-    toast.error("Kein Projekt geöffnet");
+    toast.error(i18n.t("errors:import.noProjectOpen"));
     return;
   }
 
   const clothingFiles = filePaths.filter((p) => CLOTHING_FILE_RE.test(p));
   const ignored = filePaths.length - clothingFiles.length;
   if (clothingFiles.length === 0) {
-    toast.error("Keine unterstützten Dateien (YDD, YTD, YLD) gefunden");
+    toast.error(i18n.t("errors:import.noSupportedFiles"));
     return;
   }
 
   const toastId = toast.loading(
     clothingFiles.length === 1
-      ? "Importiere 1 Datei…"
-      : `Importiere ${clothingFiles.length} Dateien…`,
+      ? i18n.t("errors:import.importingOne")
+      : i18n.t("errors:import.importingMany", { count: clothingFiles.length }),
   );
 
   try {
@@ -97,15 +100,21 @@ export async function runFileImport(filePaths: string[]): Promise<void> {
     const skipped = [...result.skipped];
     if (ignored > 0) {
       skipped.push({
-        path: `${ignored} Datei(en)`,
-        reason: "Dateityp wird nicht unterstützt.",
+        path: i18n.t("errors:import.filesCount", { count: ignored }),
+        reason: i18n.t("errors:import.unsupportedFileTypeShort"),
       });
     }
 
     const parts: string[] = [];
-    if (added > 0) parts.push(`${added} Drawable(s) hinzugefügt`);
-    if (pending.length > 0) parts.push(`${pending.length} ohne Slot`);
-    if (skipped.length > 0) parts.push(`${skipped.length} übersprungen`);
+    if (added > 0) {
+      parts.push(i18n.t("errors:import.addedDrawables", { count: added }));
+    }
+    if (pending.length > 0) {
+      parts.push(i18n.t("errors:import.withoutSlot", { count: pending.length }));
+    }
+    if (skipped.length > 0) {
+      parts.push(i18n.t("errors:import.skippedCount", { count: skipped.length }));
+    }
 
     if (added > 0) {
       toast.success(parts.join(" · "), {
@@ -115,16 +124,16 @@ export async function runFileImport(filePaths: string[]): Promise<void> {
     } else if (pending.length > 0) {
       toast.info(parts.join(" · "), {
         id: toastId,
-        description: "Bitte Slot und Geschlecht zuweisen.",
+        description: i18n.t("errors:import.assignSlotGender"),
       });
     } else {
-      toast.error("Nichts importiert", {
+      toast.error(i18n.t("errors:import.nothingImported"), {
         id: toastId,
         description: describeSkipped(skipped),
       });
     }
   } catch (e) {
-    toast.error("Import fehlgeschlagen", {
+    toast.error(i18n.t("errors:import.importFailed"), {
       id: toastId,
       description: e instanceof Error ? e.message : String(e),
     });

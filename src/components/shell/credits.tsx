@@ -5,6 +5,7 @@
  * Patreon/Ko-fi. Brand marks as inline SVGs (not in lucide).
  */
 
+import { useTranslation } from "react-i18next";
 import { open as openInBrowser } from "@tauri-apps/plugin-shell";
 import { cn } from "@/lib/utils";
 
@@ -71,12 +72,15 @@ function SupportLink({
 }
 
 export function GrzybeekCredits({ className }: { className?: string }) {
+  const { t } = useTranslation("shell");
   return (
     <div className={cn("flex flex-wrap items-center justify-center gap-3", className)}>
       <span className="text-xs text-white/35">
-        Inspiriert von{" "}
-        <span className="font-medium text-white/55">grzyClothTool</span> von{" "}
-        <span className="font-medium text-white/55">grzybeek</span> — unterstütze ihn:
+        {t("credits.inspiredBy")}{" "}
+        <span className="font-medium text-white/55">grzyClothTool</span>{" "}
+        {t("credits.by")}{" "}
+        <span className="font-medium text-white/55">grzybeek</span>{" "}
+        {t("credits.supportHim")}
       </span>
       <div className="flex items-center gap-2">
         <SupportLink

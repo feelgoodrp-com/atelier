@@ -7,6 +7,7 @@
  * GitHub/Discord is the least we can do.
  */
 
+import { Trans, useTranslation } from "react-i18next";
 import { open as openInBrowser } from "@tauri-apps/plugin-shell";
 import { Heart } from "lucide-react";
 import { PatreonMark, KofiMark } from "@/components/shell/credits";
@@ -37,8 +38,8 @@ interface CreditLink {
 
 interface Person {
   name: string;
-  /** One-line German note on what they contributed. */
-  role: string;
+  /** i18n key (settings:credits.roles.*) for the one-line contribution note. */
+  roleKey: string;
   links: CreditLink[];
 }
 
@@ -49,7 +50,7 @@ interface Person {
 const PEOPLE: Person[] = [
   {
     name: "grzybeek",
-    role: "grzyClothTool — die Vorlage für atelier",
+    roleKey: "credits.roles.grzybeek",
     links: [
       { kind: "patreon", url: "https://patreon.com/grzybeek" },
       { kind: "kofi", url: "https://ko-fi.com/grzybeek" },
@@ -59,7 +60,7 @@ const PEOPLE: Person[] = [
   },
   {
     name: "dexyfex",
-    role: "CodeWalker — ohne ihn gäbe es keine 3D-Vorschau",
+    roleKey: "credits.roles.dexyfex",
     links: [
       { kind: "patreon", url: "https://www.patreon.com/dexyfex" },
       { kind: "github", url: "https://github.com/dexyfex/CodeWalker" },
@@ -67,12 +68,12 @@ const PEOPLE: Person[] = [
   },
   {
     name: "JagodaMods",
-    role: "Ideen & Motivation",
+    roleKey: "credits.roles.jagodaMods",
     links: [{ kind: "discord", url: "https://discord.gg/jagoda" }],
   },
   {
     name: "ook",
-    role: "Beiträge & Fixes",
+    roleKey: "credits.roles.ook",
     links: [{ kind: "github", url: "https://github.com/ook3d" }],
   },
 ];
@@ -104,13 +105,14 @@ const LINK_META: Record<
 };
 
 function LinkChip({ kind, url }: CreditLink) {
+  const { t } = useTranslation("settings");
   const meta = LINK_META[kind];
   return (
     <button
       type="button"
       onClick={() => void openInBrowser(url).catch(() => {})}
       title={`${meta.label} · ${url}`}
-      aria-label={`${meta.label} öffnen`}
+      aria-label={t("credits.openLink", { label: meta.label })}
       className={cn(
         "glass-border-subtle flex h-7 w-7 items-center justify-center rounded-full text-white/50 transition-colors hover:bg-white/10",
         meta.hover,
@@ -126,6 +128,7 @@ function LinkChip({ kind, url }: CreditLink) {
  * thanks + outbound support links.
  */
 export function CreditsPanel({ className }: { className?: string }) {
+  const { t } = useTranslation("settings");
   return (
     <div
       className={cn(
@@ -135,13 +138,14 @@ export function CreditsPanel({ className }: { className?: string }) {
     >
       <div className="flex items-center gap-2">
         <Heart className="h-4 w-4 text-[#7289DA]" />
-        <h2 className="text-sm font-semibold text-white">Credits & Danke</h2>
+        <h2 className="text-sm font-semibold text-white">{t("credits.title")}</h2>
       </div>
       <p className="text-xs leading-relaxed text-white/45">
-        atelier ist ein eigenständiger Nachbau von{" "}
-        <span className="text-white/65">grzyClothTool</span> und nutzt{" "}
-        <span className="text-white/65">CodeWalker</span> für die 3D-Vorschau.
-        Unterstütze die Leute, die das möglich gemacht haben:
+        <Trans
+          t={t}
+          i18nKey="credits.intro"
+          components={{ hl: <span className="text-white/65" /> }}
+        />
       </p>
 
       <div className="flex flex-col gap-3.5">
@@ -149,7 +153,7 @@ export function CreditsPanel({ className }: { className?: string }) {
           <div key={person.name} className="flex flex-col gap-1.5">
             <div>
               <p className="text-sm font-medium text-white/85">{person.name}</p>
-              <p className="text-xs text-white/40">{person.role}</p>
+              <p className="text-xs text-white/40">{t(person.roleKey)}</p>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {person.links.map((link) => (

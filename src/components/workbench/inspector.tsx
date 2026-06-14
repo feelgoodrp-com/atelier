@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeftRight,
   FileBox,
@@ -63,17 +64,17 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 }
 
 function EmptyInspector() {
+  const { t } = useTranslation("workbench");
   return (
     <div className="flex h-full flex-col items-center justify-center px-6 text-center">
       <div className="glass-border-subtle flex h-14 w-14 items-center justify-center rounded-[10px]">
         <Layers className="h-6 w-6 text-white/30" />
       </div>
       <p className="mt-4 text-sm font-medium text-white/60">
-        Nichts ausgewählt
+        {t("inspector.emptyTitle")}
       </p>
       <p className="mt-1 max-w-60 text-xs text-white/35">
-        Wähle ein Drawable aus, um Details, Texturen und Metadaten zu
-        bearbeiten.
+        {t("inspector.emptyDescription")}
       </p>
     </div>
   );
@@ -85,6 +86,7 @@ function EmptyInspector() {
  * a–z variant chips, so combinations can be tried without deselecting.
  */
 function BulkTextureSwitcher({ ids }: { ids: string[] }) {
+  const { t } = useTranslation("workbench");
   const project = useProjectStore((s) => s.project);
   const textureIndexByDrawable = usePreview3dStore((s) => s.textureIndexByDrawable);
   const setTextureIndex = usePreview3dStore((s) => s.setTextureIndex);
@@ -99,7 +101,7 @@ function BulkTextureSwitcher({ ids }: { ids: string[] }) {
   return (
     <>
       <div className="flex flex-col gap-2.5">
-        <FieldLabel>Vorschau-Texturen</FieldLabel>
+        <FieldLabel>{t("inspector.previewTextures")}</FieldLabel>
         {withTextures.map((drawable) => {
           const active = clampTextureIndex(
             drawable,
@@ -142,6 +144,7 @@ function BulkTextureSwitcher({ ids }: { ids: string[] }) {
 
 /** Bulk actions when 2+ drawables are selected. */
 function BulkPanel({ ids }: { ids: string[] }) {
+  const { t } = useTranslation("workbench");
   const project = useProjectStore((s) => s.project);
   const assignGroup = useProjectStore((s) => s.assignGroup);
   const updateDrawable = useProjectStore((s) => s.updateDrawable);
@@ -161,10 +164,10 @@ function BulkPanel({ ids }: { ids: string[] }) {
     <div className="flex flex-col gap-4 p-4">
       <div>
         <p className="text-sm font-semibold text-white">
-          {ids.length} Drawables ausgewählt
+          {t("inspector.bulkSelected", { count: ids.length })}
         </p>
         <p className="mt-0.5 text-xs text-white/40">
-          Aktionen gelten für die gesamte Auswahl.
+          {t("inspector.bulkHint")}
         </p>
       </div>
 
@@ -173,7 +176,7 @@ function BulkPanel({ ids }: { ids: string[] }) {
       <BulkTextureSwitcher ids={ids} />
 
       <div className="flex flex-col gap-1.5">
-        <FieldLabel>Gruppe zuweisen</FieldLabel>
+        <FieldLabel>{t("inspector.assignGroup")}</FieldLabel>
         <Select
           onValueChange={(v) => {
             if (v === NEW_GROUP) setGroupDialogOpen(true);
@@ -181,7 +184,7 @@ function BulkPanel({ ids }: { ids: string[] }) {
           }}
         >
           <SelectTrigger className="h-8 w-full border-white/15 bg-white/5 text-xs text-white">
-            <SelectValue placeholder="Gruppe wählen…" />
+            <SelectValue placeholder={t("inspector.selectGroup")} />
           </SelectTrigger>
           <SelectContent>
             {(project?.groups ?? []).map((g) => (
@@ -195,14 +198,14 @@ function BulkPanel({ ids }: { ids: string[] }) {
                 </span>
               </SelectItem>
             ))}
-            <SelectItem value={NO_GROUP}>Keine Gruppe</SelectItem>
-            <SelectItem value={NEW_GROUP}>Neue Gruppe…</SelectItem>
+            <SelectItem value={NO_GROUP}>{t("inspector.noGroup")}</SelectItem>
+            <SelectItem value={NEW_GROUP}>{t("inspector.newGroup")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <FieldLabel>Geschlecht verschieben</FieldLabel>
+        <FieldLabel>{t("inspector.moveGender")}</FieldLabel>
         <div className="flex gap-2">
           <Button
             size="sm"
@@ -234,7 +237,7 @@ function BulkPanel({ ids }: { ids: string[] }) {
         onClick={() => setConfirmDelete(true)}
       >
         <Trash2 className="h-3.5 w-3.5" />
-        Auswahl löschen
+        {t("inspector.deleteSelection")}
       </Button>
 
       <ConfirmDeleteDialog
@@ -253,6 +256,7 @@ function BulkPanel({ ids }: { ids: string[] }) {
 }
 
 function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
+  const { t } = useTranslation("workbench");
   const project = useProjectStore((s) => s.project);
   const updateDrawable = useProjectStore((s) => s.updateDrawable);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
@@ -312,17 +316,13 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
         {foreignLock && (
           <div className="flex items-start gap-2 rounded-[10px] border border-amber-500/25 bg-amber-500/10 px-2.5 py-2 text-xs text-amber-300">
             <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span>
-              <span className="font-semibold">{foreignLock.username}</span>{" "}
-              bearbeitet dieses Drawable gerade. Änderungen sind weiterhin
-              möglich (Hinweis-Sperre).
-            </span>
+            <span>{t("inspector.lockNotice", { name: foreignLock.username })}</span>
           </div>
         )}
 
         {/* Label */}
         <div className="flex flex-col gap-1.5">
-          <FieldLabel>Label</FieldLabel>
+          <FieldLabel>{t("inspector.label")}</FieldLabel>
           <Input
             value={labelDraft}
             onChange={(e) => setLabelDraft(e.target.value)}
@@ -337,7 +337,7 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
         {/* Gender + Type */}
         <div className="grid grid-cols-2 gap-2">
           <div className="flex flex-col gap-1.5">
-            <FieldLabel>Geschlecht</FieldLabel>
+            <FieldLabel>{t("inspector.gender")}</FieldLabel>
             <Select
               value={drawable.gender}
               onValueChange={(v) =>
@@ -354,7 +354,7 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
             </Select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <FieldLabel>Slot</FieldLabel>
+            <FieldLabel>{t("inspector.slot")}</FieldLabel>
             <Select
               value={drawable.type}
               onValueChange={(v) => handleTypeChange(v as SlotId)}
@@ -364,18 +364,18 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectLabel>Components</SelectLabel>
+                  <SelectLabel>{t("inspector.components")}</SelectLabel>
                   {GTA_COMPONENTS.map((slot) => (
                     <SelectItem key={slot.id} value={slot.id}>
-                      {slot.label}
+                      {t(`slot.${slot.id}`)}
                     </SelectItem>
                   ))}
                 </SelectGroup>
                 <SelectGroup>
-                  <SelectLabel>Props</SelectLabel>
+                  <SelectLabel>{t("inspector.props")}</SelectLabel>
                   {GTA_PROPS.map((slot) => (
                     <SelectItem key={slot.id} value={slot.id}>
-                      {slot.label}
+                      {t(`slot.${slot.id}`)}
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -386,7 +386,7 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
 
         {/* Mode */}
         <div className="flex flex-col gap-1.5">
-          <FieldLabel>Modus</FieldLabel>
+          <FieldLabel>{t("inspector.mode")}</FieldLabel>
           <div className="grid grid-cols-2 gap-2">
             <Select
               value={drawable.mode}
@@ -396,8 +396,8 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="addon">Addon</SelectItem>
-                <SelectItem value="replace">Replace</SelectItem>
+                <SelectItem value="addon">{t("inspector.addon")}</SelectItem>
+                <SelectItem value="replace">{t("inspector.replace")}</SelectItem>
               </SelectContent>
             </Select>
             {drawable.mode === "replace" && (
@@ -412,9 +412,9 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
                       Number.isNaN(parsed) || parsed < 0 ? 0 : parsed,
                   });
                 }}
-                placeholder="Ziel-ID"
+                placeholder={t("inspector.targetId")}
                 className="h-8 border-white/15 bg-white/5 font-mono text-xs text-white"
-                title="Drawable-ID, die ersetzt wird"
+                title={t("inspector.targetIdTooltip")}
               />
             )}
           </div>
@@ -422,7 +422,7 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
 
         {/* Group */}
         <div className="flex flex-col gap-1.5">
-          <FieldLabel>Gruppe</FieldLabel>
+          <FieldLabel>{t("inspector.group")}</FieldLabel>
           <Select
             value={drawable.groupId ?? NO_GROUP}
             onValueChange={(v) => {
@@ -438,7 +438,7 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={NO_GROUP}>Keine Gruppe</SelectItem>
+              <SelectItem value={NO_GROUP}>{t("inspector.noGroup")}</SelectItem>
               {(project?.groups ?? []).map((g) => (
                 <SelectItem key={g.id} value={g.id}>
                   <span className="flex items-center gap-2">
@@ -453,7 +453,7 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
               <SelectItem value={NEW_GROUP}>
                 <span className="flex items-center gap-2">
                   <Plus className="h-3 w-3" />
-                  Neue Gruppe…
+                  {t("inspector.newGroup")}
                 </span>
               </SelectItem>
             </SelectContent>
@@ -464,9 +464,9 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
 
         {/* Flags */}
         <div className="flex flex-col gap-3">
-          <FieldLabel>Flags</FieldLabel>
+          <FieldLabel>{t("inspector.flags")}</FieldLabel>
           <div className="flex items-center justify-between">
-            <span className="text-xs text-white/70">High Heels</span>
+            <span className="text-xs text-white/70">{t("inspector.highHeels")}</span>
             <Switch
               checked={drawable.flags.highHeels}
               onCheckedChange={(checked) =>
@@ -480,9 +480,11 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-white/70">
-                  Hair Scale
+                  {t("inspector.hairScale")}
                   {drawable.type === "p_head" && (
-                    <span className="ml-1 text-white/35">(drückt Haare unter dem Hut zusammen)</span>
+                    <span className="ml-1 text-white/35">
+                      {t("inspector.hairScaleHatHint")}
+                    </span>
                   )}
                 </span>
                 <Switch
@@ -522,9 +524,7 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
               )}
               {hairScale !== null && drawable.type === "hair" && (
                 <p className="text-[10px] leading-relaxed text-white/30">
-                  Nur Vorschau: Hair Scale wirkt im Build primär für Hut-Props
-                  (p_head). Auf einem reinen Haar-Slot zeigt die 3D-Vorschau den
-                  Effekt, der gebaute Pack erzeugt ihn dort nicht.
+                  {t("inspector.hairScalePreviewOnly")}
                 </p>
               )}
             </div>
@@ -535,7 +535,7 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
 
         {/* Mesh / files */}
         <div className="flex flex-col gap-2">
-          <FieldLabel>Dateien</FieldLabel>
+          <FieldLabel>{t("inspector.files")}</FieldLabel>
           {drawable.ydd ? (
             <div className="flex items-center gap-2 rounded-[10px] bg-white/5 px-2.5 py-2">
               <FileBox className="h-4 w-4 shrink-0 text-[#7289DA]" />
@@ -545,7 +545,9 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
                   {canonicalYddName(drawable, derivedId)}
                 </p>
                 <p className="truncate text-[10px] text-white/30">
-                  Quelle: {baseName(drawable.ydd.path)}
+                  {t("inspector.source", {
+                    name: baseName(drawable.ydd.path),
+                  })}
                 </p>
               </div>
               <span className="shrink-0 text-[10px] text-white/35">
@@ -554,12 +556,11 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
             </div>
           ) : (
             <div className="rounded-[10px] border border-amber-500/25 bg-amber-500/10 px-2.5 py-2 text-xs text-amber-300">
-              Kein YDD-Mesh zugewiesen.
+              {t("inspector.noYddMesh")}
             </div>
           )}
           <p className="text-[10px] leading-relaxed text-white/30">
-            Dateinamen werden beim Build automatisch aus Slot + Nummer vergeben — das Label
-            ist nur eine Notiz für dich und ändert nichts am Pack.
+            {t("inspector.filesHint")}
           </p>
           <div className="flex gap-1.5">
             {drawable.physics && (
@@ -568,7 +569,7 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
                 className="border-emerald-500/40 text-[10px] text-emerald-300"
                 title={drawable.physics.path}
               >
-                Physik (YLD)
+                {t("inspector.physics")}
               </Badge>
             )}
             {drawable.firstPerson && (
@@ -577,7 +578,7 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
                 className="border-white/15 text-[10px] text-white/60"
                 title={drawable.firstPerson.path}
               >
-                First Person
+                {t("inspector.firstPerson")}
               </Badge>
             )}
           </div>
@@ -600,6 +601,7 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
 }
 
 export function Inspector() {
+  const { t } = useTranslation("workbench");
   const project = useProjectStore((s) => s.project);
   const selection = useProjectStore((s) => s.selection);
 
@@ -612,11 +614,11 @@ export function Inspector() {
     <div className="flex h-full flex-col">
       <div className="flex h-10 shrink-0 items-center justify-between border-b border-white/8 px-4">
         <span className="text-xs font-semibold uppercase tracking-wider text-white/50">
-          Inspector
+          {t("inspector.title")}
         </span>
         {selected.length > 0 && (
           <span className="font-mono text-[10px] text-white/30">
-            {selected.length} ausgewählt
+            {t("inspector.selected", { count: selected.length })}
           </span>
         )}
       </div>

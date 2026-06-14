@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Clock,
   Cloud,
@@ -57,6 +58,7 @@ function formatLastOpened(iso: string): string {
 }
 
 export function LauncherScreen() {
+  const { t } = useTranslation("launcher");
   const [recents, setRecents] = useState<RecentProject[]>([]);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [recovery, setRecovery] = useState<PendingRecovery | null>(null);
@@ -101,28 +103,28 @@ export function LauncherScreen() {
       const { recovery } = await openProjectFromDir(dirPath);
       if (recovery) setRecovery(recovery);
     } catch (e) {
-      toast.error("Projekt konnte nicht geöffnet werden", {
+      toast.error(t("openProjectFailed"), {
         description: errorMessage(e),
       });
     } finally {
       setOpening(false);
       setOpeningPath(null);
     }
-  }, []);
+  }, [t]);
 
   const browseAndOpen = useCallback(async () => {
     try {
       const selected = await openDialog({
         directory: true,
-        title: "atelier-Projektordner wählen",
+        title: t("projectPickerTitle"),
       });
       if (typeof selected === "string") await openFromDir(selected);
     } catch (e) {
-      toast.error("Ordner konnte nicht gewählt werden", {
+      toast.error(t("selectFolderFailed"), {
         description: errorMessage(e),
       });
     }
-  }, [openFromDir]);
+  }, [openFromDir, t]);
 
   const removeRecent = useCallback(async (dirPath: string) => {
     try {
@@ -137,11 +139,11 @@ export function LauncherScreen() {
     try {
       const selected = await openDialog({
         directory: true,
-        title: "Speicherort für den Klon wählen",
+        title: t("cloud.clonePickerTitle"),
       });
       parentDir = typeof selected === "string" ? selected : null;
     } catch (e) {
-      toast.error("Ordner konnte nicht gewählt werden", {
+      toast.error(t("selectFolderFailed"), {
         description: errorMessage(e),
       });
       return;
@@ -151,36 +153,36 @@ export function LauncherScreen() {
     setCloningId(pack.packId);
     try {
       await clonePackToLocal(pack, parentDir);
-      toast.success(`„${pack.name}“ geklont und geöffnet`);
+      toast.success(t("cloud.clonedAndOpened", { name: pack.name }));
     } catch (e) {
-      toast.error("Cloud-Projekt konnte nicht geklont werden", {
+      toast.error(t("cloud.cloneFailed"), {
         description: errorMessage(e),
       });
     } finally {
       setCloningId(null);
     }
-  }, []);
+  }, [t]);
 
   const actions = [
     {
-      title: "Neues Projekt",
-      description: "Starte ein leeres Addon-Kleidungs-Projekt.",
+      title: t("actions.newProject.title"),
+      description: t("actions.newProject.description"),
       icon: Plus,
-      cta: "Erstellen",
+      cta: t("actions.newProject.cta"),
       onClick: () => setNewProjectOpen(true),
     },
     {
-      title: "Projekt öffnen",
-      description: "Öffne ein bestehendes atelier-Projekt.",
+      title: t("actions.openProject.title"),
+      description: t("actions.openProject.description"),
       icon: FolderOpen,
-      cta: "Durchsuchen",
+      cta: t("actions.openProject.cta"),
       onClick: () => void browseAndOpen(),
     },
     {
-      title: "Pack importieren",
-      description: "Importiere einen bestehenden Clothing-Pack (YDD/YTD).",
+      title: t("actions.importPack.title"),
+      description: t("actions.importPack.description"),
       icon: PackageOpen,
-      cta: "Importieren",
+      cta: t("actions.importPack.cta"),
       onClick: () => useWorkbenchStore.getState().setImportWizardOpen(true),
     },
   ] as const;
@@ -190,11 +192,9 @@ export function LauncherScreen() {
       {/* Main column — full width with breathing room, scrolls independently. */}
       <div className="min-w-0 flex-1 overflow-y-auto pr-1">
         <h1 className="text-2xl font-semibold tracking-tight text-white">
-          Willkommen im atelier
+          {t("title")}
         </h1>
-        <p className="mt-1 text-sm text-white/50">
-          Das beste Werkzeug für GTA&nbsp;V Addon-Kleidung.
-        </p>
+        <p className="mt-1 text-sm text-white/50">{t("subtitle")}</p>
 
         <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
           {actions.map(({ title, description, icon: Icon, cta, onClick }, i) => (
@@ -228,7 +228,7 @@ export function LauncherScreen() {
         {apiReady && (
           <>
             <h2 className="mt-12 text-sm font-medium uppercase tracking-wider text-white/40">
-              Cloud-Projekte
+              {t("cloud.heading")}
             </h2>
             {cloudPacks === null ? (
               <div className="glass-border-subtle mt-3 flex flex-col gap-2 rounded-[10px] p-2">
@@ -243,11 +243,10 @@ export function LauncherScreen() {
               <div className="glass-border-subtle mt-3 flex flex-col items-center justify-center rounded-[10px] px-6 py-12 text-center">
                 <CloudOff className="h-8 w-8 text-white/25" />
                 <p className="mt-3 text-sm font-medium text-white/60">
-                  Keine Cloud-Projekte
+                  {t("cloud.emptyTitle")}
                 </p>
                 <p className="mt-1 max-w-sm text-xs text-white/40">
-                  Sobald ein Team-Mitglied ein Pack in die Cloud lädt, erscheint
-                  es hier zum Klonen.
+                  {t("cloud.emptyHint")}
                 </p>
               </div>
             ) : (
@@ -276,8 +275,8 @@ export function LauncherScreen() {
                         </p>
                         <p className="truncate text-xs text-white/40">
                           {cloning
-                            ? "Wird geklont…"
-                            : `Rev ${pack.headRevision}`}
+                            ? t("cloud.cloning")
+                            : t("cloud.revision", { revision: pack.headRevision })}
                         </p>
                       </div>
                       <span className="shrink-0 text-xs text-white/35">
@@ -292,16 +291,16 @@ export function LauncherScreen() {
         )}
 
         <h2 className="mt-12 text-sm font-medium uppercase tracking-wider text-white/40">
-          Zuletzt geöffnet
+          {t("recents.heading")}
         </h2>
         {recents.length === 0 ? (
           <div className="glass-border-subtle mt-3 flex flex-col items-center justify-center rounded-[10px] px-6 py-12 text-center">
             <Clock className="h-8 w-8 text-white/25" />
             <p className="mt-3 text-sm font-medium text-white/60">
-              Noch keine Projekte
+              {t("recents.emptyTitle")}
             </p>
             <p className="mt-1 max-w-sm text-xs text-white/40">
-              Sobald du ein Projekt erstellst oder öffnest, erscheint es hier.
+              {t("recents.emptyHint")}
             </p>
           </div>
         ) : (
@@ -329,7 +328,7 @@ export function LauncherScreen() {
                       </p>
                       <p className="truncate text-xs text-white/40">
                         {openingPath === recent.dirPath
-                          ? "Projekt wird geladen…"
+                          ? t("recents.loading")
                           : recent.dirPath}
                       </p>
                     </div>
@@ -342,13 +341,13 @@ export function LauncherScreen() {
                   <ContextMenuItem
                     onClick={() => void openFromDir(recent.dirPath)}
                   >
-                    Öffnen
+                    {t("recents.open")}
                   </ContextMenuItem>
                   <ContextMenuItem
                     variant="destructive"
                     onClick={() => void removeRecent(recent.dirPath)}
                   >
-                    Aus Liste entfernen
+                    {t("recents.removeFromList")}
                   </ContextMenuItem>
                 </ContextMenuContent>
               </ContextMenu>

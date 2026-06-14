@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import {
   Check,
@@ -33,6 +34,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import i18n from "@/lib/i18n";
 import { formatRelativeTime } from "@/lib/format";
 import { runFileImport } from "@/lib/project/import-flow";
 import {
@@ -47,10 +49,16 @@ import type { Gender } from "@/lib/project/schema";
 export async function pickAndImportFiles(): Promise<void> {
   const selected = await openDialog({
     multiple: true,
-    title: "Clothing-Dateien wählen (YDD, YTD, YLD)",
+    title: i18n.t("workbench:filePicker.clothingTitle"),
     filters: [
-      { name: "Clothing-Dateien", extensions: ["ydd", "ytd", "yld"] },
-      { name: "Drawables (YDD)", extensions: ["ydd"] },
+      {
+        name: i18n.t("workbench:filePicker.clothingFiles"),
+        extensions: ["ydd", "ytd", "yld"],
+      },
+      {
+        name: i18n.t("workbench:filePicker.drawablesYdd"),
+        extensions: ["ydd"],
+      },
     ],
   });
   if (Array.isArray(selected) && selected.length > 0) {
@@ -61,6 +69,7 @@ export async function pickAndImportFiles(): Promise<void> {
 }
 
 function ProjectName() {
+  const { t } = useTranslation("workbench");
   const name = useProjectStore((s) => s.project?.name ?? "");
   const renameProject = useProjectStore((s) => s.renameProject);
   const [editing, setEditing] = useState(false);
@@ -101,7 +110,7 @@ function ProjectName() {
         setDraft(name);
         setEditing(true);
       }}
-      title="Projekt umbenennen"
+      title={t("header.renameProject")}
     >
       <span className="truncate text-sm font-semibold text-white">{name}</span>
       <Pencil className="h-3 w-3 shrink-0 text-white/0 transition-colors group-hover:text-white/40" />
@@ -110,6 +119,7 @@ function ProjectName() {
 }
 
 function SaveIndicator() {
+  const { t } = useTranslation("workbench");
   const dirty = useProjectStore((s) => s.dirty);
   const lastSavedAt = useProjectStore((s) => s.lastSavedAt);
   const lastAutosavedAt = useProjectStore((s) => s.lastAutosavedAt);
@@ -127,20 +137,22 @@ function SaveIndicator() {
   );
 
   const label = saving
-    ? "Speichert…"
+    ? t("header.saving")
     : dirty
-      ? "Ungespeichert"
-      : "Gespeichert";
+      ? t("header.unsaved")
+      : t("header.saved");
 
   const tooltip = saving
-    ? "pack.atelier wird geschrieben…"
+    ? t("header.writingPack")
     : dirty
       ? lastAutosavedAt
-        ? `Letztes Autosave ${formatRelativeTime(lastAutosavedAt)} — Strg+S zum Speichern`
-        : "Noch nicht gesichert — Strg+S zum Speichern"
+        ? t("header.lastAutosave", {
+            time: formatRelativeTime(lastAutosavedAt),
+          })
+        : t("header.notYetSaved")
       : lastSavedAt
-        ? `Gespeichert ${formatRelativeTime(lastSavedAt)}`
-        : "Alle Änderungen gespeichert";
+        ? t("header.savedAt", { time: formatRelativeTime(lastSavedAt) })
+        : t("header.allChangesSaved");
 
   return (
     <Tooltip>
@@ -169,6 +181,7 @@ interface WorkbenchHeaderProps {
 }
 
 export function WorkbenchHeader({ onOpenDuplicates }: WorkbenchHeaderProps) {
+  const { t } = useTranslation("workbench");
   const project = useProjectStore((s) => s.project);
   const viewGender = useWorkbenchStore((s) => s.viewGender);
   const setViewGender = useWorkbenchStore((s) => s.setViewGender);
@@ -230,12 +243,12 @@ export function WorkbenchHeader({ onOpenDuplicates }: WorkbenchHeaderProps) {
             className={iconButton}
             disabled={!canUndo}
             onClick={() => useProjectStore.temporal.getState().undo()}
-            aria-label="Rückgängig"
+            aria-label={t("header.undo")}
           >
             <Undo2 className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="bottom">Rückgängig (Strg+Z)</TooltipContent>
+        <TooltipContent side="bottom">{t("header.undoShortcut")}</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
@@ -245,12 +258,12 @@ export function WorkbenchHeader({ onOpenDuplicates }: WorkbenchHeaderProps) {
             className={iconButton}
             disabled={!canRedo}
             onClick={() => useProjectStore.temporal.getState().redo()}
-            aria-label="Wiederholen"
+            aria-label={t("header.redo")}
           >
             <Redo2 className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="bottom">Wiederholen (Strg+Y)</TooltipContent>
+        <TooltipContent side="bottom">{t("header.redoShortcut")}</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
@@ -260,12 +273,12 @@ export function WorkbenchHeader({ onOpenDuplicates }: WorkbenchHeaderProps) {
             className={iconButton}
             disabled={saving || !dirty}
             onClick={() => void saveNow()}
-            aria-label="Speichern"
+            aria-label={t("header.save")}
           >
             <Save className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="bottom">Speichern (Strg+S)</TooltipContent>
+        <TooltipContent side="bottom">{t("header.saveShortcut")}</TooltipContent>
       </Tooltip>
 
       <div className="mx-1 h-5 w-px bg-white/10" />
@@ -280,13 +293,15 @@ export function WorkbenchHeader({ onOpenDuplicates }: WorkbenchHeaderProps) {
               previewOpen && "bg-white/10 text-[#7289DA] hover:text-[#7289DA]",
             )}
             onClick={() => setPreviewOpen(!previewOpen)}
-            aria-label="3D-Vorschau"
+            aria-label={t("header.preview3d")}
           >
             <Rotate3d className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          3D-Vorschau {previewOpen ? "ausblenden" : "einblenden"}
+          {t("header.preview3dToggle", {
+            action: previewOpen ? t("header.hide") : t("header.show"),
+          })}
         </TooltipContent>
       </Tooltip>
 
@@ -300,11 +315,11 @@ export function WorkbenchHeader({ onOpenDuplicates }: WorkbenchHeaderProps) {
               onClick={onOpenDuplicates}
             >
               <CopyX className="h-3.5 w-3.5" />
-              {duplicateCount} Duplikat{duplicateCount === 1 ? "" : "e"}
+              {t("header.duplicates", { count: duplicateCount })}
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            Identische YDD-Dateien im Projekt anzeigen
+            {t("header.showDuplicates")}
           </TooltipContent>
         </Tooltip>
       )}
@@ -319,7 +334,7 @@ export function WorkbenchHeader({ onOpenDuplicates }: WorkbenchHeaderProps) {
               variant="ghost"
               size="icon"
               className={iconButton}
-              aria-label="Werkzeuge"
+              aria-label={t("header.tools")}
             >
               <Wrench className="h-4 w-4" />
             </Button>
@@ -327,7 +342,7 @@ export function WorkbenchHeader({ onOpenDuplicates }: WorkbenchHeaderProps) {
           <DropdownMenuContent align="end" className="w-72">
             <DropdownMenuItem onClick={() => setBulkOptimizeOpen(true)}>
               <Images className="h-4 w-4" />
-              Alle übergroßen Texturen optimieren…
+              {t("header.optimizeOversized")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -335,17 +350,17 @@ export function WorkbenchHeader({ onOpenDuplicates }: WorkbenchHeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="h-7 px-3 text-xs">
               <Plus className="h-3.5 w-3.5" />
-              Importieren
+              {t("header.import")}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuItem onClick={() => void pickAndImportFiles()}>
               <Plus className="h-4 w-4" />
-              Dateien hinzufügen…
+              {t("header.addFiles")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setImportWizardOpen(true)}>
               <FolderInput className="h-4 w-4" />
-              Pack importieren…
+              {t("header.importPack")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -358,11 +373,11 @@ export function WorkbenchHeader({ onOpenDuplicates }: WorkbenchHeaderProps) {
               onClick={() => setBuildOpen(true)}
             >
               <Hammer className="h-3.5 w-3.5" />
-              Bauen
+              {t("header.build")}
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            Pack als Clothing-Ressource bauen (FiveM, Singleplayer, …)
+            {t("header.buildTooltip")}
           </TooltipContent>
         </Tooltip>
       </div>

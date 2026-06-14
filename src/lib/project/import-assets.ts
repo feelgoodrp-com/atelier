@@ -10,6 +10,7 @@
  */
 
 import { copyFile, exists, mkdir, readFile } from "@tauri-apps/plugin-fs";
+import i18n from "@/lib/i18n";
 import { parseYdd, parseYtd } from "@/lib/sidecar/client";
 import {
   classifyClothingFilename,
@@ -164,7 +165,7 @@ export async function importAssetFiles(
       default:
         skipped.push({
           path,
-          reason: "Dateityp wird nicht unterstützt (nur YDD, YTD, YLD).",
+          reason: i18n.t("errors:import.unsupportedFileType"),
         });
     }
   }
@@ -186,7 +187,7 @@ export async function importAssetFiles(
     } else {
       skipped.push({
         path: yld.path,
-        reason: "YLD konnte keinem Drawable zugeordnet werden.",
+        reason: i18n.t("errors:import.yldUnmatched"),
       });
     }
   }
@@ -240,7 +241,7 @@ export async function importAssetFiles(
         claimedYtds.add(ytd.path);
         skipped.push({
           path: ytd.path,
-          reason: "Normal-/Specular-Maps werden nicht als Variante importiert.",
+          reason: i18n.t("errors:import.normalSpecularNotVariant"),
         });
         continue;
       }
@@ -248,7 +249,7 @@ export async function importAssetFiles(
         claimedYtds.add(ytd.path);
         skipped.push({
           path: ytd.path,
-          reason: "Maximal 26 Textur-Varianten pro Drawable (a–z).",
+          reason: i18n.t("errors:import.maxTextureVariants"),
         });
         continue;
       }
@@ -270,7 +271,7 @@ export async function importAssetFiles(
       }
     }
     if (textures.length === 0) {
-      warnings.push("Keine Texturen gefunden — Drawable hat noch keine Variante.");
+      warnings.push(i18n.t("errors:import.noTexturesFound"));
     }
 
     // Optional physics file (.yld) for the same slot + drawable number.
@@ -294,7 +295,13 @@ export async function importAssetFiles(
 
     if (c.gender === null) {
       warnings.push(
-        `Geschlecht nicht erkannt — Standard (${gender === "male" ? "Männlich" : "Weiblich"}) verwendet.`,
+        i18n.t("errors:import.genderNotDetected", {
+          gender: i18n.t(
+            gender === "male"
+              ? "preview:character.gender.male"
+              : "preview:character.gender.female",
+          ),
+        }),
       );
     }
 
@@ -322,14 +329,14 @@ export async function importAssetFiles(
     if (claimedYtds.has(ytd.path)) continue;
     skipped.push({
       path: ytd.path,
-      reason: "Keine zugehörige YDD-Datei im Import gefunden.",
+      reason: i18n.t("errors:import.noMatchingYdd"),
     });
   }
   for (const yld of physicsByGroup.values()) {
     if (claimedYlds.has(yld.path)) continue;
     skipped.push({
       path: yld.path,
-      reason: "Keine zugehörige YDD-Datei im Import gefunden.",
+      reason: i18n.t("errors:import.noMatchingYdd"),
     });
   }
 
@@ -418,7 +425,7 @@ export async function importPlannedEntries(
       if (textures.length >= 26) {
         skipped.push({
           path: texturePath,
-          reason: "Maximal 26 Textur-Varianten pro Drawable (a–z).",
+          reason: i18n.t("errors:import.maxTextureVariants"),
         });
         continue;
       }

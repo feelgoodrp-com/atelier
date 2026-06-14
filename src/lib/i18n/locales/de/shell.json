@@ -1,0 +1,48 @@
+{
+  "nav": {
+    "start": "Start",
+    "workbench": "Werkbank",
+    "settings": "Einstellungen"
+  },
+  "sidecar": {
+    "notResponding": "Sidecar antwortet nicht auf /health",
+    "statusUnknown": "Sidecar-Status unbekannt"
+  },
+  "user": {
+    "loginFailed": "Anmeldung fehlgeschlagen",
+    "loggingIn": "Anmeldung läuft…",
+    "login": "Anmelden",
+    "pendingApproval": "Warte auf Freigabe",
+    "admin": "Administrator",
+    "member": "Mitglied",
+    "settings": "Einstellungen",
+    "logout": "Abmelden",
+    "loggedOut": "Abgemeldet"
+  },
+  "window": {
+    "minimize": "Minimieren",
+    "restore": "Wiederherstellen",
+    "maximize": "Maximieren",
+    "close": "Schließen"
+  },
+  "log": {
+    "button": "Echtzeit-Log",
+    "buttonTooltip": "Echtzeit-Log-Fenster (Strg+Shift+L)",
+    "level": "ab {{level}}",
+    "filterPlaceholder": "Filtern (Nachricht oder Target)…",
+    "pauseScroll": "Auto-Scroll pausieren",
+    "resumeScroll": "Auto-Scroll fortsetzen",
+    "jumpToBottom": "Nach unten springen",
+    "copyVisible": "Sichtbare Zeilen kopieren",
+    "clear": "Leeren",
+    "linesCopied": "{{count}} Zeilen kopiert",
+    "copyFailed": "Kopieren fehlgeschlagen",
+    "noEntries": "Keine Log-Einträge",
+    "filterActive": "(Filter aktiv)"
+  },
+  "credits": {
+    "inspiredBy": "Inspiriert von",
+    "by": "von",
+    "supportHim": "— unterstütze ihn:"
+  }
+}

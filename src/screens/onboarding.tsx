@@ -7,10 +7,12 @@
  */
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Check,
   ChevronLeft,
   FolderOpen,
+  Globe,
   Loader2,
   ScrollText,
   ServerCog,
@@ -23,6 +25,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { GateShell } from "@/screens/login";
+import i18n, { SUPPORTED_LANGUAGES } from "@/lib/i18n";
+import { changeLanguage } from "@/lib/i18n/language";
 import { checkApiHealth } from "@/lib/sync/api-client";
 import { pushGtaPathToSidecar } from "@/lib/sidecar/gta-path";
 import {
@@ -39,6 +43,7 @@ import { openLogWindow, useLogConsoleStore } from "@/lib/stores/log-console-stor
 import { cn } from "@/lib/utils";
 
 const STEPS = [
+  { id: "language", title: "Language" },
   { id: "server", title: "Server" },
   { id: "gta", title: "GTA V" },
   { id: "logs", title: "Logs" },
@@ -82,8 +87,11 @@ export function OnboardingWizard({
   /** When set (re-run from Settings), shows an "Abbrechen" exit on step 1. */
   onCancel?: () => void;
 }) {
+  const { t } = useTranslation("onboarding");
   const setApiUrl = useAuthStore((s) => s.setApiUrl);
   const [stepIdx, setStepIdx] = useState(0);
+  // Re-render on language switch so the highlighted option stays in sync.
+  const [currentLang, setCurrentLang] = useState(i18n.language);
 
   // Step 1 — server address + health check.
   const [apiDraft, setApiDraft] = useState(DEFAULT_API_URL);
@@ -110,7 +118,9 @@ export function OnboardingWizard({
     try {
       const { version } = await checkApiHealth(apiDraft);
       setHealth("ok");
-      setHealthMsg(version ? `atelier-api v${version} läuft hier.` : "atelier-api erreichbar.");
+      setHealthMsg(
+        version ? t("server.apiRunningHere", { version }) : t("server.apiReachable"),
+      );
     } catch (e) {
       setHealth("fail");
       setHealthMsg(errorMessage(e));
@@ -122,20 +132,20 @@ export function OnboardingWizard({
     try {
       const selected = await openDialog({
         directory: true,
-        title: "GTA V Installationsordner wählen",
+        title: t("gta.pickerTitle"),
       });
       if (typeof selected === "string") {
         setGtaPathState(selected);
         await setGtaPath(selected);
         const ready = await pushGtaPathToSidecar(selected);
-        toast[ready ? "success" : "warning"]("GTA V Pfad gespeichert", {
+        toast[ready ? "success" : "warning"](t("gta.pathSaved"), {
           description: ready
-            ? "Ped-Vorschau ist jetzt verfügbar."
-            : "Pfad gespeichert, aber nicht verifiziert — enthält der Ordner GTA5.exe und .rpf-Archive?",
+            ? t("gta.pathSavedReady")
+            : t("gta.pathSavedUnverified"),
         });
       }
     } catch (e) {
-      toast.error("Pfad konnte nicht gewählt werden", { description: errorMessage(e) });
+      toast.error(t("gta.pickFailed"), { description: errorMessage(e) });
     } finally {
       setPicking(false);
     }
@@ -158,7 +168,7 @@ export function OnboardingWizard({
       await setOnboardingDone(true);
       onDone();
     } catch (e) {
-      toast.error("Einrichtung konnte nicht abgeschlossen werden", {
+      toast.error(t("finishFailed"), {
         description: errorMessage(e),
       });
       setFinishing(false);
@@ -175,8 +185,8 @@ export function OnboardingWizard({
           <div className="flex items-center gap-3">
             <img src={atelierLogo} alt="" className="h-9 w-9" draggable={false} />
             <div>
-              <h1 className="text-lg font-semibold text-white">Willkommen bei atelier</h1>
-              <p className="text-xs text-white/45">Lass uns das kurz einrichten.</p>
+              <h1 className="text-lg font-semibold text-white">{t("welcomeTitle")}</h1>
+              <p className="text-xs text-white/45">{t("welcomeSubtitle")}</p>
             </div>
             <div className="ml-auto">
               <StepDots index={stepIdx} />
@@ -184,16 +194,48 @@ export function OnboardingWizard({
           </div>
 
           <div className="mt-7 min-h-[184px]">
+            {step.id === "language" && (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2 text-white">
+                  <Globe className="h-4 w-4 text-[#7289DA]" />
+                  <span className="text-sm font-medium">{t("language.title")}</span>
+                </div>
+                <p className="text-sm text-white/50">{t("language.description")}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {SUPPORTED_LANGUAGES.map((lang) => {
+                    const active = currentLang === lang.code;
+                    return (
+                      <button
+                        key={lang.code}
+                        type="button"
+                        onClick={() => {
+                          void changeLanguage(lang.code).then(() =>
+                            setCurrentLang(lang.code),
+                          );
+                        }}
+                        className={cn(
+                          "flex items-center justify-between rounded-[10px] border px-3 py-2.5 text-sm transition-colors",
+                          active
+                            ? "border-[#5865F2] bg-[#5865F2]/15 text-white"
+                            : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10",
+                        )}
+                      >
+                        <span>{lang.label}</span>
+                        {active && <Check className="h-4 w-4 shrink-0 text-[#7289DA]" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {step.id === "server" && (
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2 text-white">
                   <ServerCog className="h-4 w-4 text-[#7289DA]" />
-                  <span className="text-sm font-medium">Server-Adresse</span>
+                  <span className="text-sm font-medium">{t("server.title")}</span>
                 </div>
-                <p className="text-sm text-white/50">
-                  Adresse der atelier-api (Sync-Server). Prüfe, ob dort eine atelier-api
-                  antwortet.
-                </p>
+                <p className="text-sm text-white/50">{t("server.description")}</p>
                 <div className="flex gap-2">
                   <Input
                     value={apiDraft}
@@ -213,7 +255,7 @@ export function OnboardingWizard({
                     {health === "checking" ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      "Prüfen"
+                      t("server.check")
                     )}
                   </Button>
                 </div>
@@ -240,28 +282,25 @@ export function OnboardingWizard({
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2 text-white">
                   <FolderOpen className="h-4 w-4 text-[#7289DA]" />
-                  <span className="text-sm font-medium">GTA V-Verzeichnis</span>
+                  <span className="text-sm font-medium">{t("gta.title")}</span>
                 </div>
-                <p className="text-sm text-white/50">
-                  Für die Ped-Vorschau und den Pack-Export. Du kannst das auch später in den
-                  Einstellungen nachholen.
-                </p>
+                <p className="text-sm text-white/50">{t("gta.description")}</p>
                 <div className="flex gap-2">
                   <Input
                     readOnly
                     value={gtaPath ?? ""}
-                    placeholder="Noch kein Pfad gewählt…"
+                    placeholder={t("gta.noPathYet")}
                     className="border-white/15 bg-white/5 text-white"
                   />
                   <Button variant="outline" disabled={picking} onClick={() => void pickGtaPath()}>
                     <FolderOpen className="h-4 w-4" />
-                    Durchsuchen
+                    {t("gta.browse")}
                   </Button>
                 </div>
                 {gtaPath && (
                   <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
                     <Check className="h-4 w-4 shrink-0" />
-                    <span>Verzeichnis gesetzt.</span>
+                    <span>{t("gta.directorySet")}</span>
                   </div>
                 )}
               </div>
@@ -271,14 +310,11 @@ export function OnboardingWizard({
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2 text-white">
                   <ScrollText className="h-4 w-4 text-[#7289DA]" />
-                  <span className="text-sm font-medium">Echtzeit-Logs</span>
+                  <span className="text-sm font-medium">{t("logs.title")}</span>
                 </div>
-                <p className="text-sm text-white/50">
-                  Ein eigenes Fenster mit Live-Logs (App, Sidecar, Oberfläche) — praktisch
-                  beim Melden von Fehlern. Jederzeit per Strg+Shift+L.
-                </p>
+                <p className="text-sm text-white/50">{t("logs.description")}</p>
                 <div className="flex items-center justify-between gap-4 rounded-[10px] bg-white/5 px-3 py-2.5">
-                  <span className="text-sm text-white/85">Log-Fenster aktivieren</span>
+                  <span className="text-sm text-white/85">{t("logs.enableWindow")}</span>
                   <Switch checked={logEnabled} onCheckedChange={setLogEnabled} />
                 </div>
               </div>
@@ -293,11 +329,11 @@ export function OnboardingWizard({
                 onClick={() => setStepIdx((i) => Math.max(0, i - 1))}
               >
                 <ChevronLeft className="h-4 w-4" />
-                Zurück
+                {t("common:back")}
               </Button>
             ) : onCancel ? (
               <Button variant="ghost" size="sm" onClick={onCancel}>
-                Abbrechen
+                {t("common:cancel")}
               </Button>
             ) : (
               <span />
@@ -309,14 +345,14 @@ export function OnboardingWizard({
                 className="bg-[#5865F2] text-white hover:bg-[#4752C4]"
                 onClick={() => void finish()}
               >
-                {finishing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Los geht's"}
+                {finishing ? <Loader2 className="h-4 w-4 animate-spin" /> : t("finish")}
               </Button>
             ) : (
               <Button
                 className="bg-[#5865F2] text-white hover:bg-[#4752C4]"
                 onClick={() => void next()}
               >
-                Weiter
+                {t("common:next")}
               </Button>
             )}
           </div>

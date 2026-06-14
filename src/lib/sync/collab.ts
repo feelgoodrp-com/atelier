@@ -14,6 +14,7 @@
 
 import { useEffect } from "react";
 import { toast } from "sonner";
+import i18n from "@/lib/i18n";
 import {
   acquireLock,
   ApiError,
@@ -233,12 +234,12 @@ function onHeadChanged(msg: Record<string, unknown>): void {
   const base = useProjectStore.getState().project?.sync.baseRevision ?? 0;
   if (revision <= base) return;
 
-  toast.info(`Neue Version verfügbar (Rev ${revision})`, {
+  toast.info(i18n.t("sync:headChanged.title", { revision }), {
     id: "collab-head-changed",
-    description: "Ein Teammitglied hat eine neue Revision hochgeladen.",
+    description: i18n.t("sync:headChanged.description"),
     duration: 15_000,
     action: {
-      label: "Jetzt laden",
+      label: i18n.t("sync:headChanged.action"),
       onClick: () => void useSyncStore.getState().pull(),
     },
   });

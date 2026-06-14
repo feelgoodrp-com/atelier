@@ -1,0 +1,119 @@
+{
+  "title": "Settings",
+  "tabs": {
+    "general": "General",
+    "account": "Account",
+    "admin": "Admin"
+  },
+  "general": {
+    "language": {
+      "title": "Language",
+      "description": "Choose the display language for atelier."
+    },
+    "gta": {
+      "title": "GTA V",
+      "description": "Required for preview models and pack export.",
+      "installFolder": "Installation folder",
+      "noPathYet": "No path selected yet…",
+      "browse": "Browse",
+      "pickerTitle": "Select GTA V installation folder",
+      "pathSaved": "GTA V path saved",
+      "pathSavedReady": "Ped preview is now available.",
+      "pathSavedUnverified": "The sidecar could not verify the path — is the installation folder correct (contains GTA5.exe and .rpf archives)?",
+      "pickFailed": "Could not select path"
+    },
+    "backend": {
+      "title": "Backend",
+      "description": "Address of the atelier sync server.",
+      "apiUrlLabel": "API URL",
+      "apiUrlSaved": "API URL saved",
+      "apiUrlSaveFailed": "Could not save API URL"
+    },
+    "sidecar": {
+      "title": "Sidecar",
+      "description": "Local helper process for YDD/YTD processing.",
+      "statusUnknown": "Status unknown",
+      "restart": "Restart",
+      "restarting": "Sidecar is restarting",
+      "restartFailed": "Restart failed"
+    },
+    "logs": {
+      "title": "Logs",
+      "description": "Daily rotating log files (app, sidecar, UI) — helpful for bug reports.",
+      "dirUnavailable": "Log directory unavailable",
+      "consoleTitle": "Real-time log window",
+      "consoleDescription": "A dedicated window with a live stream of all logs (terminal button top right, Ctrl+Shift+L)."
+    },
+    "setup": {
+      "title": "Setup",
+      "description": "Run the setup wizard again (server address, GTA path, logs).",
+      "rerun": "Run setup again"
+    }
+  },
+  "account": {
+    "notSignedIn": "Not signed in",
+    "notSignedInDescription": "Sign in with Discord to sync projects.",
+    "signingIn": "Signing in…",
+    "signInWithDiscord": "Sign in with Discord",
+    "signInFailed": "Sign-in failed",
+    "pendingTitle": "Waiting for approval.",
+    "pendingBody": "An admin needs to approve your account before you can sync.",
+    "title": "Account",
+    "discordId": "Discord ID: {{id}}",
+    "roleAdmin": "Admin",
+    "roleMember": "Member",
+    "statusApproved": "Approved",
+    "statusPending": "Pending",
+    "statusLocked": "Locked",
+    "logout": "Log out",
+    "loggedOut": "Logged out",
+    "devices": {
+      "title": "Devices",
+      "description": "Devices signed in to your account.",
+      "empty": "No devices found.",
+      "thisDevice": "This device",
+      "revoked": "Device signed out",
+      "revokeFailed": "Error"
+    }
+  },
+  "admin": {
+    "title": "User management",
+    "description": "Approvals and locks for atelier accounts.",
+    "loadFailed": "Could not load users",
+    "statusPlaceholder": "Status",
+    "filter": {
+      "all": "All",
+      "pending": "Pending",
+      "approved": "Approved",
+      "locked": "Locked"
+    },
+    "empty": "No users for this filter.",
+    "columns": {
+      "user": "User",
+      "role": "Role",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "roleAdmin": "Admin",
+    "roleMember": "Member",
+    "statusApproved": "Approved",
+    "statusPending": "Pending",
+    "statusLocked": "Locked",
+    "approve": "Approve",
+    "lock": "Lock",
+    "userApproved": "User approved",
+    "userLocked": "User locked",
+    "actionFailed": "Action failed"
+  },
+  "credits": {
+    "title": "Credits & thanks",
+    "intro": "atelier is an independent reimplementation of <hl>grzyClothTool</hl> and uses <hl>CodeWalker</hl> for the 3D preview. Support the people who made it possible:",
+    "openLink": "Open {{label}}",
+    "roles": {
+      "grzybeek": "grzyClothTool — the blueprint for atelier",
+      "dexyfex": "CodeWalker — without him there would be no 3D preview",
+      "jagodaMods": "Ideas & motivation",
+      "ook": "Contributions & fixes"
+    }
+  }
+}

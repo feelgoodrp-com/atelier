@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Anchor,
   Backpack,
@@ -81,6 +82,7 @@ function CategoryRow({
   active: boolean;
   onSelect: () => void;
 }) {
+  const { t } = useTranslation("workbench");
   const Icon = SLOT_ICONS[slot.icon] ?? Shirt;
   return (
     <button
@@ -99,7 +101,7 @@ function CategoryRow({
           active ? "text-[#7289DA]" : "text-white/45",
         )}
       />
-      <span className="flex-1 truncate">{slot.label}</span>
+      <span className="flex-1 truncate">{t(`slot.${slot.id}`)}</span>
       {stats.warnings > 0 && (
         <Tooltip>
           <TooltipTrigger asChild>
@@ -109,7 +111,7 @@ function CategoryRow({
             </span>
           </TooltipTrigger>
           <TooltipContent side="right">
-            {stats.warnings} Drawable(s) ohne Mesh oder Texturen
+            {t("categoryTree.warningsTooltip", { count: stats.warnings })}
           </TooltipContent>
         </Tooltip>
       )}
@@ -183,6 +185,7 @@ function Section({
 }
 
 export function CategoryTree() {
+  const { t } = useTranslation("workbench");
   const project = useProjectStore((s) => s.project);
   const viewGender = useWorkbenchStore((s) => s.viewGender);
   const category = useWorkbenchStore((s) => s.category);
@@ -213,7 +216,7 @@ export function CategoryTree() {
     <div className="flex h-full flex-col">
       <div className="flex h-10 shrink-0 items-center justify-between border-b border-white/8 px-4">
         <span className="text-xs font-semibold uppercase tracking-wider text-white/50">
-          Kategorien
+          {t("categoryTree.title")}
         </span>
         <span className="font-mono text-[10px] text-white/30">
           {viewGender === "male" ? "mp_m" : "mp_f"}
@@ -238,7 +241,7 @@ export function CategoryTree() {
                 category === "all" ? "text-[#7289DA]" : "text-white/45",
               )}
             />
-            <span className="flex-1">Alle</span>
+            <span className="flex-1">{t("categoryTree.all")}</span>
             {totalWarnings > 0 && (
               <span className="flex items-center gap-0.5 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-amber-300">
                 <TriangleAlert className="h-2.5 w-2.5" />
@@ -256,7 +259,7 @@ export function CategoryTree() {
           </button>
 
           <Section
-            title="Components"
+            title={t("categoryTree.components")}
             slots={GTA_COMPONENTS}
             statsBySlot={statsBySlot}
             category={category}
@@ -265,7 +268,7 @@ export function CategoryTree() {
             onOpenChange={(open) => setCategorySection("components", open)}
           />
           <Section
-            title="Props"
+            title={t("categoryTree.props")}
             slots={GTA_PROPS}
             statsBySlot={statsBySlot}
             category={category}

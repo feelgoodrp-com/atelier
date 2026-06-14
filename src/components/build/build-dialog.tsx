@@ -15,6 +15,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   CircleAlert,
   CircleCheck,
@@ -68,63 +69,32 @@ const RESOURCE_NAME_RE = /^[a-zA-Z0-9_-]+$/;
 
 interface TargetOption {
   id: BuildTarget;
-  label: string;
-  description: string;
 }
 
 const TARGETS: TargetOption[] = [
-  {
-    id: "fivem",
-    label: "FiveM",
-    description: "Streambare Server-Ressource mit echten YMT-Dateien (empfohlen).",
-  },
-  {
-    id: "singleplayer",
-    label: "Singleplayer",
-    description: "dlc.rpf für den GTA-V-Einzelspieler (dlclist.xml-Eintrag nötig).",
-  },
-  {
-    id: "ragemp",
-    label: "RageMP",
-    description: "dlc.rpf im Client-Format für RageMP-Server (experimentell).",
-  },
-  {
-    id: "altv",
-    label: "alt:V",
-    description: "Ordner-Struktur als DLC-Ressource für alt:V (experimentell).",
-  },
+  { id: "fivem" },
+  { id: "singleplayer" },
+  { id: "ragemp" },
+  { id: "altv" },
 ];
-
-/** German labels for the SSE progress phases of the sidecar builders. */
-const PHASE_LABELS: Record<string, string> = {
-  validate: "Validierung",
-  plan: "Build-Plan",
-  copy: "Dateien kopieren",
-  ymt: "YMT-Generierung",
-  meta: "Manifeste schreiben",
-  package: "Paketierung",
-};
 
 const SEVERITY_ORDER: FindingSeverity[] = ["error", "warn", "info"];
 
 const SEVERITY_META: Record<
   FindingSeverity,
-  { label: string; icon: typeof Info; row: string; iconColor: string }
+  { icon: typeof Info; row: string; iconColor: string }
 > = {
   error: {
-    label: "Fehler",
     icon: CircleAlert,
     row: "border-red-500/25 bg-red-500/10 text-red-200",
     iconColor: "text-red-400",
   },
   warn: {
-    label: "Warnungen",
     icon: TriangleAlert,
     row: "border-amber-500/25 bg-amber-500/10 text-amber-200",
     iconColor: "text-amber-300",
   },
   info: {
-    label: "Hinweise",
     icon: Info,
     row: "border-white/10 bg-white/5 text-white/60",
     iconColor: "text-white/40",
@@ -151,6 +121,7 @@ function FindingRow({
   finding: ValidationFinding;
   onJump: (drawableId: string) => void;
 }) {
+  const { t } = useTranslation("build");
   const project = useProjectStore((s) => s.project);
   const drawable = finding.drawableId
     ? project?.drawables.find((d) => d.id === finding.drawableId)
@@ -171,7 +142,9 @@ function FindingRow({
           <p className="mb-0.5 flex items-center gap-1.5 text-[10px] opacity-75">
             <span className="font-mono">
               {drawable.gender === "male" ? "mp_m" : "mp_f"} ·{" "}
-              {getSlotById(drawable.type)?.label ?? drawable.type}
+              {getSlotById(drawable.type)
+                ? t(`workbench:slot.${drawable.type}`)
+                : drawable.type}
             </span>
             <span className="truncate font-semibold">{drawable.label}</span>
           </p>
@@ -183,7 +156,7 @@ function FindingRow({
           type="button"
           onClick={() => onJump(drawable.id)}
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] text-current opacity-50 transition-opacity hover:opacity-100"
-          title="Im Workbench anzeigen"
+          title={t("findings.jumpToWorkbench")}
         >
           <Crosshair className="h-3.5 w-3.5" />
         </button>
@@ -198,6 +171,7 @@ interface BuildDialogProps {
 }
 
 export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
+  const { t } = useTranslation("build");
   const project = useProjectStore((s) => s.project);
   const projectDir = useProjectStore((s) => s.projectDir);
   const updateSettings = useProjectStore((s) => s.updateSettings);
@@ -273,7 +247,7 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
   const pickOutDir = async () => {
     const selected = await openDialog({
       directory: true,
-      title: "Ausgabeordner für den Build wählen",
+      title: t("setup.outDirTitle"),
       defaultPath: outDir ?? undefined,
     }).catch(() => null);
     if (typeof selected === "string") {
@@ -304,7 +278,7 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
       setFindings(await validateProject(projectDir, project));
       setStep("findings");
     } catch (e) {
-      toast.error("Validierung fehlgeschlagen", { description: errorMessage(e) });
+      toast.error(t("toast.validateFailed"), { description: errorMessage(e) });
       setStep("setup");
     }
   };
@@ -336,12 +310,15 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
       setReport(done.report);
       setBuiltOutDir(done.outDir);
       setStep("done");
-      toast.success("Build abgeschlossen", {
-        description: `${done.report.resources.length} Ressource(n) in ${done.outDir}`,
+      toast.success(t("toast.buildDone"), {
+        description: t("toast.buildDoneDesc", {
+          count: done.report.resources.length,
+          dir: done.outDir,
+        }),
       });
     } catch (e) {
       if (e instanceof BuildBusyError) {
-        toast.error("Sidecar ist beschäftigt", { description: errorMessage(e) });
+        toast.error(t("toast.sidecarBusy"), { description: errorMessage(e) });
         setStep("findings");
         return;
       }
@@ -355,7 +332,7 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
     try {
       await openPath(builtOutDir);
     } catch (e) {
-      toast.error("Ordner konnte nicht geöffnet werden", {
+      toast.error(t("toast.openFolderFailed"), {
         description: errorMessage(e),
       });
     }
@@ -381,18 +358,17 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
             <Hammer className="h-4 w-4 text-[#7289DA]" />
-            Pack bauen
+            {t("dialog.title")}
           </DialogTitle>
           <DialogDescription className="text-white/50">
-            Baut das Projekt als installierbare Clothing-Ressource für das
-            gewählte Ziel.
+            {t("dialog.description")}
           </DialogDescription>
         </DialogHeader>
 
         {step === "setup" && (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <FieldLabel>Ziel</FieldLabel>
+              <FieldLabel>{t("targets.label")}</FieldLabel>
               <div className="grid grid-cols-2 gap-2">
                 {TARGETS.map((option) => (
                   <button
@@ -407,10 +383,10 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
                     )}
                   >
                     <span className="text-sm font-semibold text-white">
-                      {option.label}
+                      {t(`targets.${option.id}.label`)}
                     </span>
                     <span className="text-[11px] leading-snug text-white/45">
-                      {option.description}
+                      {t(`targets.${option.id}.description`)}
                     </span>
                   </button>
                 ))}
@@ -419,11 +395,11 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
 
             <div className="grid grid-cols-2 gap-2">
               <div className="flex flex-col gap-1.5">
-                <FieldLabel>DLC-Name</FieldLabel>
+                <FieldLabel>{t("setup.dlcName")}</FieldLabel>
                 <Input
                   value={dlcName}
                   onChange={(e) => setDlcName(e.target.value)}
-                  placeholder="z. B. fgsommer"
+                  placeholder={t("setup.dlcPlaceholder")}
                   className={cn(
                     "h-8 border-white/15 bg-white/5 font-mono text-xs text-white",
                     dlcName.length > 0 && !dlcValid && "border-red-500/50",
@@ -431,16 +407,16 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
                 />
                 {dlcName.length > 0 && !dlcValid && (
                   <p className="text-[10px] text-red-300">
-                    Nur Kleinbuchstaben, Ziffern und Unterstriche (a–z, 0–9, _).
+                    {t("setup.dlcInvalid")}
                   </p>
                 )}
               </div>
               <div className="flex flex-col gap-1.5">
-                <FieldLabel>Ressourcen-Name (optional)</FieldLabel>
+                <FieldLabel>{t("setup.resourceName")}</FieldLabel>
                 <Input
                   value={resourceName}
                   onChange={(e) => setResourceName(e.target.value)}
-                  placeholder={normalizedDlc || "wie DLC-Name"}
+                  placeholder={normalizedDlc || t("setup.resourcePlaceholderFallback")}
                   className={cn(
                     "h-8 border-white/15 bg-white/5 font-mono text-xs text-white",
                     !resourceValid && "border-red-500/50",
@@ -448,19 +424,19 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
                 />
                 {!resourceValid && (
                   <p className="text-[10px] text-red-300">
-                    Erlaubt sind Buchstaben, Ziffern, _ und -.
+                    {t("setup.resourceInvalid")}
                   </p>
                 )}
               </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <FieldLabel>Ausgabeordner</FieldLabel>
+              <FieldLabel>{t("setup.outDir")}</FieldLabel>
               <div className="flex gap-2">
                 <Input
                   readOnly
                   value={outDir ?? ""}
-                  placeholder="Noch kein Ordner gewählt…"
+                  placeholder={t("setup.outDirPlaceholder")}
                   className="h-8 border-white/15 bg-white/5 text-xs text-white"
                   title={outDir ?? undefined}
                 />
@@ -471,7 +447,7 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
                   onClick={() => void pickOutDir()}
                 >
                   <FolderOpen className="h-3.5 w-3.5" />
-                  Durchsuchen
+                  {t("setup.browse")}
                 </Button>
               </div>
             </div>
@@ -480,10 +456,10 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
               <div className="flex items-center justify-between rounded-[10px] border border-white/10 bg-white/5 px-3 py-2">
                 <div className="flex flex-col">
                   <span className="text-xs text-white/70">
-                    shop_ped_apparel.meta erzeugen
+                    {t("setup.shopMeta")}
                   </span>
                   <span className="text-[10px] text-white/35">
-                    Macht die Drawables für Shop-/Kleidungs-Scripts auffindbar.
+                    {t("setup.shopMetaHint")}
                   </span>
                 </div>
                 <Switch
@@ -498,7 +474,7 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
         {step === "validating" && (
           <div className="flex flex-col items-center gap-4 py-12">
             <Loader2 className="h-8 w-8 animate-spin text-[#7289DA]" />
-            <p className="text-sm text-white/50">Projekt wird geprüft…</p>
+            <p className="text-sm text-white/50">{t("validating")}</p>
           </div>
         )}
 
@@ -508,7 +484,7 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
               <div className="flex flex-col items-center gap-3 py-8">
                 <CircleCheck className="h-8 w-8 text-emerald-400" />
                 <p className="text-sm text-white/60">
-                  Keine Probleme gefunden — bereit zum Bauen.
+                  {t("findings.noIssues")}
                 </p>
               </div>
             ) : (
@@ -520,7 +496,7 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
                     return (
                       <div key={severity} className="flex flex-col gap-1.5">
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
-                          {SEVERITY_META[severity].label} ({list.length})
+                          {t(`severity.${severity}`)} ({list.length})
                         </p>
                         {list.map((finding, i) => (
                           <FindingRow
@@ -537,8 +513,7 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
             )}
             {errorCount > 0 && (
               <p className="text-xs text-red-300">
-                {errorCount} Fehler verhindern den Build — bitte beheben und
-                erneut prüfen.
+                {t("findings.errorsBlock", { count: errorCount })}
               </p>
             )}
           </div>
@@ -549,8 +524,8 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
             <div className="flex items-center gap-2 text-sm text-white">
               <Loader2 className="h-4 w-4 animate-spin text-[#7289DA]" />
               {progress
-                ? (PHASE_LABELS[progress.phase] ?? progress.phase)
-                : "Build wird gestartet…"}
+                ? t(`phase.${progress.phase}`, { defaultValue: progress.phase })
+                : t("building.starting")}
               {progress && progress.total > 1 && (
                 <span className="ml-auto font-mono text-[10px] text-white/35">
                   {Math.min(progress.current, progress.total)}/{progress.total}
@@ -569,8 +544,7 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
             <div className="flex items-center gap-2">
               <CircleCheck className="h-5 w-5 shrink-0 text-emerald-400" />
               <p className="text-sm text-white">
-                Build abgeschlossen — {report.resources.length} Ressource(n)
-                erstellt.
+                {t("done.title", { count: report.resources.length })}
               </p>
             </div>
             <div className="rounded-[10px] border border-white/10">
@@ -583,7 +557,7 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
                     {resource.folder}
                   </span>
                   <span className="shrink-0 text-white/40">
-                    {resource.drawables} Drawable(s)
+                    {t("done.drawables", { count: resource.drawables })}
                   </span>
                 </div>
               ))}
@@ -608,7 +582,7 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
             <div className="flex items-start gap-2 rounded-[10px] border border-red-500/25 bg-red-500/10 px-3 py-2.5">
               <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
               <p className="break-words text-sm text-red-200">
-                {buildError ?? "Der Build ist fehlgeschlagen."}
+                {buildError ?? t("failed.fallback")}
               </p>
             </div>
           </div>
@@ -617,10 +591,10 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
         {step === "setup" && (
           <DialogFooter>
             <Button variant="outline" onClick={() => close(false)}>
-              Abbrechen
+              {t("common:cancel")}
             </Button>
             <Button disabled={!setupValid} onClick={() => void runValidation()}>
-              Weiter zur Prüfung
+              {t("setup.next")}
             </Button>
           </DialogFooter>
         )}
@@ -628,11 +602,11 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
         {step === "findings" && (
           <DialogFooter>
             <Button variant="outline" onClick={() => setStep("setup")}>
-              Zurück
+              {t("common:back")}
             </Button>
             <Button disabled={errorCount > 0} onClick={() => void runBuild()}>
               <Hammer className="h-4 w-4" />
-              Bauen
+              {t("findings.build")}
             </Button>
           </DialogFooter>
         )}
@@ -641,18 +615,18 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
           <DialogFooter>
             <Button variant="outline" onClick={() => void openOutputFolder()}>
               <FolderOpen className="h-4 w-4" />
-              Ordner öffnen
+              {t("done.openFolder")}
             </Button>
-            <Button onClick={() => close(false)}>Schließen</Button>
+            <Button onClick={() => close(false)}>{t("common:close")}</Button>
           </DialogFooter>
         )}
 
         {step === "failed" && (
           <DialogFooter>
             <Button variant="outline" onClick={() => setStep("setup")}>
-              Zurück
+              {t("common:back")}
             </Button>
-            <Button onClick={() => close(false)}>Schließen</Button>
+            <Button onClick={() => close(false)}>{t("common:close")}</Button>
           </DialogFooter>
         )}
       </DialogContent>

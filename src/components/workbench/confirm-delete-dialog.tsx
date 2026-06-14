@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,22 +25,25 @@ export function ConfirmDeleteDialog({
   count,
   onConfirm,
 }: ConfirmDeleteDialogProps) {
+  const { t } = useTranslation("workbench");
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="liquid-glass border-white/15 sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="text-white">
-            {count === 1 ? "Drawable löschen?" : `${count} Drawables löschen?`}
+            {count === 1
+              ? t("confirmDelete.titleOne")
+              : t("confirmDelete.titleMany", { count })}
           </DialogTitle>
           <DialogDescription className="text-white/50">
-            Entfernt {count === 1 ? "das Drawable" : "die Drawables"} aus dem
-            Projekt. Die kopierten Dateien bleiben im assets-Ordner erhalten.
-            Mit Strg+Z rückgängig machbar.
+            {count === 1
+              ? t("confirmDelete.descriptionOne")
+              : t("confirmDelete.descriptionMany")}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Abbrechen
+            {t("common:cancel")}
           </Button>
           <Button
             variant="destructive"
@@ -49,7 +53,7 @@ export function ConfirmDeleteDialog({
             }}
           >
             <Trash2 className="h-4 w-4" />
-            Löschen
+            {t("common:delete")}
           </Button>
         </DialogFooter>
       </DialogContent>

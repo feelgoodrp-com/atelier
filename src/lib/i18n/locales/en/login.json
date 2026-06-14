@@ -1,0 +1,28 @@
+{
+  "phase": {
+    "connecting": "Preparing connection…",
+    "awaiting": "Waiting for confirmation in the browser…",
+    "exchanging": "Finishing sign-in…",
+    "success": "Signed in!"
+  },
+  "advanced": "Advanced: server address",
+  "apiUrlLabel": "atelier-api URL",
+  "apiUrlSaved": "Server address saved",
+  "signIn": "Sign in",
+  "signInSubtitle": "Sign in with Discord to get started.",
+  "signInWithDiscord": "Sign in with Discord",
+  "signInFailed": "Sign-in failed",
+  "tagline": "For everyone. Fuck gatekeeping.",
+  "pending": {
+    "title": "Waiting for approval",
+    "bodyNamed": "Hey {{name}} — your account still needs to be approved by an admin. We check automatically.",
+    "body": "Your account still needs to be approved by an admin. We check automatically.",
+    "checkStatus": "Check status",
+    "logout": "Log out"
+  },
+  "locked": {
+    "title": "Account locked",
+    "body": "Your account has been locked. Please contact an admin.",
+    "logout": "Log out"
+  }
+}

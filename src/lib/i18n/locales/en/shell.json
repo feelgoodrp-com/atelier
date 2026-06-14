@@ -1,0 +1,48 @@
+{
+  "nav": {
+    "start": "Start",
+    "workbench": "Workbench",
+    "settings": "Settings"
+  },
+  "sidecar": {
+    "notResponding": "Sidecar is not responding to /health",
+    "statusUnknown": "Sidecar status unknown"
+  },
+  "user": {
+    "loginFailed": "Login failed",
+    "loggingIn": "Signing in…",
+    "login": "Sign in",
+    "pendingApproval": "Awaiting approval",
+    "admin": "Administrator",
+    "member": "Member",
+    "settings": "Settings",
+    "logout": "Sign out",
+    "loggedOut": "Signed out"
+  },
+  "window": {
+    "minimize": "Minimize",
+    "restore": "Restore",
+    "maximize": "Maximize",
+    "close": "Close"
+  },
+  "log": {
+    "button": "Live log",
+    "buttonTooltip": "Live log window (Ctrl+Shift+L)",
+    "level": "From {{level}}",
+    "filterPlaceholder": "Filter (message or target)…",
+    "pauseScroll": "Pause auto-scroll",
+    "resumeScroll": "Resume auto-scroll",
+    "jumpToBottom": "Jump to bottom",
+    "copyVisible": "Copy visible lines",
+    "clear": "Clear",
+    "linesCopied": "{{count}} lines copied",
+    "copyFailed": "Copy failed",
+    "noEntries": "No log entries",
+    "filterActive": "(filter active)"
+  },
+  "credits": {
+    "inspiredBy": "Inspired by",
+    "by": "by",
+    "supportHim": "— support him:"
+  }
+}

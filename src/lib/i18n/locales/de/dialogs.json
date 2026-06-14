@@ -1,0 +1,26 @@
+{
+  "newProject": {
+    "title": "Neues Projekt",
+    "description": "Erstellt einen Projektordner mit pack.atelier und assets/.",
+    "nameLabel": "Projektname",
+    "namePlaceholder": "z. B. Feelgood Summer Pack",
+    "locationLabel": "Speicherort",
+    "locationPlaceholder": "Noch kein Ordner gewählt…",
+    "browse": "Durchsuchen",
+    "willBeCreatedIn": "Wird erstellt in: {{path}}",
+    "create": "Erstellen",
+    "creating": "Erstellen…",
+    "pickLocationTitle": "Speicherort für das Projekt wählen",
+    "pickLocationError": "Ordner konnte nicht gewählt werden",
+    "created": "Projekt „{{name}}“ erstellt",
+    "createError": "Projekt konnte nicht erstellt werden"
+  },
+  "recovery": {
+    "title": "Nicht gespeicherte Änderungen gefunden",
+    "description": "Für „{{name}}“ existiert ein Autosave vom {{date}}, das neuer ist als der letzte Speicherstand. Möchtest du es wiederherstellen?",
+    "discard": "Verwerfen",
+    "restore": "Wiederherstellen",
+    "restored": "Autosave wiederhergestellt",
+    "restoreError": "Wiederherstellung fehlgeschlagen"
+  }
+}

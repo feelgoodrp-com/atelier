@@ -14,6 +14,7 @@
  * WasInArray, exponential floats, value clamps, unknown elements ignored.
  */
 
+import i18n from "@/lib/i18n";
 import {
   COMPONENT_SLOT_IDS,
   type ComponentSlotId,
@@ -429,7 +430,9 @@ function parseEntityPed(entity: XmlElement, fallbackName: string): MenyooPed | n
     // Purely about component-index matching — irrelevant for a face-only
     // import (no components are taken), so it goes to the clothing bucket.
     clothingWarnings.push(
-      `Kein Freemode-Ped (ModelHash ${modelText || "unbekannt"}) — Komponenten-Indizes passen eventuell nicht zur Vorschau.`,
+      i18n.t("errors:menyoo.notFreemodePed", {
+        hash: modelText || i18n.t("errors:menyoo.modelHashUnknown"),
+      }),
     );
   }
 
@@ -438,12 +441,16 @@ function parseEntityPed(entity: XmlElement, fallbackName: string): MenyooPed | n
     {};
   for (const { index, el } of indexedChildren(child(pedProperties, "PedComps"))) {
     if (index < 0 || index >= COMPONENT_SLOT_IDS.length) {
-      clothingWarnings.push(`Unbekannter Komponenten-Slot „_${index}“ ignoriert.`);
+      clothingWarnings.push(
+        i18n.t("errors:menyoo.unknownComponentSlot", { index }),
+      );
       continue;
     }
     const pair = parsePair(textOf(el));
     if (!pair) {
-      clothingWarnings.push(`Komponenten-Slot „_${index}“ ist unlesbar und wird ignoriert.`);
+      clothingWarnings.push(
+        i18n.t("errors:menyoo.componentSlotUnreadable", { index }),
+      );
       continue;
     }
     const [drawable, rawTexture] = pair;
@@ -453,7 +460,7 @@ function parseEntityPed(entity: XmlElement, fallbackName: string): MenyooPed | n
     // whole sidecar request (int32 overflow) — fall back to the slot default.
     if (drawable > APPEARANCE_INDEX_MAX || texture > APPEARANCE_INDEX_MAX) {
       clothingWarnings.push(
-        `Komponenten-Slot „_${index}“: Wert außerhalb des gültigen Bereichs — Standard wird verwendet.`,
+        i18n.t("errors:menyoo.componentSlotOutOfRange", { index }),
       );
       continue;
     }
@@ -468,28 +475,34 @@ function parseEntityPed(entity: XmlElement, fallbackName: string): MenyooPed | n
   for (const { index, el } of indexedChildren(child(pedProperties, "PedProps"))) {
     const pair = parsePair(textOf(el));
     if (!pair) {
-      clothingWarnings.push(`Prop-Slot „_${index}“ ist unlesbar und wird ignoriert.`);
+      clothingWarnings.push(
+        i18n.t("errors:menyoo.propSlotUnreadable", { index }),
+      );
       continue;
     }
     const [drawable, rawTexture] = pair;
     if (drawable < 0) continue;
     const anchor = PROP_ANCHOR_BY_SLOT[index];
     if (!anchor) {
-      clothingWarnings.push(`Prop-Slot „_${index}“ wird nicht unterstützt und ignoriert.`);
+      clothingWarnings.push(
+        i18n.t("errors:menyoo.propSlotUnsupported", { index }),
+      );
       continue;
     }
     const texture = Math.max(0, rawTexture);
     // Same upper-bound guard as components (sidecar int32 + 400 contract).
     if (drawable > APPEARANCE_INDEX_MAX || texture > APPEARANCE_INDEX_MAX) {
       clothingWarnings.push(
-        `Prop-Slot „_${index}“: Wert außerhalb des gültigen Bereichs — wird ignoriert.`,
+        i18n.t("errors:menyoo.propSlotOutOfRange", { index }),
       );
       continue;
     }
     // Duplicate _N entries map to the same anchor — the sidecar rejects
     // duplicate anchors (400), so only the first one wins.
     if (props.some((p) => p.anchor === anchor)) {
-      clothingWarnings.push(`Prop-Slot „_${index}“ ist doppelt angegeben und wird ignoriert.`);
+      clothingWarnings.push(
+        i18n.t("errors:menyoo.propSlotDuplicate", { index }),
+      );
       continue;
     }
     props.push({ anchor, drawable, texture });
@@ -512,9 +525,7 @@ function parseEntityPed(entity: XmlElement, fallbackName: string): MenyooPed | n
     // colour, FacialFeatures, overlays) — the garment indices are guarded
     // separately above — so this is a face-relevant warning that survives the
     // face-only import.
-    warnings.push(
-      "Einige Werte lagen außerhalb des gültigen Bereichs und wurden angepasst.",
-    );
+    warnings.push(i18n.t("errors:menyoo.valuesClamped"));
   }
 
   return {
@@ -538,9 +549,7 @@ export function parseMenyooXmlText(text: string): MenyooParseResult {
   if (!root) {
     return {
       peds: [],
-      warnings: [
-        "Die Datei ist kein lesbares XML (Menyoo-Outfit oder Spooner-Datei erwartet).",
-      ],
+      warnings: [i18n.t("errors:menyoo.notReadableXml")],
     };
   }
 
@@ -562,16 +571,19 @@ export function parseMenyooXmlText(text: string): MenyooParseResult {
       if (child(c, "PedProperties")) entities.push(c);
     }
     if (entities.length === 0) {
-      warnings.push(`Unbekanntes XML-Format („${root.name}“ statt OutfitPedData/SpoonerPlacements).`);
+      warnings.push(i18n.t("errors:menyoo.unknownXmlFormat", { root: root.name }));
     }
   }
 
   const peds = entities.flatMap((entity, index) => {
-    const ped = parseEntityPed(entity, `Ped ${index + 1}`);
+    const ped = parseEntityPed(
+      entity,
+      i18n.t("errors:menyoo.pedFallbackName", { index: index + 1 }),
+    );
     return ped ? [ped] : [];
   });
   if (peds.length === 0 && warnings.length === 0) {
-    warnings.push("Die Datei enthält keinen Ped mit PedProperties.");
+    warnings.push(i18n.t("errors:menyoo.noPedWithProperties"));
   }
   return { peds, warnings };
 }

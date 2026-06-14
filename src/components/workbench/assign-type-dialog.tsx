@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CircleHelp, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ interface RowState {
  * non-empty; canceling discards the drafts (copied files stay in assets/).
  */
 export function AssignTypeDialog() {
+  const { t } = useTranslation("workbench");
   const pendingDrafts = useWorkbenchStore((s) => s.pendingDrafts);
   const setPendingDrafts = useWorkbenchStore((s) => s.setPendingDrafts);
   const addDrawable = useProjectStore((s) => s.addDrawable);
@@ -67,14 +69,13 @@ export function AssignTypeDialog() {
       added++;
     });
     setPendingDrafts([]);
-    toast.success(`${added} Drawable(s) hinzugefügt`);
+    toast.success(t("assignType.addedToast", { count: added }));
   };
 
   const cancel = () => {
     setPendingDrafts([]);
-    toast.info("Import abgebrochen", {
-      description:
-        "Die Drawables ohne Slot wurden nicht hinzugefügt. Bereits kopierte Dateien bleiben im assets-Ordner.",
+    toast.info(t("assignType.cancelledTitle"), {
+      description: t("assignType.cancelledDescription"),
     });
   };
 
@@ -84,13 +85,15 @@ export function AssignTypeDialog() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
             <CircleHelp className="h-4 w-4 text-[#7289DA]" />
-            Slot zuweisen
+            {t("assignType.title")}
           </DialogTitle>
           <DialogDescription className="text-white/50">
             {pendingDrafts.length === 1
-              ? "Eine Datei konnte nicht automatisch zugeordnet werden."
-              : `${pendingDrafts.length} Dateien konnten nicht automatisch zugeordnet werden.`}{" "}
-            Wähle Geschlecht und Slot, bevor sie hinzugefügt werden.
+              ? t("assignType.descriptionOne")
+              : t("assignType.descriptionMany", {
+                  count: pendingDrafts.length,
+                })}{" "}
+            {t("assignType.descriptionSuffix")}
           </DialogDescription>
         </DialogHeader>
 
@@ -138,22 +141,22 @@ export function AssignTypeDialog() {
                   }
                 >
                   <SelectTrigger className="h-8 w-40 border-white/15 bg-white/5 text-xs text-white">
-                    <SelectValue placeholder="Slot wählen…" />
+                    <SelectValue placeholder={t("assignType.selectSlot")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      <SelectLabel>Components</SelectLabel>
+                      <SelectLabel>{t("assignType.components")}</SelectLabel>
                       {GTA_COMPONENTS.map((slot) => (
                         <SelectItem key={slot.id} value={slot.id}>
-                          {slot.label}
+                          {t(`slot.${slot.id}`)}
                         </SelectItem>
                       ))}
                     </SelectGroup>
                     <SelectGroup>
-                      <SelectLabel>Props</SelectLabel>
+                      <SelectLabel>{t("assignType.props")}</SelectLabel>
                       {GTA_PROPS.map((slot) => (
                         <SelectItem key={slot.id} value={slot.id}>
-                          {slot.label}
+                          {t(`slot.${slot.id}`)}
                         </SelectItem>
                       ))}
                     </SelectGroup>
@@ -166,11 +169,11 @@ export function AssignTypeDialog() {
 
         <DialogFooter>
           <Button variant="outline" onClick={cancel}>
-            Abbrechen
+            {t("common:cancel")}
           </Button>
           <Button disabled={!allTyped} onClick={confirm}>
             <Plus className="h-4 w-4" />
-            Hinzufügen
+            {t("assignType.add")}
           </Button>
         </DialogFooter>
       </DialogContent>

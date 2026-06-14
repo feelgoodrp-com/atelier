@@ -6,6 +6,7 @@
 
 import { create } from "zustand";
 import { toast } from "sonner";
+import i18n from "@/lib/i18n";
 import {
   getServerBuild,
   startServerBuild,
@@ -96,7 +97,7 @@ export const useSyncStore = create<SyncState>((set, get) => ({
       if (result.status === "conflict") {
         set({ conflictHeadRevision: result.headRevision });
       } else {
-        toast.success(`Hochgeladen — Rev ${result.revision}`);
+        toast.success(i18n.t("sync:push.success", { revision: result.revision }));
         // Offer the server build for the just-pushed revision (subtle action
         // in the Cloud section).
         const packId =
@@ -113,7 +114,7 @@ export const useSyncStore = create<SyncState>((set, get) => ({
         }
       }
     } catch (e) {
-      toast.error("Hochladen fehlgeschlagen", { description: errorMessage(e) });
+      toast.error(i18n.t("sync:push.error"), { description: errorMessage(e) });
     } finally {
       set({ busy: null, progress: null });
     }
@@ -130,14 +131,14 @@ export const useSyncStore = create<SyncState>((set, get) => ({
       const result = await pullProject({
         onProgress: (progress) => set({ progress }),
       });
-      toast.success(`Rev ${result.revision} geladen`, {
+      toast.success(i18n.t("sync:pull.success", { revision: result.revision }), {
         description:
           result.downloadedAssets > 0
-            ? `${result.downloadedAssets} Datei(en) heruntergeladen.`
-            : "Alle Dateien waren bereits lokal vorhanden.",
+            ? i18n.t("sync:pull.downloaded", { count: result.downloadedAssets })
+            : i18n.t("sync:pull.allLocal"),
       });
     } catch (e) {
-      toast.error("Laden fehlgeschlagen", { description: errorMessage(e) });
+      toast.error(i18n.t("sync:pull.error"), { description: errorMessage(e) });
     } finally {
       set({ busy: null, progress: null });
     }
@@ -150,7 +151,9 @@ export const useSyncStore = create<SyncState>((set, get) => ({
       const build = await startServerBuild(offer.packId, offer.revision);
       if (build.status === "done") {
         // Cached artifact of the immutable revision — nothing to wait for.
-        toast.success(`Server-Build für Rev ${build.revision} ist fertig`);
+        toast.success(
+          i18n.t("sync:serverBuild.ready", { revision: build.revision }),
+        );
         set({ serverBuild: null });
         return;
       }
@@ -158,7 +161,7 @@ export const useSyncStore = create<SyncState>((set, get) => ({
         serverBuild: { ...offer, buildId: build.buildId, status: build.status },
       });
     } catch (e) {
-      toast.error("Server-Build konnte nicht gestartet werden", {
+      toast.error(i18n.t("sync:serverBuild.startError"), {
         description: errorMessage(e),
       });
     }
@@ -169,21 +172,23 @@ export const useSyncStore = create<SyncState>((set, get) => ({
     if (!current || current.buildId !== buildId) return;
 
     if (status === "done") {
-      toast.success(`Server-Build abgeschlossen (Rev ${current.revision})`);
+      toast.success(
+        i18n.t("sync:serverBuild.done", { revision: current.revision }),
+      );
       set({ serverBuild: null });
       return;
     }
     if (status === "error") {
       set({ serverBuild: null });
-      // Fetch the German error detail (best effort).
+      // Fetch the error detail (best effort).
       void getServerBuild(buildId)
         .then((build) => {
-          toast.error("Server-Build fehlgeschlagen", {
+          toast.error(i18n.t("sync:serverBuild.error"), {
             description: build.error ?? undefined,
           });
         })
         .catch(() => {
-          toast.error("Server-Build fehlgeschlagen");
+          toast.error(i18n.t("sync:serverBuild.error"));
         });
       return;
     }

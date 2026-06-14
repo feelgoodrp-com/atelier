@@ -22,6 +22,7 @@ import {
   rename,
   writeTextFile,
 } from "@tauri-apps/plugin-fs";
+import i18n from "@/lib/i18n";
 import { migrateProjectFile, ProjectMigrationError } from "./migrations";
 import {
   atelierProjectSchema,
@@ -81,7 +82,9 @@ function parseProjectText(text: string, sourceLabel: string): AtelierProject {
   try {
     raw = JSON.parse(text);
   } catch {
-    throw new ProjectIoError(`${sourceLabel} ist beschädigt (ungültiges JSON).`);
+    throw new ProjectIoError(
+      i18n.t("errors:io.corruptJson", { source: sourceLabel }),
+    );
   }
 
   let migrated: unknown;
@@ -95,9 +98,15 @@ function parseProjectText(text: string, sourceLabel: string): AtelierProject {
   const result = atelierProjectSchema.safeParse(migrated);
   if (!result.success) {
     const issue = result.error.issues[0];
-    const where = issue?.path.length ? ` (Feld: ${issue.path.join(".")})` : "";
+    const where = issue?.path.length
+      ? i18n.t("errors:io.invalidFormatField", { field: issue.path.join(".") })
+      : "";
     throw new ProjectIoError(
-      `${sourceLabel} hat ein ungültiges Format${where}: ${issue?.message ?? "unbekannter Fehler"}`,
+      i18n.t("errors:io.invalidFormat", {
+        source: sourceLabel,
+        where,
+        message: issue?.message ?? i18n.t("errors:io.unknownError"),
+      }),
     );
   }
   return result.data;
@@ -118,9 +127,7 @@ export async function createProject(
 ): Promise<AtelierProject> {
   const projectFile = joinPath(dirPath, PROJECT_FILE_NAME);
   if (await exists(projectFile)) {
-    throw new ProjectIoError(
-      "Im gewählten Ordner existiert bereits ein atelier-Projekt.",
-    );
+    throw new ProjectIoError(i18n.t("errors:io.projectExists"));
   }
 
   try {
@@ -130,10 +137,7 @@ export async function createProject(
     // The cache dir holds machine-local derived data — keep it out of git.
     await writeTextFile(joinPath(dirPath, CACHE_DIR_NAME, ".gitignore"), "*\n");
   } catch (e) {
-    throw new ProjectIoError(
-      "Projektordner konnte nicht angelegt werden. Prüfe Pfad und Schreibrechte.",
-      e,
-    );
+    throw new ProjectIoError(i18n.t("errors:io.createFolderFailed"), e);
   }
 
   const project = createEmptyProject(name);
@@ -149,25 +153,20 @@ export async function loadProject(dirPath: string): Promise<AtelierProject> {
   try {
     fileExists = await exists(projectFile);
   } catch (e) {
-    throw new ProjectIoError(
-      "Ordner konnte nicht gelesen werden. Prüfe, ob der Pfad noch existiert.",
-      e,
-    );
+    throw new ProjectIoError(i18n.t("errors:io.readFolderFailed"), e);
   }
   if (!fileExists) {
-    throw new ProjectIoError(
-      "Kein atelier-Projekt gefunden (pack.atelier fehlt in diesem Ordner).",
-    );
+    throw new ProjectIoError(i18n.t("errors:io.noProjectFound"));
   }
 
   let text: string;
   try {
     text = await readTextFile(projectFile);
   } catch (e) {
-    throw new ProjectIoError("pack.atelier konnte nicht gelesen werden.", e);
+    throw new ProjectIoError(i18n.t("errors:io.readPackFailed"), e);
   }
 
-  return parseProjectText(text, "pack.atelier");
+  return parseProjectText(text, i18n.t("errors:io.packLabel"));
 }
 
 /**
@@ -186,10 +185,7 @@ export async function saveProject(
   } catch (e) {
     // Best effort cleanup of a stranded tmp file.
     await remove(tmpFile).catch(() => {});
-    throw new ProjectIoError(
-      "Projekt konnte nicht gespeichert werden. Prüfe Speicherplatz und Schreibrechte.",
-      e,
-    );
+    throw new ProjectIoError(i18n.t("errors:io.saveFailed"), e);
   }
 }
 
@@ -263,7 +259,7 @@ export async function findNewerAutosave(
     try {
       candidate = parseProjectText(
         await readTextFile(file.path),
-        "Autosave-Datei",
+        i18n.t("errors:io.autosaveLabel"),
       );
     } catch {
       continue; // corrupt/old snapshot — try the next newest

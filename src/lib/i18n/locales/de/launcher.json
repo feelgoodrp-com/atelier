@@ -1,0 +1,49 @@
+{
+  "title": "Willkommen im atelier",
+  "subtitle": "Das beste Werkzeug für GTA V Addon-Kleidung.",
+  "actions": {
+    "newProject": {
+      "title": "Neues Projekt",
+      "description": "Starte ein leeres Addon-Kleidungs-Projekt.",
+      "cta": "Erstellen"
+    },
+    "openProject": {
+      "title": "Projekt öffnen",
+      "description": "Öffne ein bestehendes atelier-Projekt.",
+      "cta": "Durchsuchen"
+    },
+    "importPack": {
+      "title": "Pack importieren",
+      "description": "Importiere einen bestehenden Clothing-Pack (YDD/YTD).",
+      "cta": "Importieren"
+    }
+  },
+  "cloud": {
+    "heading": "Cloud-Projekte",
+    "emptyTitle": "Keine Cloud-Projekte",
+    "emptyHint": "Sobald ein Team-Mitglied ein Pack in die Cloud lädt, erscheint es hier zum Klonen.",
+    "revision": "Rev {{revision}}",
+    "cloning": "Wird geklont…",
+    "clonedAndOpened": "„{{name}}“ geklont und geöffnet",
+    "clonePickerTitle": "Speicherort für den Klon wählen",
+    "cloneFailed": "Cloud-Projekt konnte nicht geklont werden"
+  },
+  "recents": {
+    "heading": "Zuletzt geöffnet",
+    "emptyTitle": "Noch keine Projekte",
+    "emptyHint": "Sobald du ein Projekt erstellst oder öffnest, erscheint es hier.",
+    "loading": "Projekt wird geladen…",
+    "open": "Öffnen",
+    "removeFromList": "Aus Liste entfernen"
+  },
+  "projectPickerTitle": "atelier-Projektordner wählen",
+  "openProjectFailed": "Projekt konnte nicht geöffnet werden",
+  "selectFolderFailed": "Ordner konnte nicht gewählt werden",
+  "online": {
+    "title": "Online",
+    "you": "(du)",
+    "inLauncher": "Im Launcher",
+    "nobodyOnline": "Niemand online",
+    "nobodyHint": "Teammitglieder erscheinen hier, sobald sie atelier öffnen."
+  }
+}

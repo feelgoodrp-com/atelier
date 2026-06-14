@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   CircleUser,
   FolderOpen,
@@ -46,6 +47,8 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { CreditsPanel } from "@/components/settings/credits-panel";
+import i18n, { SUPPORTED_LANGUAGES } from "@/lib/i18n";
+import { changeLanguage } from "@/lib/i18n/language";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useUiStore } from "@/lib/stores/ui-store";
 import { useSidecarStore } from "@/lib/stores/sidecar-store";
@@ -72,7 +75,50 @@ function errorMessage(e: unknown): string {
 // Allgemein
 // ---------------------------------------------------------------------------
 
+/** UI language selector. Switches the app language and persists the choice. */
+function LanguageCard() {
+  const { t } = useTranslation("settings");
+  // Re-render on language switch so the highlighted button stays in sync.
+  const [current, setCurrent] = useState(i18n.language);
+
+  return (
+    <Card className="glass-border-subtle border-white/10 bg-transparent">
+      <CardHeader>
+        <CardTitle className="text-white">{t("general.language.title")}</CardTitle>
+        <CardDescription className="text-white/50">
+          {t("general.language.description")}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap gap-2">
+          {SUPPORTED_LANGUAGES.map((lang) => {
+            const active = current === lang.code;
+            return (
+              <Button
+                key={lang.code}
+                variant="outline"
+                size="sm"
+                aria-pressed={active}
+                className={cn(
+                  active &&
+                    "border-[#5865F2] bg-[#5865F2]/15 text-white hover:bg-[#5865F2]/20",
+                )}
+                onClick={() => {
+                  void changeLanguage(lang.code).then(() => setCurrent(lang.code));
+                }}
+              >
+                {lang.label}
+              </Button>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function GeneralTab() {
+  const { t } = useTranslation("settings");
   const [gtaPath, setGtaPathState] = useState<string | null>(null);
   const apiUrl = useAuthStore((s) => s.apiUrl);
   const setApiUrl = useAuthStore((s) => s.setApiUrl);
@@ -94,7 +140,7 @@ function GeneralTab() {
     try {
       const selected = await openDialog({
         directory: true,
-        title: "GTA V Installationsordner wählen",
+        title: t("general.gta.pickerTitle"),
       });
       if (typeof selected === "string") {
         await setGtaPath(selected);
@@ -102,33 +148,32 @@ function GeneralTab() {
         // Push immediately — the sidecar keeps the path in memory only.
         const ready = await pushGtaPathToSidecar(selected);
         if (ready) {
-          toast.success("GTA V Pfad gespeichert", {
-            description: "Ped-Vorschau ist jetzt verfügbar.",
+          toast.success(t("general.gta.pathSaved"), {
+            description: t("general.gta.pathSavedReady"),
           });
         } else {
-          toast.warning("GTA V Pfad gespeichert", {
-            description:
-              "Der Sidecar konnte den Pfad nicht verifizieren — stimmt der Installationsordner (enthält GTA5.exe und .rpf-Archive)?",
+          toast.warning(t("general.gta.pathSaved"), {
+            description: t("general.gta.pathSavedUnverified"),
           });
         }
       }
     } catch (e) {
-      toast.error("Pfad konnte nicht gewählt werden", {
+      toast.error(t("general.gta.pickFailed"), {
         description: errorMessage(e),
       });
     }
-  }, []);
+  }, [t]);
 
   const saveApiUrl = useCallback(async () => {
     try {
       await setApiUrl(apiUrlDraft);
-      toast.success("API-URL gespeichert");
+      toast.success(t("general.backend.apiUrlSaved"));
     } catch (e) {
-      toast.error("API-URL konnte nicht gespeichert werden", {
+      toast.error(t("general.backend.apiUrlSaveFailed"), {
         description: errorMessage(e),
       });
     }
-  }, [apiUrlDraft, setApiUrl]);
+  }, [apiUrlDraft, setApiUrl, t]);
 
   const sidecarDot =
     sidecarInfo.status === "ready"
@@ -139,28 +184,30 @@ function GeneralTab() {
 
   return (
     <div className="flex flex-col gap-4">
+      <LanguageCard />
+
       <Card className="glass-border-subtle border-white/10 bg-transparent">
         <CardHeader>
-          <CardTitle className="text-white">GTA V</CardTitle>
+          <CardTitle className="text-white">{t("general.gta.title")}</CardTitle>
           <CardDescription className="text-white/50">
-            Wird für Vorschau-Modelle und Pack-Export benötigt.
+            {t("general.gta.description")}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           <Label htmlFor="gta-path" className="text-white/70">
-            Installationsordner
+            {t("general.gta.installFolder")}
           </Label>
           <div className="flex gap-2">
             <Input
               id="gta-path"
               readOnly
               value={gtaPath ?? ""}
-              placeholder="Noch kein Pfad gewählt…"
+              placeholder={t("general.gta.noPathYet")}
               className="border-white/15 bg-white/5 text-white"
             />
             <Button variant="outline" onClick={() => void pickGtaPath()}>
               <FolderOpen className="h-4 w-4" />
-              Durchsuchen
+              {t("general.gta.browse")}
             </Button>
           </div>
         </CardContent>
@@ -168,14 +215,14 @@ function GeneralTab() {
 
       <Card className="glass-border-subtle border-white/10 bg-transparent">
         <CardHeader>
-          <CardTitle className="text-white">Backend</CardTitle>
+          <CardTitle className="text-white">{t("general.backend.title")}</CardTitle>
           <CardDescription className="text-white/50">
-            Adresse des atelier-Sync-Servers.
+            {t("general.backend.description")}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           <Label htmlFor="api-url" className="text-white/70">
-            API-URL
+            {t("general.backend.apiUrlLabel")}
           </Label>
           <div className="flex gap-2">
             <Input
@@ -190,7 +237,7 @@ function GeneralTab() {
               disabled={apiUrlDraft === apiUrl}
               onClick={() => void saveApiUrl()}
             >
-              Speichern
+              {t("common:save")}
             </Button>
           </div>
         </CardContent>
@@ -198,15 +245,15 @@ function GeneralTab() {
 
       <Card className="glass-border-subtle border-white/10 bg-transparent">
         <CardHeader>
-          <CardTitle className="text-white">Sidecar</CardTitle>
+          <CardTitle className="text-white">{t("general.sidecar.title")}</CardTitle>
           <CardDescription className="text-white/50">
-            Lokaler Hilfsprozess für YDD/YTD-Verarbeitung.
+            {t("general.sidecar.description")}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm text-white/70">
             <span className={cn("h-2 w-2 rounded-full", sidecarDot)} />
-            <span>{sidecarInfo.detail ?? "Status unbekannt"}</span>
+            <span>{sidecarInfo.detail ?? t("general.sidecar.statusUnknown")}</span>
           </div>
           <Button
             variant="outline"
@@ -215,9 +262,9 @@ function GeneralTab() {
             onClick={() => {
               setRestarting(true);
               restartSidecar()
-                .then(() => toast.success("Sidecar wird neu gestartet"))
+                .then(() => toast.success(t("general.sidecar.restarting")))
                 .catch((e: unknown) =>
-                  toast.error("Neustart fehlgeschlagen", {
+                  toast.error(t("general.sidecar.restartFailed"), {
                     description: errorMessage(e),
                   }),
                 )
@@ -225,7 +272,7 @@ function GeneralTab() {
             }}
           >
             <RotateCcw className="h-4 w-4" />
-            Neu starten
+            {t("general.sidecar.restart")}
           </Button>
         </CardContent>
       </Card>
@@ -238,19 +285,20 @@ function GeneralTab() {
 
 /** Re-run the first-run setup wizard (server address, GTA path, logs). */
 function SetupCard() {
+  const { t } = useTranslation("settings");
   const setRerunOnboarding = useUiStore((s) => s.setRerunOnboarding);
   return (
     <Card className="glass-border-subtle border-white/10 bg-transparent">
       <CardHeader>
-        <CardTitle className="text-white">Einrichtung</CardTitle>
+        <CardTitle className="text-white">{t("general.setup.title")}</CardTitle>
         <CardDescription className="text-white/50">
-          Den Einrichtungs-Assistenten erneut durchlaufen (Server-Adresse, GTA-Pfad, Logs).
+          {t("general.setup.description")}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Button variant="outline" onClick={() => setRerunOnboarding(true)}>
           <RotateCcw className="h-4 w-4" />
-          Einrichtung erneut durchlaufen
+          {t("general.setup.rerun")}
         </Button>
       </CardContent>
     </Card>
@@ -259,6 +307,7 @@ function SetupCard() {
 
 /** Where the rotating tracing log files live (Rust + sidecar + webview logs). */
 function LogsCard() {
+  const { t } = useTranslation("settings");
   const [logDir, setLogDir] = useState<string | null>(null);
   const consoleEnabled = useLogConsoleStore((s) => s.enabled);
   const setConsoleEnabled = useLogConsoleStore((s) => s.setEnabled);
@@ -270,16 +319,16 @@ function LogsCard() {
   return (
     <Card className="glass-border-subtle border-white/10 bg-transparent">
       <CardHeader>
-        <CardTitle className="text-white">Logs</CardTitle>
+        <CardTitle className="text-white">{t("general.logs.title")}</CardTitle>
         <CardDescription className="text-white/50">
-          Täglich rotierende Log-Dateien (App, Sidecar, Oberfläche) — hilfreich für Fehlerberichte.
+          {t("general.logs.description")}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <Input
             readOnly
-            value={logDir ?? "Log-Verzeichnis nicht verfügbar"}
+            value={logDir ?? t("general.logs.dirUnavailable")}
             className="border-white/15 bg-white/5 text-white"
           />
           <Button
@@ -290,16 +339,15 @@ function LogsCard() {
             }}
           >
             <FolderOpen className="h-4 w-4" />
-            Öffnen
+            {t("common:open")}
           </Button>
         </div>
 
         <div className="flex items-center justify-between gap-4 rounded-[10px] bg-white/5 px-3 py-2.5">
           <div className="min-w-0">
-            <p className="text-sm text-white/85">Echtzeit-Log-Fenster</p>
+            <p className="text-sm text-white/85">{t("general.logs.consoleTitle")}</p>
             <p className="text-xs text-white/45">
-              Eigenes Fenster mit Live-Stream aller Logs (Terminal-Button oben rechts,
-              Strg+Shift+L).
+              {t("general.logs.consoleDescription")}
             </p>
           </div>
           <Switch
@@ -321,6 +369,7 @@ function LogsCard() {
 // ---------------------------------------------------------------------------
 
 function AccountTab() {
+  const { t } = useTranslation("settings");
   const user = useAuthStore((s) => s.user);
   const status = useAuthStore((s) => s.status);
   const login = useAuthStore((s) => s.login);
@@ -342,9 +391,9 @@ function AccountTab() {
     return (
       <Card className="glass-border-subtle border-white/10 bg-transparent">
         <CardHeader>
-          <CardTitle className="text-white">Nicht angemeldet</CardTitle>
+          <CardTitle className="text-white">{t("account.notSignedIn")}</CardTitle>
           <CardDescription className="text-white/50">
-            Melde dich mit Discord an, um Projekte zu synchronisieren.
+            {t("account.notSignedInDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -352,13 +401,15 @@ function AccountTab() {
             disabled={status === "loggingIn"}
             onClick={() => {
               login().catch((e: unknown) =>
-                toast.error("Anmeldung fehlgeschlagen", {
+                toast.error(t("account.signInFailed"), {
                   description: errorMessage(e),
                 }),
               );
             }}
           >
-            {status === "loggingIn" ? "Anmeldung läuft…" : "Mit Discord anmelden"}
+            {status === "loggingIn"
+              ? t("account.signingIn")
+              : t("account.signInWithDiscord")}
           </Button>
         </CardContent>
       </Card>
@@ -373,15 +424,15 @@ function AccountTab() {
         <div className="flex items-center gap-3 rounded-[10px] border border-amber-500/30 bg-amber-500/10 px-4 py-3">
           <Hourglass className="h-4 w-4 shrink-0 text-amber-300" />
           <div className="text-sm text-amber-200">
-            <span className="font-medium">Warte auf Freigabe.</span>{" "}
-            Ein Admin muss dein Konto freischalten, bevor du synchronisieren kannst.
+            <span className="font-medium">{t("account.pendingTitle")}</span>{" "}
+            {t("account.pendingBody")}
           </div>
         </div>
       )}
 
       <Card className="glass-border-subtle border-white/10 bg-transparent">
         <CardHeader>
-          <CardTitle className="text-white">Konto</CardTitle>
+          <CardTitle className="text-white">{t("account.title")}</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center gap-4">
           {user.avatar ? (
@@ -395,7 +446,9 @@ function AccountTab() {
           )}
           <div className="flex-1">
             <p className="font-medium text-white">{name}</p>
-            <p className="text-xs text-white/45">Discord-ID: {user.discordId}</p>
+            <p className="text-xs text-white/45">
+              {t("account.discordId", { id: user.discordId })}
+            </p>
             <div className="mt-1.5 flex gap-1.5">
               <Badge
                 variant="outline"
@@ -404,7 +457,9 @@ function AccountTab() {
                   user.role === "admin" && "border-[#5865F2]/50 text-[#7289DA]",
                 )}
               >
-                {user.role === "admin" ? "Admin" : "Mitglied"}
+                {user.role === "admin"
+                  ? t("account.roleAdmin")
+                  : t("account.roleMember")}
               </Badge>
               <Badge
                 variant="outline"
@@ -416,30 +471,30 @@ function AccountTab() {
                 )}
               >
                 {user.status === "approved"
-                  ? "Freigegeben"
+                  ? t("account.statusApproved")
                   : user.status === "pending"
-                    ? "Ausstehend"
-                    : "Gesperrt"}
+                    ? t("account.statusPending")
+                    : t("account.statusLocked")}
               </Badge>
             </div>
           </div>
           <Button
             variant="outline"
             onClick={() => {
-              void logout().then(() => toast.success("Abgemeldet"));
+              void logout().then(() => toast.success(t("account.loggedOut")));
             }}
           >
             <LogOut className="h-4 w-4" />
-            Abmelden
+            {t("account.logout")}
           </Button>
         </CardContent>
       </Card>
 
       <Card className="glass-border-subtle border-white/10 bg-transparent">
         <CardHeader>
-          <CardTitle className="text-white">Geräte</CardTitle>
+          <CardTitle className="text-white">{t("account.devices.title")}</CardTitle>
           <CardDescription className="text-white/50">
-            Angemeldete Geräte deines Kontos.
+            {t("account.devices.description")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -449,7 +504,7 @@ function AccountTab() {
               <Skeleton className="h-10 w-full bg-white/5" />
             </div>
           ) : devices.length === 0 ? (
-            <p className="text-sm text-white/40">Keine Geräte gefunden.</p>
+            <p className="text-sm text-white/40">{t("account.devices.empty")}</p>
           ) : (
             <div className="flex flex-col">
               {devices.map((device, i) => (
@@ -462,7 +517,7 @@ function AccountTab() {
                         {device.name}
                         {device.current && (
                           <span className="ml-2 text-xs text-[#7289DA]">
-                            Dieses Gerät
+                            {t("account.devices.thisDevice")}
                           </span>
                         )}
                       </p>
@@ -480,11 +535,13 @@ function AccountTab() {
                       onClick={() => {
                         revokeDevice(device.deviceId)
                           .then(() => {
-                            toast.success("Gerät abgemeldet");
+                            toast.success(t("account.devices.revoked"));
                             loadDevices();
                           })
                           .catch((e: unknown) =>
-                            toast.error("Fehler", { description: errorMessage(e) }),
+                            toast.error(t("account.devices.revokeFailed"), {
+                              description: errorMessage(e),
+                            }),
                           );
                       }}
                     >
@@ -508,6 +565,7 @@ function AccountTab() {
 type StatusFilter = UserStatus | "all";
 
 function AdminTab() {
+  const { t } = useTranslation("settings");
   const [filter, setFilter] = useState<StatusFilter>("pending");
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -518,11 +576,11 @@ function AdminTab() {
       .then(setUsers)
       .catch((e: unknown) => {
         setUsers([]);
-        toast.error("Nutzer konnten nicht geladen werden", {
+        toast.error(t("admin.loadFailed"), {
           description: errorMessage(e),
         });
       });
-  }, [filter]);
+  }, [filter, t]);
 
   useEffect(() => {
     loadUsers();
@@ -533,11 +591,13 @@ function AdminTab() {
     const call = action === "approve" ? adminApproveUser : adminLockUser;
     call(discordId)
       .then(() => {
-        toast.success(action === "approve" ? "Nutzer freigegeben" : "Nutzer gesperrt");
+        toast.success(
+          action === "approve" ? t("admin.userApproved") : t("admin.userLocked"),
+        );
         loadUsers();
       })
       .catch((e: unknown) =>
-        toast.error("Aktion fehlgeschlagen", { description: errorMessage(e) }),
+        toast.error(t("admin.actionFailed"), { description: errorMessage(e) }),
       )
       .finally(() => setBusyId(null));
   };
@@ -546,20 +606,20 @@ function AdminTab() {
     <Card className="glass-border-subtle border-white/10 bg-transparent">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle className="text-white">Nutzerverwaltung</CardTitle>
+          <CardTitle className="text-white">{t("admin.title")}</CardTitle>
           <CardDescription className="text-white/50">
-            Freigaben und Sperren für atelier-Konten.
+            {t("admin.description")}
           </CardDescription>
         </div>
         <Select value={filter} onValueChange={(v) => setFilter(v as StatusFilter)}>
           <SelectTrigger className="w-44 border-white/15 bg-white/5 text-white">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t("admin.statusPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Alle</SelectItem>
-            <SelectItem value="pending">Ausstehend</SelectItem>
-            <SelectItem value="approved">Freigegeben</SelectItem>
-            <SelectItem value="locked">Gesperrt</SelectItem>
+            <SelectItem value="all">{t("admin.filter.all")}</SelectItem>
+            <SelectItem value="pending">{t("admin.filter.pending")}</SelectItem>
+            <SelectItem value="approved">{t("admin.filter.approved")}</SelectItem>
+            <SelectItem value="locked">{t("admin.filter.locked")}</SelectItem>
           </SelectContent>
         </Select>
       </CardHeader>
@@ -572,16 +632,18 @@ function AdminTab() {
           </div>
         ) : users.length === 0 ? (
           <p className="py-6 text-center text-sm text-white/40">
-            Keine Nutzer für diesen Filter.
+            {t("admin.empty")}
           </p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow className="border-white/8 hover:bg-transparent">
-                <TableHead className="text-white/50">Nutzer</TableHead>
-                <TableHead className="text-white/50">Rolle</TableHead>
-                <TableHead className="text-white/50">Status</TableHead>
-                <TableHead className="text-right text-white/50">Aktionen</TableHead>
+                <TableHead className="text-white/50">{t("admin.columns.user")}</TableHead>
+                <TableHead className="text-white/50">{t("admin.columns.role")}</TableHead>
+                <TableHead className="text-white/50">{t("admin.columns.status")}</TableHead>
+                <TableHead className="text-right text-white/50">
+                  {t("admin.columns.actions")}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -602,7 +664,7 @@ function AdminTab() {
                     </div>
                   </TableCell>
                   <TableCell className="text-white/60">
-                    {u.role === "admin" ? "Admin" : "Mitglied"}
+                    {u.role === "admin" ? t("admin.roleAdmin") : t("admin.roleMember")}
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -616,10 +678,10 @@ function AdminTab() {
                       )}
                     >
                       {u.status === "approved"
-                        ? "Freigegeben"
+                        ? t("admin.statusApproved")
                         : u.status === "pending"
-                          ? "Ausstehend"
-                          : "Gesperrt"}
+                          ? t("admin.statusPending")
+                          : t("admin.statusLocked")}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -633,7 +695,7 @@ function AdminTab() {
                           onClick={() => act(u.discordId, "approve")}
                         >
                           <ShieldCheck className="h-3.5 w-3.5" />
-                          Freigeben
+                          {t("admin.approve")}
                         </Button>
                       )}
                       {u.status !== "locked" && (
@@ -645,7 +707,7 @@ function AdminTab() {
                           onClick={() => act(u.discordId, "lock")}
                         >
                           <ShieldX className="h-3.5 w-3.5" />
-                          Sperren
+                          {t("admin.lock")}
                         </Button>
                       )}
                     </div>
@@ -665,6 +727,7 @@ function AdminTab() {
 // ---------------------------------------------------------------------------
 
 export function SettingsScreen() {
+  const { t } = useTranslation("settings");
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.role === "admin";
 
@@ -674,13 +737,13 @@ export function SettingsScreen() {
       <div className="mx-auto flex w-full max-w-5xl gap-8">
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-semibold tracking-tight text-white">
-            Einstellungen
+            {t("title")}
           </h1>
           <Tabs defaultValue="general" className="mt-6">
             <TabsList className="liquid-glass bg-transparent">
-              <TabsTrigger value="general">Allgemein</TabsTrigger>
-              <TabsTrigger value="account">Konto</TabsTrigger>
-              {isAdmin && <TabsTrigger value="admin">Admin</TabsTrigger>}
+              <TabsTrigger value="general">{t("tabs.general")}</TabsTrigger>
+              <TabsTrigger value="account">{t("tabs.account")}</TabsTrigger>
+              {isAdmin && <TabsTrigger value="admin">{t("tabs.admin")}</TabsTrigger>}
             </TabsList>
             <TabsContent value="general" className="mt-4">
               <GeneralTab />

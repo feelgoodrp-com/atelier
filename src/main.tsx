@@ -3,6 +3,8 @@ import ReactDOM from "react-dom/client";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import App from "./App";
 import { LogWindow } from "./windows/log-window";
+import "./lib/i18n";
+import { loadStoredLanguage } from "./lib/i18n/language";
 
 import "@fontsource/sora/400.css";
 import "@fontsource/sora/500.css";
@@ -23,8 +25,14 @@ function currentWindowLabel(): string {
   }
 }
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <React.StrictMode>
-    {currentWindowLabel() === "logs" ? <LogWindow /> : <App />}
-  </React.StrictMode>,
-);
+function render(): void {
+  ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+    <React.StrictMode>
+      {currentWindowLabel() === "logs" ? <LogWindow /> : <App />}
+    </React.StrictMode>,
+  );
+}
+
+// Apply the persisted language before the first paint (defaults to English),
+// then render. `.finally` ensures rendering even without the Tauri bridge.
+void loadStoredLanguage().finally(render);

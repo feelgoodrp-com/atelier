@@ -7,6 +7,7 @@ import {
   type CSSProperties,
   type MouseEvent,
 } from "react";
+import { useTranslation } from "react-i18next";
 import {
   DndContext,
   PointerSensor,
@@ -127,6 +128,7 @@ function DrawableRow({
   onClick,
   onContextMenuCapture,
 }: RowProps) {
+  const { t } = useTranslation("workbench");
   const {
     attributes,
     listeners,
@@ -183,8 +185,8 @@ function DrawableRow({
         )}
         title={
           canReorder
-            ? "Ziehen zum Sortieren"
-            : "Sortieren nur innerhalb einer Kategorie ohne Suche"
+            ? t("drawableList.dragToSort")
+            : t("drawableList.sortOnlyInCategory")
         }
         onClick={(e) => e.stopPropagation()}
       >
@@ -217,7 +219,7 @@ function DrawableRow({
           }}
           title={drawable.label}
         >
-          {drawable.label || "(ohne Namen)"}
+          {drawable.label || t("drawableList.noName")}
         </span>
       )}
 
@@ -227,7 +229,7 @@ function DrawableRow({
             <Eye className="h-3.5 w-3.5 shrink-0 text-[#7289DA]" />
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            Wird in der 3D-Vorschau gerendert
+            {t("drawableList.renderedInPreview")}
           </TooltipContent>
         </Tooltip>
       )}
@@ -241,7 +243,7 @@ function DrawableRow({
             </span>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            Wird gerade von {lockedBy} bearbeitet
+            {t("drawableList.lockedBy", { name: lockedBy })}
           </TooltipContent>
         </Tooltip>
       )}
@@ -256,8 +258,10 @@ function DrawableRow({
         )}
       >
         {drawable.mode === "addon"
-          ? "Addon"
-          : `Replace ${drawable.replaceTargetId ?? "?"}`}
+          ? t("drawableList.addon")
+          : t("drawableList.replace", {
+              id: drawable.replaceTargetId ?? "?",
+            })}
       </Badge>
 
       <Tooltip>
@@ -274,7 +278,9 @@ function DrawableRow({
           </span>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          {drawable.textures.length} Texturvariante(n)
+          {t("drawableList.textureVariants", {
+            count: drawable.textures.length,
+          })}
         </TooltipContent>
       </Tooltip>
 
@@ -286,7 +292,7 @@ function DrawableRow({
             </span>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            Identische YDD-Datei wird mehrfach verwendet
+            {t("drawableList.duplicateTooltip")}
           </TooltipContent>
         </Tooltip>
       )}
@@ -309,26 +315,28 @@ function DrawableRow({
 }
 
 function EmptyState({ onAdd }: { onAdd: () => void }) {
+  const { t } = useTranslation("workbench");
   return (
     <div className="flex h-full flex-col items-center justify-center px-6 text-center">
       <div className="glass-border-subtle flex h-14 w-14 items-center justify-center rounded-[10px]">
         <Shirt className="h-6 w-6 text-white/30" />
       </div>
       <p className="mt-4 text-sm font-medium text-white/60">
-        Keine Drawables in dieser Ansicht
+        {t("drawableList.emptyTitle")}
       </p>
       <p className="mt-1 max-w-64 text-xs text-white/35">
-        Füge YDD-Dateien hinzu oder ziehe sie einfach in das Fenster.
+        {t("drawableList.emptyDescription")}
       </p>
       <Button size="sm" variant="outline" className="mt-4" onClick={onAdd}>
         <Plus className="h-4 w-4" />
-        Drawable hinzufügen
+        {t("drawableList.addDrawable")}
       </Button>
     </div>
   );
 }
 
 export function DrawableList() {
+  const { t } = useTranslation("workbench");
   const project = useProjectStore((s) => s.project);
   const selection = useProjectStore((s) => s.selection);
   const setSelection = useProjectStore((s) => s.setSelection);
@@ -502,7 +510,7 @@ export function DrawableList() {
       addDrawable({
         ...d,
         id: crypto.randomUUID(),
-        label: `${d.label} (Kopie)`,
+        label: `${d.label} ${t("drawableList.copySuffix")}`,
         textures: [...d.textures],
         flags: { ...d.flags },
       });
@@ -532,7 +540,11 @@ export function DrawableList() {
   );
 
   const slotLabel =
-    category === "all" ? "Alle" : (getSlotById(category)?.label ?? category);
+    category === "all"
+      ? t("categoryTree.all")
+      : getSlotById(category)
+        ? t(`slot.${category}`)
+        : category;
 
   // ---------------------------------------------------------------------
   // Render
@@ -592,7 +604,7 @@ export function DrawableList() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Suchen…"
+            placeholder={t("drawableList.searchPlaceholder")}
             className="h-7 border-white/10 bg-white/5 pl-8 text-xs text-white"
           />
         </div>
@@ -603,7 +615,7 @@ export function DrawableList() {
           onClick={() => void pickAndImportFiles()}
         >
           <Plus className="h-3.5 w-3.5" />
-          Drawable hinzufügen
+          {t("drawableList.addDrawable")}
         </Button>
       </div>
 
@@ -649,12 +661,12 @@ export function DrawableList() {
               onClick={duplicateSelection}
             >
               <Copy className="h-4 w-4" />
-              Duplizieren
+              {t("drawableList.duplicate")}
             </ContextMenuItem>
             <ContextMenuSub>
               <ContextMenuSubTrigger disabled={selection.length === 0}>
                 <Users className="mr-2 h-4 w-4" />
-                Gruppe zuweisen
+                {t("drawableList.assignGroup")}
               </ContextMenuSubTrigger>
               <ContextMenuSubContent className="w-48">
                 {(project?.groups ?? []).map((g) => (
@@ -670,28 +682,28 @@ export function DrawableList() {
                   </ContextMenuItem>
                 ))}
                 <ContextMenuItem onClick={() => assignGroup(selection, null)}>
-                  Keine Gruppe
+                  {t("drawableList.noGroup")}
                 </ContextMenuItem>
                 <ContextMenuSeparator />
                 <ContextMenuItem onClick={() => setGroupDialogOpen(true)}>
                   <Plus className="h-4 w-4" />
-                  Neue Gruppe…
+                  {t("drawableList.newGroup")}
                 </ContextMenuItem>
               </ContextMenuSubContent>
             </ContextMenuSub>
             <ContextMenuSub>
               <ContextMenuSubTrigger disabled={selection.length === 0}>
                 <ArrowLeftRight className="mr-2 h-4 w-4" />
-                Geschlecht wechseln
+                {t("drawableList.changeGender")}
               </ContextMenuSubTrigger>
               <ContextMenuSubContent className="w-40">
                 <ContextMenuItem onClick={() => moveSelectionToGender("male")}>
-                  Zu mp_m
+                  {t("drawableList.toMale")}
                 </ContextMenuItem>
                 <ContextMenuItem
                   onClick={() => moveSelectionToGender("female")}
                 >
-                  Zu mp_f
+                  {t("drawableList.toFemale")}
                 </ContextMenuItem>
               </ContextMenuSubContent>
             </ContextMenuSub>
@@ -702,7 +714,7 @@ export function DrawableList() {
               onClick={() => setConfirmDelete(true)}
             >
               <Trash2 className="h-4 w-4" />
-              Löschen
+              {t("drawableList.delete")}
             </ContextMenuItem>
           </ContextMenuContent>
         </ContextMenu>

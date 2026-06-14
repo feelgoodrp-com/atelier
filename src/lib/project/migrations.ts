@@ -6,6 +6,7 @@
  * chain upgrades (v1 → v2 → …) until {@link PROJECT_FILE_VERSION} is reached.
  */
 
+import i18n from "@/lib/i18n";
 import { PROJECT_FILE_VERSION } from "./schema";
 
 export class ProjectMigrationError extends Error {
@@ -22,9 +23,7 @@ export class ProjectMigrationError extends Error {
  */
 export function migrateProjectFile(raw: unknown): unknown {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
-    throw new ProjectMigrationError(
-      "pack.atelier enthält kein gültiges Projektobjekt.",
-    );
+    throw new ProjectMigrationError(i18n.t("errors:migration.noProjectObject"));
   }
 
   const version = (raw as { fgcloth?: unknown }).fgcloth;
@@ -34,8 +33,10 @@ export function migrateProjectFile(raw: unknown): unknown {
     default:
       throw new ProjectMigrationError(
         typeof version === "number" && version > PROJECT_FILE_VERSION
-          ? `Das Projekt wurde mit einer neueren atelier-Version erstellt (fgcloth v${version}). Bitte aktualisiere atelier.`
-          : `Unbekannte Projektversion (fgcloth=${String(version)}).`,
+          ? i18n.t("errors:migration.newerVersion", { version })
+          : i18n.t("errors:migration.unknownVersion", {
+              version: String(version),
+            }),
       );
   }
 }

@@ -9,10 +9,11 @@
  *       -> replace drawables + sync block in ONE undo step -> save.
  * LINK: writes the sync block (remoteProjectId) without touching content.
  *
- * All thrown errors carry German user-facing messages (surfaced via toasts).
+ * All thrown errors carry localized user-facing messages (surfaced via toasts).
  */
 
 import { exists, mkdir, readFile, writeFile } from "@tauri-apps/plugin-fs";
+import i18n from "@/lib/i18n";
 import {
   ApiError,
   checkAssets,
@@ -70,11 +71,11 @@ function requireLinkedProject(): {
 } {
   const { project, projectDir } = useProjectStore.getState();
   if (!project || !projectDir) {
-    throw new Error("Kein Projekt geöffnet.");
+    throw new Error(i18n.t("sync:errors.noProjectOpen"));
   }
   const packId = project.sync.remoteProjectId;
   if (!packId) {
-    throw new Error("Das Projekt ist noch nicht mit der Cloud verknüpft.");
+    throw new Error(i18n.t("sync:errors.notLinked"));
   }
   return { project, projectDir, packId };
 }
@@ -109,7 +110,7 @@ async function saveOpenProject(): Promise<void> {
  */
 export async function linkProject(packId: string): Promise<void> {
   const { project, projectDir, setSyncState } = useProjectStore.getState();
-  if (!project || !projectDir) throw new Error("Kein Projekt geöffnet.");
+  if (!project || !projectDir) throw new Error(i18n.t("sync:errors.noProjectOpen"));
   setSyncState({ remoteProjectId: packId, baseRevision: null, lastSyncedAt: null });
   await saveOpenProject();
 }
@@ -127,15 +128,13 @@ async function uploadLocalAsset(projectDir: string, asset: LocalAsset): Promise<
   try {
     bytes = await readFile(absPath);
   } catch {
-    throw new Error(`Datei fehlt lokal: ${asset.ref.path}`);
+    throw new Error(i18n.t("sync:errors.fileMissing", { path: asset.ref.path }));
   }
 
   // The revision will reference ref.hash — a drifted file would brick the
   // upload at /complete anyway, so fail early with a readable message.
   if ((await sha256Hex(bytes)) !== asset.ref.hash) {
-    throw new Error(
-      `„${name}" wurde außerhalb von atelier verändert (Hash weicht ab). Bitte die Datei neu importieren.`,
-    );
+    throw new Error(i18n.t("sync:errors.fileDrifted", { name }));
   }
 
   let session: UploadSession;
@@ -163,7 +162,7 @@ async function uploadLocalAsset(projectDir: string, asset: LocalAsset): Promise<
     await completeUpload(session.uploadId);
   } catch (e) {
     if (e instanceof ApiError && e.status === 422) {
-      throw new Error(`Upload von „${name}" ist fehlgeschlagen (Hash-Prüfung). Bitte erneut versuchen.`);
+      throw new Error(i18n.t("sync:errors.uploadHashFailed", { name }));
     }
     throw e;
   }
@@ -188,7 +187,7 @@ export async function pushProject(options: PushOptions = {}): Promise<PushResult
   const shas = [...localAssets.keys()];
   const missing: string[] = [];
   const batchCount = Math.max(1, Math.ceil(shas.length / CHECK_BATCH_SIZE));
-  onProgress({ phase: "check", current: 0, total: batchCount, label: "Dateien werden geprüft…" });
+  onProgress({ phase: "check", current: 0, total: batchCount, label: i18n.t("sync:progress.checking") });
   for (let i = 0; i < shas.length; i += CHECK_BATCH_SIZE) {
     const batch = shas.slice(i, i + CHECK_BATCH_SIZE);
     const result = await checkAssets(batch);
@@ -197,7 +196,7 @@ export async function pushProject(options: PushOptions = {}): Promise<PushResult
       phase: "check",
       current: Math.floor(i / CHECK_BATCH_SIZE) + 1,
       total: batchCount,
-      label: "Dateien werden geprüft…",
+      label: i18n.t("sync:progress.checking"),
     });
   }
 
@@ -214,11 +213,11 @@ export async function pushProject(options: PushOptions = {}): Promise<PushResult
     await uploadLocalAsset(projectDir, asset);
   }
   if (missing.length > 0) {
-    onProgress({ phase: "upload", current: missing.length, total: missing.length, label: "Fertig" });
+    onProgress({ phase: "upload", current: missing.length, total: missing.length, label: i18n.t("sync:progress.done") });
   }
 
   // -- phase 3: commit the revision ------------------------------------------
-  onProgress({ phase: "commit", current: 0, total: 1, label: "Revision wird erstellt…" });
+  onProgress({ phase: "commit", current: 0, total: 1, label: i18n.t("sync:progress.committing") });
   const baseRevision =
     options.baseRevisionOverride ?? project.sync.baseRevision ?? 0;
   const result = await postRevision(packId, {
@@ -243,7 +242,7 @@ export async function pushProject(options: PushOptions = {}): Promise<PushResult
     lastSyncedAt: new Date().toISOString(),
   });
   await saveOpenProject();
-  onProgress({ phase: "commit", current: 1, total: 1, label: "Fertig" });
+  onProgress({ phase: "commit", current: 1, total: 1, label: i18n.t("sync:progress.done") });
   return { status: "ok", revision: result.revision.revision };
 }
 
@@ -288,7 +287,7 @@ export async function pullProject(options: PullOptions = {}): Promise<PullResult
     manifest = await getHeadManifest(packId);
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) {
-      throw new Error("In der Cloud existiert noch keine Version dieses Packs.");
+      throw new Error(i18n.t("sync:errors.noCloudVersion"));
     }
     throw e;
   }
@@ -308,7 +307,10 @@ export async function pullProject(options: PullOptions = {}): Promise<PullResult
     phase: "download",
     current: 0,
     total: toDownload.length,
-    label: toDownload.length === 0 ? "Alle Dateien sind bereits lokal vorhanden" : "Download startet…",
+    label:
+      toDownload.length === 0
+        ? i18n.t("sync:progress.allLocal")
+        : i18n.t("sync:progress.downloadStarting"),
   });
 
   for (let i = 0; i < toDownload.length; i++) {
@@ -318,14 +320,14 @@ export async function pullProject(options: PullOptions = {}): Promise<PullResult
 
     const bytes = await downloadAsset(asset.sha256);
     if ((await sha256Hex(bytes)) !== asset.sha256) {
-      throw new Error(`Download von „${exportName}" ist beschädigt angekommen. Bitte erneut versuchen.`);
+      throw new Error(i18n.t("sync:errors.downloadCorrupt", { name: exportName }));
     }
     const target = await resolveDownloadTarget(projectDir, asset.gender, asset.type, exportName);
     await writeFile(target.absPath, bytes);
     pathBySha.set(asset.sha256, target.relPath);
   }
   if (toDownload.length > 0) {
-    onProgress({ phase: "download", current: toDownload.length, total: toDownload.length, label: "Fertig" });
+    onProgress({ phase: "download", current: toDownload.length, total: toDownload.length, label: i18n.t("sync:progress.done") });
   }
 
   const localGroupIds = new Set(project.groups.map((g) => g.id));

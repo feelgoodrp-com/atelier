@@ -1,0 +1,124 @@
+{
+  "dialog": {
+    "title": "Build pack",
+    "description": "Builds the project as an installable clothing resource for the selected target."
+  },
+  "targets": {
+    "label": "Target",
+    "fivem": {
+      "label": "FiveM",
+      "description": "Streamable server resource with real YMT files (recommended)."
+    },
+    "singleplayer": {
+      "label": "Singleplayer",
+      "description": "dlc.rpf for GTA V singleplayer (requires a dlclist.xml entry)."
+    },
+    "ragemp": {
+      "label": "RageMP",
+      "description": "dlc.rpf in client format for RageMP servers (experimental)."
+    },
+    "altv": {
+      "label": "alt:V",
+      "description": "Folder structure as a DLC resource for alt:V (experimental)."
+    }
+  },
+  "setup": {
+    "dlcName": "DLC name",
+    "dlcPlaceholder": "e.g. fgsommer",
+    "dlcInvalid": "Lowercase letters, digits and underscores only (a–z, 0–9, _).",
+    "resourceName": "Resource name (optional)",
+    "resourcePlaceholderFallback": "like DLC name",
+    "resourceInvalid": "Allowed characters are letters, digits, _ and -.",
+    "outDir": "Output folder",
+    "outDirPlaceholder": "No folder selected yet…",
+    "browse": "Browse",
+    "outDirTitle": "Choose the output folder for the build",
+    "shopMeta": "Generate shop_ped_apparel.meta",
+    "shopMetaHint": "Makes the drawables discoverable for shop/clothing scripts.",
+    "next": "Continue to validation"
+  },
+  "validating": "Checking project…",
+  "findings": {
+    "noIssues": "No issues found — ready to build.",
+    "jumpToWorkbench": "Show in workbench",
+    "errorsBlock_one": "{{count}} error blocks the build — please fix it and re-check.",
+    "errorsBlock_other": "{{count}} errors block the build — please fix them and re-check.",
+    "build": "Build"
+  },
+  "severity": {
+    "error": "Errors",
+    "warn": "Warnings",
+    "info": "Notes"
+  },
+  "phase": {
+    "validate": "Validation",
+    "plan": "Build plan",
+    "copy": "Copying files",
+    "ymt": "Generating YMT",
+    "meta": "Writing manifests",
+    "package": "Packaging"
+  },
+  "building": {
+    "starting": "Starting build…"
+  },
+  "done": {
+    "title_one": "Build complete — {{count}} resource created.",
+    "title_other": "Build complete — {{count}} resources created.",
+    "drawables_one": "{{count}} drawable",
+    "drawables_other": "{{count}} drawables",
+    "openFolder": "Open folder"
+  },
+  "failed": {
+    "fallback": "The build failed."
+  },
+  "toast": {
+    "validateFailed": "Validation failed",
+    "sidecarBusy": "Sidecar is busy",
+    "buildDone": "Build complete",
+    "buildDoneDesc_one": "{{count}} resource in {{dir}}",
+    "buildDoneDesc_other": "{{count}} resources in {{dir}}",
+    "openFolderFailed": "Could not open folder"
+  },
+  "texture": {
+    "title": "Optimize texture",
+    "description": "{{name}} ({{size}}) will be shrunk directly in the project file.",
+    "permanentWarning": "Permanent change (cannot be reverted via undo) — the original is backed up under „.atelier-cache/texture-backups“ in the project folder.",
+    "current": "Current: {{list}}",
+    "currentMore": " … (+{{count}})",
+    "maxEdge": "Maximum edge length",
+    "format": "Format",
+    "formatKeep": "Keep",
+    "formatBC1": "BC1 (small)",
+    "formatBC3": "BC3 (alpha)",
+    "formatBC7": "BC7 (best quality)",
+    "regenerateMips": "Regenerate mipmaps",
+    "optimize": "Optimize",
+    "toast": {
+      "optimized": "Texture optimized",
+      "failed": "Optimization failed"
+    }
+  },
+  "bulk": {
+    "title": "Optimize oversized textures",
+    "description": "Finds textures larger than {{threshold}} px edge length and shrinks them directly in the project (format is preserved).",
+    "permanentWarning": "Permanent change (cannot be reverted via undo) — originals are backed up under „.atelier-cache/texture-backups“ in the project folder.",
+    "optimizing": "Optimizing {{done}}/{{total}}…",
+    "analyzing": "Analyzing textures… {{pending}} of {{total}} remaining",
+    "noOversized": "No oversized textures found.",
+    "unreadable_one": "{{count}} file could not be read.",
+    "unreadable_other": "{{count}} files could not be read.",
+    "shrinkTo": "Shrink to",
+    "skipped_one": "{{count}} file could not be analyzed and will be skipped.",
+    "skipped_other": "{{count}} files could not be analyzed and will be skipped.",
+    "optimizeCount_one": "Optimize {{count}} texture",
+    "optimizeCount_other": "Optimize {{count}} textures",
+    "toast": {
+      "optimized_one": "{{count}} texture optimized",
+      "optimized_other": "{{count}} textures optimized",
+      "saved": "{{size}} saved",
+      "savedWithFailures": "{{size}} saved · {{count}} failed",
+      "someFailed": "Some textures could not be optimized",
+      "noneOptimized": "No texture optimized"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { open as openInBrowser } from "@tauri-apps/plugin-shell";
+import i18n from "@/lib/i18n";
 import {
   clearPresence,
   configureApiClient,
@@ -36,7 +37,7 @@ const LOGIN_TIMEOUT_MS = 5 * 60 * 1000;
  * API (hidden when unreachable). apiUrl is trusted (our own configured origin).
  */
 function oauthResponseHtml(apiUrl: string): string {
-  return `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>atelier by feelgood</title>
+  return `<!doctype html><html lang="${i18n.language}"><head><meta charset="utf-8"><title>atelier by feelgood</title>
 <link rel="icon" href="${apiUrl}/logo.png">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}html,body{height:100%}
@@ -70,12 +71,12 @@ p{font-size:13.5px;line-height:1.6;color:rgba(255,255,255,.55)}
 <div class="brand">
 <img class="logo" src="${apiUrl}/logo.png" alt="" onerror="this.style.display='none'">
 <div class="wm"><b>atelier</b><span>by feelgood</span></div>
-<p class="tag">Für alle. Fucke gatekeeping.</p>
+<p class="tag">${i18n.t("sync:oauthPage.tagline")}</p>
 </div>
 <main class="card">
 <div class="icon"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M14 27l8 8 16-17"/></svg></div>
-<h2>Anmeldung abgeschlossen</h2>
-<p>Willkommen zurück! Du kannst dieses Fenster schließen und zur App zurückkehren.</p>
+<h2>${i18n.t("sync:oauthPage.title")}</h2>
+<p>${i18n.t("sync:oauthPage.body")}</p>
 <div class="foot">atelier by feelgood</div>
 </main>
 </div>
@@ -119,7 +120,11 @@ async function getDeviceMeta(): Promise<DeviceMeta> {
   try {
     return await invoke<DeviceMeta>("get_device_info");
   } catch {
-    return { name: "Unbekanntes Gerät", platform: "windows", appVersion: "0.0.0" };
+    return {
+      name: i18n.t("sync:auth.unknownDevice"),
+      platform: "windows",
+      appVersion: "0.0.0",
+    };
   }
 }
 
@@ -182,7 +187,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
         const code = await new Promise<string>((resolve, reject) => {
           const timeout = setTimeout(
-            () => reject(new Error("Zeitüberschreitung bei der Anmeldung")),
+            () => reject(new Error(i18n.t("sync:auth.loginTimeout"))),
             LOGIN_TIMEOUT_MS,
           );
           cleanups.push(() => clearTimeout(timeout));
@@ -194,7 +199,12 @@ export const useAuthStore = create<AuthState>((set, get) => {
               if (code) {
                 resolve(code);
               } else {
-                reject(new Error(parsed.searchParams.get("error") ?? "Kein Code erhalten"));
+                reject(
+                  new Error(
+                    parsed.searchParams.get("error") ??
+                      i18n.t("sync:auth.noCodeReceived"),
+                  ),
+                );
               }
             } catch (e) {
               reject(e instanceof Error ? e : new Error(String(e)));

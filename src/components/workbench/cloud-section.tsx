@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Check,
   CircleUser,
@@ -67,6 +68,7 @@ function useUnsyncedChanges(): boolean {
 const ROSTER_MAX_AVATARS = 4;
 
 function RosterStack() {
+  const { t } = useTranslation("workbench");
   const roster = useCollabStore((s) => s.roster);
   const selfId = useAuthStore((s) => s.user?.discordId);
   if (roster.length === 0) return null;
@@ -74,7 +76,9 @@ function RosterStack() {
   const shown = roster.slice(0, ROSTER_MAX_AVATARS);
   const extra = roster.length - shown.length;
   const names = roster
-    .map((u) => (u.discordId === selfId ? `${u.username} (du)` : u.username))
+    .map((u) =>
+      u.discordId === selfId ? t("cloud.you", { name: u.username }) : u.username,
+    )
     .join(", ");
 
   return (
@@ -103,7 +107,9 @@ function RosterStack() {
           )}
         </div>
       </TooltipTrigger>
-      <TooltipContent side="bottom">Online in diesem Pack: {names}</TooltipContent>
+      <TooltipContent side="bottom">
+        {t("cloud.onlineInPack", { names })}
+      </TooltipContent>
     </Tooltip>
   );
 }
@@ -113,6 +119,7 @@ function RosterStack() {
 // ---------------------------------------------------------------------------
 
 function CloudLinkDialog() {
+  const { t } = useTranslation("workbench");
   const open = useSyncStore((s) => s.linkDialogOpen);
   const setOpen = useSyncStore((s) => s.setLinkDialogOpen);
   const projectName = useProjectStore((s) => s.project?.name ?? "");
@@ -129,7 +136,7 @@ function CloudLinkDialog() {
       .then(setPacks)
       .catch((e) => {
         setPacks([]);
-        toast.error("Packs konnten nicht geladen werden", {
+        toast.error(t("cloud.packsLoadFailed"), {
           description: errorMessage(e),
         });
       });
@@ -142,12 +149,12 @@ function CloudLinkDialog() {
     try {
       const pack = await createPack(trimmed);
       await linkProject(pack.packId);
-      toast.success(`Mit „${pack.name}“ verknüpft`, {
-        description: "Lade deine Drawables mit „Hochladen“ in die Cloud.",
+      toast.success(t("cloud.linkedToast", { name: pack.name }), {
+        description: t("cloud.linkedDescriptionUpload"),
       });
       setOpen(false);
     } catch (e) {
-      toast.error("Pack konnte nicht erstellt werden", {
+      toast.error(t("cloud.createFailed"), {
         description: errorMessage(e),
       });
     } finally {
@@ -160,15 +167,17 @@ function CloudLinkDialog() {
     setBusy(true);
     try {
       await linkProject(pack.packId);
-      toast.success(`Mit „${pack.name}“ verknüpft`, {
+      toast.success(t("cloud.linkedToast", { name: pack.name }), {
         description:
           pack.headRevision > 0
-            ? `Das Pack steht bei Rev ${pack.headRevision} — „Neueste Version laden“ holt den Cloud-Stand.`
-            : "Lade deine Drawables mit „Hochladen“ in die Cloud.",
+            ? t("cloud.linkedDescriptionPull", {
+                revision: pack.headRevision,
+              })
+            : t("cloud.linkedDescriptionUpload"),
       });
       setOpen(false);
     } catch (e) {
-      toast.error("Verknüpfen fehlgeschlagen", { description: errorMessage(e) });
+      toast.error(t("cloud.linkFailed"), { description: errorMessage(e) });
     } finally {
       setBusy(false);
     }
@@ -178,24 +187,23 @@ function CloudLinkDialog() {
     <Dialog open={open} onOpenChange={(o) => !busy && setOpen(o)}>
       <DialogContent className="liquid-glass border-white/15 sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-white">Mit Cloud verknüpfen</DialogTitle>
+          <DialogTitle className="text-white">{t("cloud.linkTitle")}</DialogTitle>
           <DialogDescription className="text-white/50">
-            Verbindet dieses Projekt mit einem Pack auf dem atelier-Server,
-            damit dein Team gemeinsam daran arbeiten kann.
+            {t("cloud.linkDescription")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="cloud-pack-name" className="text-white/70">
-              Neues Pack erstellen
+              {t("cloud.createNewPack")}
             </Label>
             <div className="flex gap-2">
               <Input
                 id="cloud-pack-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Pack-Name"
+                placeholder={t("cloud.packNamePlaceholder")}
                 className="border-white/15 bg-white/5 text-white"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") void createAndLink();
@@ -206,7 +214,7 @@ function CloudLinkDialog() {
                 onClick={() => void createAndLink()}
               >
                 <Plus className="h-4 w-4" />
-                Erstellen
+                {t("cloud.create")}
               </Button>
             </div>
           </div>
@@ -214,7 +222,7 @@ function CloudLinkDialog() {
           <div className="flex items-center gap-3">
             <Separator className="flex-1 bg-white/8" />
             <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30">
-              oder bestehendes Pack
+              {t("cloud.orExistingPack")}
             </span>
             <Separator className="flex-1 bg-white/8" />
           </div>
@@ -228,7 +236,7 @@ function CloudLinkDialog() {
               </div>
             ) : packs.length === 0 ? (
               <p className="px-3 py-6 text-center text-xs text-white/35">
-                Keine Packs gefunden — erstelle oben ein neues.
+                {t("cloud.noPacksFound")}
               </p>
             ) : (
               packs.map((pack) => (
@@ -244,7 +252,7 @@ function CloudLinkDialog() {
                     {pack.name}
                   </span>
                   <span className="shrink-0 font-mono text-[10px] text-white/40">
-                    Rev {pack.headRevision}
+                    {t("cloud.rev", { revision: pack.headRevision })}
                   </span>
                   <span className="shrink-0 text-[10px] text-white/30">
                     {formatRelativeTime(pack.updatedAt)}
@@ -263,16 +271,17 @@ function CloudLinkDialog() {
 // Progress dialog (push/pull phases)
 // ---------------------------------------------------------------------------
 
-const PUSH_PHASES: Array<{ id: SyncPhase; label: string }> = [
-  { id: "check", label: "Dateien prüfen" },
-  { id: "upload", label: "Dateien hochladen" },
-  { id: "commit", label: "Revision erstellen" },
+const PUSH_PHASES: Array<{ id: SyncPhase; labelKey: string }> = [
+  { id: "check", labelKey: "cloud.phaseCheck" },
+  { id: "upload", labelKey: "cloud.phaseUpload" },
+  { id: "commit", labelKey: "cloud.phaseCommit" },
 ];
-const PULL_PHASES: Array<{ id: SyncPhase; label: string }> = [
-  { id: "download", label: "Dateien herunterladen" },
+const PULL_PHASES: Array<{ id: SyncPhase; labelKey: string }> = [
+  { id: "download", labelKey: "cloud.phaseDownload" },
 ];
 
 function SyncProgressDialog() {
+  const { t } = useTranslation("workbench");
   const busy = useSyncStore((s) => s.busy);
   const progress = useSyncStore((s) => s.progress);
   if (!busy) return null;
@@ -294,10 +303,12 @@ function SyncProgressDialog() {
       >
         <DialogHeader>
           <DialogTitle className="text-white">
-            {busy === "push" ? "Hochladen…" : "Neueste Version laden…"}
+            {busy === "push"
+              ? t("cloud.uploading")
+              : t("cloud.loadingLatest")}
           </DialogTitle>
           <DialogDescription className="text-white/50">
-            Bitte warten — das Fenster schließt sich automatisch.
+            {t("cloud.pleaseWait")}
           </DialogDescription>
         </DialogHeader>
 
@@ -322,7 +333,7 @@ function SyncProgressDialog() {
                       done && "text-white/60",
                     )}
                   >
-                    {phase.label}
+                    {t(phase.labelKey)}
                   </span>
                   {active && progress && progress.total > 1 && (
                     <span className="ml-auto font-mono text-[10px] text-white/35">
@@ -354,6 +365,7 @@ function SyncProgressDialog() {
 // ---------------------------------------------------------------------------
 
 function ConflictDialog() {
+  const { t } = useTranslation("workbench");
   const headRevision = useSyncStore((s) => s.conflictHeadRevision);
   const dismiss = useSyncStore((s) => s.dismissConflict);
   const push = useSyncStore((s) => s.push);
@@ -364,11 +376,10 @@ function ConflictDialog() {
       <DialogContent className="liquid-glass border-white/15 sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-white">
-            Konflikt: Cloud-Stand ist neuer
+            {t("cloud.conflictTitle")}
           </DialogTitle>
           <DialogDescription className="text-white/50">
-            In der Cloud existiert bereits Rev {headRevision} — deine Änderungen
-            basieren auf einem älteren Stand. Wie möchtest du fortfahren?
+            {t("cloud.conflictDescription", { revision: headRevision })}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="flex-col gap-2 sm:flex-col">
@@ -381,7 +392,7 @@ function ConflictDialog() {
             }}
           >
             <CloudDownload className="h-4 w-4" />
-            Remote-Stand laden (lokale Änderungen verwerfen)
+            {t("cloud.loadRemoteDiscard")}
           </Button>
           <Button
             className="w-full justify-start"
@@ -392,7 +403,7 @@ function ConflictDialog() {
             }}
           >
             <CloudUpload className="h-4 w-4" />
-            Erneut versuchen auf Basis des Remote-Stands (lokal erzwingen)
+            {t("cloud.retryOnRemote")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -405,6 +416,7 @@ function ConflictDialog() {
 // ---------------------------------------------------------------------------
 
 function PullConfirmDialog() {
+  const { t } = useTranslation("workbench");
   const open = useSyncStore((s) => s.pullConfirmOpen);
   const setOpen = useSyncStore((s) => s.setPullConfirmOpen);
   const pull = useSyncStore((s) => s.pull);
@@ -413,15 +425,14 @@ function PullConfirmDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="liquid-glass border-white/15 sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle className="text-white">Neueste Version laden?</DialogTitle>
+          <DialogTitle className="text-white">{t("cloud.pullConfirmTitle")}</DialogTitle>
           <DialogDescription className="text-white/50">
-            Lokale Änderungen, die noch nicht hochgeladen wurden, gehen dabei
-            verloren. Der Cloud-Stand ersetzt die Drawables dieses Projekts.
+            {t("cloud.pullConfirmDescription")}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
-            Abbrechen
+            {t("common:cancel")}
           </Button>
           <Button
             onClick={() => {
@@ -430,7 +441,7 @@ function PullConfirmDialog() {
             }}
           >
             <CloudDownload className="h-4 w-4" />
-            Neueste Version laden
+            {t("cloud.loadLatest")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -443,6 +454,7 @@ function PullConfirmDialog() {
 // ---------------------------------------------------------------------------
 
 function ServerBuildAction() {
+  const { t } = useTranslation("workbench");
   const serverBuild = useSyncStore((s) => s.serverBuild);
   const requestServerBuild = useSyncStore((s) => s.requestServerBuild);
   const packId = useProjectStore(
@@ -462,12 +474,11 @@ function ServerBuildAction() {
             onClick={() => void requestServerBuild()}
           >
             <Server className="h-3.5 w-3.5" />
-            Server-Build anstoßen
+            {t("cloud.triggerServerBuild")}
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          Baut Rev {serverBuild.revision} auf dem Server als FiveM-Ressource
-          (ZIP-Artefakt)
+          {t("cloud.serverBuildTooltip", { revision: serverBuild.revision })}
         </TooltipContent>
       </Tooltip>
     );
@@ -478,12 +489,13 @@ function ServerBuildAction() {
       <TooltipTrigger asChild>
         <div className="flex h-7 cursor-default items-center gap-1.5 rounded-full bg-white/5 px-2.5 text-xs text-white/55">
           <Loader2 className="h-3 w-3 animate-spin text-[#7289DA]" />
-          Server-Build läuft…
+          {t("cloud.serverBuildRunning")}
         </div>
       </TooltipTrigger>
       <TooltipContent side="bottom">
-        Rev {serverBuild.revision} wird gebaut — das Ergebnis kommt als
-        Meldung.
+        {t("cloud.serverBuildRunningTooltip", {
+          revision: serverBuild.revision,
+        })}
       </TooltipContent>
     </Tooltip>
   );
@@ -494,6 +506,7 @@ function ServerBuildAction() {
 // ---------------------------------------------------------------------------
 
 function LinkedControls() {
+  const { t } = useTranslation("workbench");
   const baseRevision = useProjectStore(
     (s) => s.project?.sync.baseRevision ?? null,
   );
@@ -522,20 +535,22 @@ function LinkedControls() {
               )}
             />
             <span className="font-mono text-[10px] text-white/60">
-              Rev {baseRevision ?? 0}
+              {t("cloud.rev", { revision: baseRevision ?? 0 })}
             </span>
           </div>
         </TooltipTrigger>
         <TooltipContent side="bottom">
           {collabStatus === "online"
-            ? "Mit der Cloud verbunden"
+            ? t("cloud.connected")
             : collabStatus === "connecting"
-              ? "Verbindung wird aufgebaut…"
-              : "Offline"}
+              ? t("cloud.connecting")
+              : t("cloud.offline")}
           {" · "}
           {lastSyncedAt
-            ? `Zuletzt synchronisiert ${formatRelativeTime(lastSyncedAt)}`
-            : "Noch nie synchronisiert"}
+            ? t("cloud.lastSynced", {
+                time: formatRelativeTime(lastSyncedAt),
+              })
+            : t("cloud.neverSynced")}
         </TooltipContent>
       </Tooltip>
 
@@ -553,14 +568,14 @@ function LinkedControls() {
             ) : (
               <CloudUpload className="h-3.5 w-3.5" />
             )}
-            {unsynced ? "Änderungen hochladen" : "Hochladen"}
+            {unsynced ? t("cloud.uploadChanges") : t("cloud.upload")}
             {unsynced && (
               <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
             )}
           </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          Lokalen Stand als neue Revision in die Cloud hochladen
+          {t("cloud.uploadTooltip")}
         </TooltipContent>
       </Tooltip>
 
@@ -572,7 +587,7 @@ function LinkedControls() {
             className="h-7 w-7 rounded-[8px] text-white/55 hover:bg-white/10 hover:text-white"
             disabled={busy !== null}
             onClick={() => void pull()}
-            aria-label="Neueste Version laden"
+            aria-label={t("cloud.loadLatest")}
           >
             {busy === "pull" ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -581,7 +596,7 @@ function LinkedControls() {
             )}
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="bottom">Neueste Version laden</TooltipContent>
+        <TooltipContent side="bottom">{t("cloud.loadLatest")}</TooltipContent>
       </Tooltip>
 
       <ServerBuildAction />
@@ -590,6 +605,7 @@ function LinkedControls() {
 }
 
 export function CloudSection() {
+  const { t } = useTranslation("workbench");
   const linked = useProjectStore(
     (s) => (s.project?.sync.remoteProjectId ?? null) !== null,
   );
@@ -611,11 +627,11 @@ export function CloudSection() {
               onClick={() => setLinkDialogOpen(true)}
             >
               <Cloud className="h-3.5 w-3.5" />
-              Mit Cloud verknüpfen
+              {t("cloud.linkWithCloud")}
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            Projekt mit einem Cloud-Pack verbinden (Team-Sync)
+            {t("cloud.linkWithCloudTooltip")}
           </TooltipContent>
         </Tooltip>
       )}

@@ -16,6 +16,7 @@ import {
   useState,
   type ComponentRef,
 } from "react";
+import { useTranslation } from "react-i18next";
 import { Canvas, useThree } from "@react-three/fiber";
 import { Grid, OrbitControls } from "@react-three/drei";
 import { Box3, Texture, Vector3 } from "three";
@@ -71,6 +72,7 @@ function GlbModel({
   onBounds: (box: Box3 | null) => void;
   onError: (message: string) => void;
 }) {
+  const { t } = useTranslation("preview");
   const [scene, setScene] = useState<Group | null>(null);
 
   // Keep callbacks out of the effect deps — parents pass fresh closures every
@@ -79,6 +81,10 @@ function GlbModel({
   onBoundsRef.current = onBounds;
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
+  // Same reason for `t`: keep it out of the effect deps so a language switch
+  // never reloads the GLB (the fallback string is only read on a load error).
+  const tRef = useRef(t);
+  tRef.current = t;
 
   useEffect(() => {
     let disposed = false;
@@ -98,7 +104,9 @@ function GlbModel({
       (err) => {
         if (!disposed) {
           onErrorRef.current(
-            err instanceof Error ? err.message : "GLB konnte nicht geladen werden",
+            err instanceof Error
+              ? err.message
+              : tRef.current("viewer.glbLoadFailed"),
           );
         }
       },

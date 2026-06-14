@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import i18n from "@/lib/i18n";
 import { useSidecarStore } from "@/lib/stores/sidecar-store";
 import type {
   BuildDoneEvent,
@@ -39,7 +40,7 @@ export async function restartSidecar(): Promise<void> {
 
 export class SidecarUnavailableError extends Error {
   constructor() {
-    super("Sidecar ist nicht verbunden");
+    super(i18n.t("errors:sidecar.unavailable"));
     this.name = "SidecarUnavailableError";
   }
 }
@@ -47,7 +48,7 @@ export class SidecarUnavailableError extends Error {
 /** 422 ped_body_unavailable — includePedBody requested without a ready gtaPath. */
 export class PedBodyUnavailableError extends Error {
   constructor() {
-    super("Ped-Body nicht verfügbar — GTA-Pfad in den Einstellungen setzen");
+    super(i18n.t("errors:sidecar.pedBodyUnavailable"));
     this.name = "PedBodyUnavailableError";
   }
 }
@@ -57,7 +58,7 @@ export class PoseUnavailableError extends Error {
   /** Pose id from the error envelope (null when the sidecar omitted it). */
   readonly pose: string | null;
   constructor(pose: string | null) {
-    super("Pose nicht verfügbar");
+    super(i18n.t("errors:sidecar.poseUnavailable"));
     this.name = "PoseUnavailableError";
     this.pose = pose;
   }
@@ -74,7 +75,7 @@ function sidecarTarget(): { base: string; token: string } {
 
 /** Reads the `{ error }` envelope of a non-2xx sidecar response. */
 async function sidecarErrorMessage(res: Response): Promise<string> {
-  let message = `Sidecar-Fehler (${res.status})`;
+  let message = i18n.t("errors:sidecar.genericError", { status: res.status });
   try {
     const body = (await res.json()) as { error?: string };
     if (body.error) message = body.error;
@@ -184,7 +185,9 @@ async function throwPreviewError(res: Response): Promise<never> {
   if (res.status === 422 && envelope.error === "pose_unavailable") {
     throw new PoseUnavailableError(envelope.pose ?? null);
   }
-  throw new Error(envelope.error ?? `Sidecar-Fehler (${res.status})`);
+  throw new Error(
+    envelope.error ?? i18n.t("errors:sidecar.genericError", { status: res.status }),
+  );
 }
 
 /** GET /preview/poses — static catalog of bakeable preview poses. */
@@ -291,7 +294,7 @@ export async function fetchPreviewOutfitGlb(
 /** 409 on POST /build — another build is already running in this sidecar. */
 export class BuildBusyError extends Error {
   constructor() {
-    super("Es läuft bereits ein Build — bitte warten, bis er fertig ist.");
+    super(i18n.t("errors:sidecar.buildBusy"));
     this.name = "BuildBusyError";
   }
 }
@@ -350,7 +353,7 @@ async function readProgressStream(
     { headers: { "x-fg-atelier-token": token }, signal },
   );
   if (!res.ok) throw new Error(await sidecarErrorMessage(res));
-  if (!res.body) throw new Error("Sidecar-Stream konnte nicht geöffnet werden.");
+  if (!res.body) throw new Error(i18n.t("errors:sidecar.streamFailed"));
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -402,7 +405,7 @@ export async function buildProgress(
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
-  throw new Error("Verbindung zum Build-Fortschritt abgerissen.");
+  throw new Error(i18n.t("errors:sidecar.progressLost"));
 }
 
 /** POST /texture/optimize — resizes/re-encodes all textures of a .ytd. */

@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Check,
   FolderInput,
@@ -42,6 +43,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import i18n from "@/lib/i18n";
 import { baseName } from "@/lib/format";
 import {
   ALL_SLOT_IDS,
@@ -94,11 +96,18 @@ const CONFIDENCE_STYLE: Record<string, string> = {
   low: "border-red-500/40 text-red-300",
 };
 
-const CONFIDENCE_LABEL: Record<string, string> = {
-  high: "hoch",
-  medium: "mittel",
-  low: "niedrig",
-};
+function confidenceLabel(confidence: string): string {
+  switch (confidence) {
+    case "high":
+      return i18n.t("workbench:importWizard.confidenceHigh");
+    case "medium":
+      return i18n.t("workbench:importWizard.confidenceMedium");
+    case "low":
+      return i18n.t("workbench:importWizard.confidenceLow");
+    default:
+      return confidence;
+  }
+}
 
 /** Minimal include checkbox (no radix checkbox dependency in the project). */
 function IncludeCheckbox({
@@ -133,12 +142,13 @@ function sanitizeFolderName(name: string): string {
       .trim()
       .replace(/[\\/:*?"<>|]+/g, "-")
       .replace(/[. ]+$/g, "")
-      .trim() || "atelier-projekt"
+      .trim() || i18n.t("workbench:importWizard.defaultProjectName")
   );
 }
 
 /** First wizard step when no project is open: create or open a target project. */
 function ProjectStep({ onReady }: { onReady: () => void }) {
+  const { t } = useTranslation("workbench");
   const [name, setName] = useState("");
   const [location, setLocation] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -151,7 +161,7 @@ function ProjectStep({ onReady }: { onReady: () => void }) {
   const pickLocation = async () => {
     const selected = await openDialog({
       directory: true,
-      title: "Speicherort für das Projekt wählen",
+      title: t("importWizard.pickLocationTitle"),
     }).catch(() => null);
     if (typeof selected === "string") setLocation(selected);
   };
@@ -163,7 +173,7 @@ function ProjectStep({ onReady }: { onReady: () => void }) {
       await createAndOpenProject(projectDir, name.trim());
       onReady();
     } catch (e) {
-      toast.error("Projekt konnte nicht erstellt werden", {
+      toast.error(t("importWizard.createFailed"), {
         description: errorMessage(e),
       });
     } finally {
@@ -174,22 +184,21 @@ function ProjectStep({ onReady }: { onReady: () => void }) {
   const openExisting = async () => {
     const selected = await openDialog({
       directory: true,
-      title: "atelier-Projektordner wählen",
+      title: t("importWizard.pickProjectTitle"),
     }).catch(() => null);
     if (typeof selected !== "string") return;
     setBusy(true);
     try {
       const { recovery } = await openProjectFromDir(selected);
       if (recovery) {
-        toast.info("Projekt hat ein neueres Autosave", {
-          description:
-            "Bitte öffne das Projekt über den Start-Bildschirm, um die Wiederherstellung zu beantworten.",
+        toast.info(t("importWizard.newerAutosaveTitle"), {
+          description: t("importWizard.newerAutosaveDescription"),
         });
         return;
       }
       onReady();
     } catch (e) {
-      toast.error("Projekt konnte nicht geöffnet werden", {
+      toast.error(t("importWizard.openFailed"), {
         description: errorMessage(e),
       });
     } finally {
@@ -200,40 +209,39 @@ function ProjectStep({ onReady }: { onReady: () => void }) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-white/60">
-        Der Import braucht ein Ziel-Projekt. Erstelle ein neues oder öffne ein
-        bestehendes.
+        {t("importWizard.projectStepIntro")}
       </p>
 
       <div className="glass-border-subtle flex flex-col gap-3 rounded-[10px] p-4">
         <div className="flex flex-col gap-2">
           <Label htmlFor="wizard-project-name" className="text-white/70">
-            Projektname
+            {t("importWizard.projectName")}
           </Label>
           <Input
             id="wizard-project-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="z. B. Importierter Pack"
+            placeholder={t("importWizard.projectNamePlaceholder")}
             className="border-white/15 bg-white/5 text-white"
           />
         </div>
         <div className="flex flex-col gap-2">
-          <Label className="text-white/70">Speicherort</Label>
+          <Label className="text-white/70">{t("importWizard.location")}</Label>
           <div className="flex gap-2">
             <Input
               readOnly
               value={location ?? ""}
-              placeholder="Noch kein Ordner gewählt…"
+              placeholder={t("importWizard.noFolderChosen")}
               className="border-white/15 bg-white/5 text-white"
             />
             <Button variant="outline" onClick={() => void pickLocation()}>
               <FolderOpen className="h-4 w-4" />
-              Durchsuchen
+              {t("importWizard.browse")}
             </Button>
           </div>
           {projectDir && (
             <p className="break-all text-xs text-white/35">
-              Wird erstellt in: {projectDir}
+              {t("importWizard.willBeCreatedIn", { path: projectDir })}
             </p>
           )}
         </div>
@@ -242,25 +250,26 @@ function ProjectStep({ onReady }: { onReady: () => void }) {
           onClick={() => void create()}
         >
           <Plus className="h-4 w-4" />
-          Projekt erstellen und fortfahren
+          {t("importWizard.createAndContinue")}
         </Button>
       </div>
 
       <div className="flex items-center gap-3">
         <div className="h-px flex-1 bg-white/10" />
-        <span className="text-xs text-white/35">oder</span>
+        <span className="text-xs text-white/35">{t("importWizard.or")}</span>
         <div className="h-px flex-1 bg-white/10" />
       </div>
 
       <Button variant="outline" disabled={busy} onClick={() => void openExisting()}>
         <FolderOpen className="h-4 w-4" />
-        Bestehendes Projekt öffnen…
+        {t("importWizard.openExisting")}
       </Button>
     </div>
   );
 }
 
 export function ImportWizard() {
+  const { t } = useTranslation("workbench");
   const open = useWorkbenchStore((s) => s.importWizardOpen);
   const setOpen = useWorkbenchStore((s) => s.setImportWizardOpen);
   const hasProject = useProjectStore((s) => s.project !== null);
@@ -295,7 +304,7 @@ export function ImportWizard() {
   const pickFolderAndScan = useCallback(async () => {
     const selected = await openDialog({
       directory: true,
-      title: "Clothing-Pack-Ordner wählen",
+      title: t("importWizard.pickFolderTitle"),
     }).catch(() => null);
     if (typeof selected !== "string") return;
     setFolder(selected);
@@ -316,12 +325,12 @@ export function ImportWizard() {
       setWarnings(result.warnings);
       setStep("review");
     } catch (e) {
-      toast.error("Ordner konnte nicht gescannt werden", {
+      toast.error(t("importWizard.scanFailed"), {
         description: errorMessage(e),
       });
       setStep("folder");
     }
-  }, []);
+  }, [t]);
 
   const updateRow = useCallback(
     (index: number, patch: Partial<Omit<ReviewRow, "entry">>) => {
@@ -369,9 +378,11 @@ export function ImportWizard() {
       );
       for (const drawable of result.drawables) addDrawable(drawable);
 
-      const parts = [`${result.drawables.length} Drawable(s) importiert`];
+      const parts = [
+        t("importWizard.importedToast", { count: result.drawables.length }),
+      ];
       if (result.skipped.length > 0) {
-        parts.push(`${result.skipped.length} übersprungen`);
+        parts.push(t("importWizard.skipped", { count: result.skipped.length }));
       }
       toast.success(parts.join(" · "), {
         description:
@@ -385,10 +396,12 @@ export function ImportWizard() {
       setOpen(false);
       reset();
     } catch (e) {
-      toast.error("Import fehlgeschlagen", { description: errorMessage(e) });
+      toast.error(t("importWizard.importFailed"), {
+        description: errorMessage(e),
+      });
       setStep("review");
     }
-  }, [included, missingType, addDrawable, setOpen, reset]);
+  }, [included, missingType, addDrawable, setOpen, reset, t]);
 
   return (
     <Dialog open={open} onOpenChange={close}>
@@ -401,11 +414,10 @@ export function ImportWizard() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
             <PackageOpen className="h-4 w-4 text-[#7289DA]" />
-            Pack importieren
+            {t("importWizard.title")}
           </DialogTitle>
           <DialogDescription className="text-white/50">
-            Scannt einen Clothing-Pack-Ordner (YDD/YTD/YLD) und übernimmt die
-            Drawables in das Projekt.
+            {t("importWizard.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -419,12 +431,11 @@ export function ImportWizard() {
               <FolderInput className="h-6 w-6 text-white/40" />
             </div>
             <p className="max-w-sm text-center text-sm text-white/50">
-              Wähle den Ordner eines bestehenden Clothing-Packs. Der Inhalt
-              wird analysiert und automatisch zugeordnet.
+              {t("importWizard.folderIntro")}
             </p>
             <Button onClick={() => void pickFolderAndScan()}>
               <FolderOpen className="h-4 w-4" />
-              Ordner wählen und scannen
+              {t("importWizard.pickAndScan")}
             </Button>
           </div>
         )}
@@ -433,7 +444,11 @@ export function ImportWizard() {
           <div className="flex flex-col items-center gap-4 py-12">
             <Loader2 className="h-8 w-8 animate-spin text-[#7289DA]" />
             <p className="text-sm text-white/50">
-              Scanne {folder ? baseName(folder) : "Ordner"}…
+              {t("importWizard.scanning", {
+                name: folder
+                  ? baseName(folder)
+                  : t("importWizard.folderFallback"),
+              })}
             </p>
           </div>
         )}
@@ -449,7 +464,9 @@ export function ImportWizard() {
                   ))}
                   {warnings.length > 3 && (
                     <p className="text-amber-200/60">
-                      … und {warnings.length - 3} weitere Hinweise
+                      {t("importWizard.moreWarnings", {
+                        count: warnings.length - 3,
+                      })}
                     </p>
                   )}
                 </div>
@@ -458,7 +475,7 @@ export function ImportWizard() {
 
             {rows.length === 0 ? (
               <p className="py-8 text-center text-sm text-white/40">
-                Keine YDD-Dateien im gewählten Ordner gefunden.
+                {t("importWizard.noYddFound")}
               </p>
             ) : (
               <ScrollArea className="max-h-[45vh] rounded-[10px] border border-white/8">
@@ -475,17 +492,23 @@ export function ImportWizard() {
                           }
                         />
                       </TableHead>
-                      <TableHead className="text-white/50">Datei</TableHead>
-                      <TableHead className="w-24 text-white/50">
-                        Geschlecht
+                      <TableHead className="text-white/50">
+                        {t("importWizard.colFile")}
                       </TableHead>
-                      <TableHead className="w-36 text-white/50">Slot</TableHead>
-                      <TableHead className="w-16 text-white/50">Nr.</TableHead>
+                      <TableHead className="w-24 text-white/50">
+                        {t("importWizard.colGender")}
+                      </TableHead>
+                      <TableHead className="w-36 text-white/50">
+                        {t("importWizard.colSlot")}
+                      </TableHead>
+                      <TableHead className="w-16 text-white/50">
+                        {t("importWizard.colNumber")}
+                      </TableHead>
                       <TableHead className="w-14 text-center text-white/50">
-                        Tex
+                        {t("importWizard.colTex")}
                       </TableHead>
                       <TableHead className="w-20 text-white/50">
-                        Qualität
+                        {t("importWizard.colQuality")}
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -513,7 +536,7 @@ export function ImportWizard() {
                           </span>
                           {row.entry.yldPath && (
                             <span className="text-[10px] text-emerald-300/70">
-                              + Physik (YLD)
+                              {t("importWizard.physicsYld")}
                             </span>
                           )}
                         </TableCell>
@@ -548,22 +571,22 @@ export function ImportWizard() {
                                   "border-amber-500/50",
                               )}
                             >
-                              <SelectValue placeholder="Slot wählen…" />
+                              <SelectValue placeholder={t("importWizard.selectSlot")} />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectGroup>
-                                <SelectLabel>Components</SelectLabel>
+                                <SelectLabel>{t("importWizard.components")}</SelectLabel>
                                 {GTA_COMPONENTS.map((slot) => (
                                   <SelectItem key={slot.id} value={slot.id}>
-                                    {slot.label}
+                                    {t(`slot.${slot.id}`)}
                                   </SelectItem>
                                 ))}
                               </SelectGroup>
                               <SelectGroup>
-                                <SelectLabel>Props</SelectLabel>
+                                <SelectLabel>{t("importWizard.props")}</SelectLabel>
                                 {GTA_PROPS.map((slot) => (
                                   <SelectItem key={slot.id} value={slot.id}>
-                                    {slot.label}
+                                    {t(`slot.${slot.id}`)}
                                   </SelectItem>
                                 ))}
                               </SelectGroup>
@@ -601,8 +624,7 @@ export function ImportWizard() {
                                 "border-white/15 text-white/50",
                             )}
                           >
-                            {CONFIDENCE_LABEL[row.entry.confidence] ??
-                              row.entry.confidence}
+                            {confidenceLabel(row.entry.confidence)}
                           </Badge>
                         </TableCell>
                       </TableRow>
@@ -614,8 +636,7 @@ export function ImportWizard() {
 
             {missingType && (
               <p className="text-xs text-amber-300">
-                Einige ausgewählte Einträge haben noch keinen Slot — bitte
-                zuweisen oder abwählen.
+                {t("importWizard.missingType")}
               </p>
             )}
           </div>
@@ -633,7 +654,10 @@ export function ImportWizard() {
               className="w-72"
             />
             <p className="text-sm text-white/50">
-              Importiere {progress.done}/{progress.total} Drawables…
+              {t("importWizard.importing", {
+                done: progress.done,
+                total: progress.total,
+              })}
             </p>
           </div>
         )}
@@ -641,14 +665,14 @@ export function ImportWizard() {
         {effectiveStep === "review" && (
           <DialogFooter>
             <Button variant="outline" onClick={() => setStep("folder")}>
-              Zurück
+              {t("common:back")}
             </Button>
             <Button
               disabled={included.length === 0 || missingType}
               onClick={() => void runImport()}
             >
               <PackageOpen className="h-4 w-4" />
-              {included.length} Drawable(s) importieren
+              {t("importWizard.importDrawables", { count: included.length })}
             </Button>
           </DialogFooter>
         )}

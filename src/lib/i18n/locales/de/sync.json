@@ -1,0 +1,66 @@
+{
+  "push": {
+    "success": "Hochgeladen — Rev {{revision}}",
+    "error": "Hochladen fehlgeschlagen"
+  },
+  "pull": {
+    "success": "Rev {{revision}} geladen",
+    "downloaded_one": "{{count}} Datei heruntergeladen.",
+    "downloaded_other": "{{count}} Datei(en) heruntergeladen.",
+    "allLocal": "Alle Dateien waren bereits lokal vorhanden.",
+    "error": "Laden fehlgeschlagen"
+  },
+  "serverBuild": {
+    "ready": "Server-Build für Rev {{revision}} ist fertig",
+    "startError": "Server-Build konnte nicht gestartet werden",
+    "done": "Server-Build abgeschlossen (Rev {{revision}})",
+    "error": "Server-Build fehlgeschlagen"
+  },
+  "save": {
+    "error": "Speichern fehlgeschlagen"
+  },
+  "pose": {
+    "unavailable": "Pose nicht verfügbar",
+    "unavailableDescription": "„{{label}}“ kann auf dieser Installation nicht geladen werden — zurück zur Bind-Pose."
+  },
+  "headChanged": {
+    "title": "Neue Version verfügbar (Rev {{revision}})",
+    "description": "Ein Teammitglied hat eine neue Revision hochgeladen.",
+    "action": "Jetzt laden"
+  },
+  "oauthPage": {
+    "tagline": "Für alle. Fucke gatekeeping.",
+    "title": "Anmeldung abgeschlossen",
+    "body": "Willkommen zurück! Du kannst dieses Fenster schließen und zur App zurückkehren."
+  },
+  "auth": {
+    "unknownDevice": "Unbekanntes Gerät",
+    "loginTimeout": "Zeitüberschreitung bei der Anmeldung",
+    "noCodeReceived": "Kein Code erhalten"
+  },
+  "api": {
+    "notConfigured": "ApiClient ist nicht konfiguriert",
+    "requestFailed": "Anfrage fehlgeschlagen ({{status}})",
+    "invalidUrl": "Adresse muss mit http:// oder https:// beginnen.",
+    "healthTimeout": "Keine Antwort (Zeitüberschreitung) — läuft der Server?",
+    "healthUnreachable": "Server nicht erreichbar — läuft die atelier-api unter dieser Adresse?",
+    "healthBadStatus": "Server antwortete mit HTTP {{status}}.",
+    "healthWrongService": "Hier antwortet eine andere Anwendung, keine atelier-api."
+  },
+  "errors": {
+    "noProjectOpen": "Kein Projekt geöffnet.",
+    "notLinked": "Das Projekt ist noch nicht mit der Cloud verknüpft.",
+    "fileMissing": "Datei fehlt lokal: {{path}}",
+    "fileDrifted": "„{{name}}“ wurde außerhalb von atelier verändert (Hash weicht ab). Bitte die Datei neu importieren.",
+    "uploadHashFailed": "Upload von „{{name}}“ ist fehlgeschlagen (Hash-Prüfung). Bitte erneut versuchen.",
+    "noCloudVersion": "In der Cloud existiert noch keine Version dieses Packs.",
+    "downloadCorrupt": "Download von „{{name}}“ ist beschädigt angekommen. Bitte erneut versuchen."
+  },
+  "progress": {
+    "checking": "Dateien werden geprüft…",
+    "done": "Fertig",
+    "committing": "Revision wird erstellt…",
+    "allLocal": "Alle Dateien sind bereits lokal vorhanden",
+    "downloadStarting": "Download startet…"
+  }
+}

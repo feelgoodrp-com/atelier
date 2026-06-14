@@ -1,0 +1,161 @@
+{
+  "pane": {
+    "title": "3D Preview",
+    "sidecarUnavailable": {
+      "heading": "Sidecar not connected",
+      "body": "The 3D preview needs the local sidecar process. Restart it or check Settings → Sidecar.",
+      "restart": "Restart sidecar",
+      "restarting": "Sidecar is restarting",
+      "restartFailed": "Restart failed"
+    },
+    "empty": {
+      "noYdd": "No YDD mesh in the selection",
+      "nothing": "Nothing selected",
+      "noYddHint": "The selected drawables have no YDD mesh — assign one first.",
+      "nothingHint": "Select drawables in the list to view them in 3D here (multi-select = outfit)."
+    },
+    "capToast": {
+      "title": "Preview shows at most {{count}} drawables",
+      "description_one": "{{count}} other selected drawable is not rendered.",
+      "description_other": "{{count}} other selected drawables are not rendered."
+    },
+    "pose": {
+      "ariaLabel": "Pose",
+      "bind": "Bind pose",
+      "tooltipActive": "Preview pose (statically baked into the mesh)",
+      "tooltipDisabled": "Set the GTA path in the settings"
+    },
+    "centerCamera": "Center camera",
+    "centerCameraTooltip": "Center camera on selection",
+    "autoRotate": "Auto-rotate",
+    "autoRotateOn": "Auto-rotate on",
+    "autoRotateOff": "Auto-rotate off",
+    "pedBody": "Ped body",
+    "pedBodyAria": "Show ped body",
+    "pedBodyTooltipActive": "Show the freemode body under the clothing",
+    "pedBodyTooltipDisabled": "Set the GTA path in the settings",
+    "collapse": "Collapse preview",
+    "stats": "{{polys}} polys · {{verts}} verts",
+    "statsTitle": "Total of the {{count}} rendered drawables",
+    "lodWarning_one": "{{count}} LOD warning",
+    "lodWarning_other": "{{count}} LOD warnings",
+    "lodMissing": "{{label}}: {{missing}} LOD missing",
+    "untextured_one": "{{count}} without texture",
+    "untextured_other": "{{count}} without texture",
+    "loadingModels_one": "Loading {{count}} model…",
+    "loadingModels_other": "Loading {{count}} models…",
+    "retryHint": "Click to reload",
+    "noName": "(no name)",
+    "unknownError": "Unknown error"
+  },
+  "lod": {
+    "med": "Med",
+    "low": "Low"
+  },
+  "character": {
+    "trigger": "Customize character",
+    "triggerTooltipDisabled": "Enable the ped body to customize the character",
+    "triggerTooltipActive": "Customize character (components, Menyoo import, presets)",
+    "title": "Character",
+    "close": "Close",
+    "pickPed": "The file contains several peds — which one should be imported?",
+    "notFreemode": "not freemode",
+    "componentsHint": "Components of the freemode body for the preview — drawable and texture index per slot.",
+    "importMenyoo": "Import Menyoo XML…",
+    "importDialogTitle": "Import Menyoo XML",
+    "reset": "Reset character",
+    "resetTooltip": "Reset to game default",
+    "faceOnlyHint": "Only the face is taken from the Menyoo file (shape, skin tone, eyebrows/beard, eye colour). Clothing and hair from the file are ignored — you set those in the tool yourself.",
+    "face": "Face",
+    "removeFace": "Remove face",
+    "removeFaceTooltip": "Remove face (manually set components stay)",
+    "faceFeaturesNote": "Fine-tuners (FaceFeatures) are not shown in the preview.",
+    "presets": "Presets",
+    "applyPreset": "Apply “{{name}}”",
+    "deletePreset": "Delete preset “{{name}}”",
+    "presetNamePlaceholder": "Preset name…",
+    "savePreset": "Save preset",
+    "savePresetTooltip": "Save the current character as a preset",
+    "savePresetTooltipDisabled": "Adjust or import components first",
+    "hints": "Hints",
+    "stepperDecrease": "Decrease {{label}}",
+    "stepperIncrease": "Increase {{label}}",
+    "drawableAria": "{{label}} drawable",
+    "textureAria": "{{label}} texture",
+    "gender": {
+      "male": "male",
+      "female": "female"
+    },
+    "genderMismatch": {
+      "title": "Gender differs",
+      "importDescription": "The XML is for a {{xml}} ped, but the preview currently shows a {{preview}} body.",
+      "presetDescription": "The preset is saved for {{preset}}, but the preview currently shows {{preview}}."
+    },
+    "faceImported": {
+      "title": "Face imported from “{{name}}”",
+      "description": "Only the face is applied (shape, skin tone, eyebrows/beard, eye colour). Clothing and hair from the file are ignored — you set those in the tool yourself."
+    },
+    "importFailed": "Import failed",
+    "importNoPed": "The file contains no importable ped.",
+    "nameReserved": {
+      "title": "Name is reserved",
+      "description": "Please choose a different preset name."
+    },
+    "presetSaved": "Preset “{{name}}” saved",
+    "faceLines": {
+      "shapeDominantFirst": "Shape: parent {{parent}} (dominant)",
+      "shapeDominantSecond": "Shape: parent {{parent}} (dominant)",
+      "shapeMix": "Shape mix: {{first}} ↔ {{second}} ({{percent}} %)",
+      "skinMix": "Skin tone mix: {{percent}} %",
+      "overlays_one": "{{count}} active overlay: {{names}}",
+      "overlays_other": "{{count}} active overlays: {{names}}",
+      "eyeColour": "Eye colour: {{value}}"
+    },
+    "overlaySlots": {
+      "0": "Skin blemishes",
+      "1": "Beard",
+      "2": "Eyebrows",
+      "3": "Ageing",
+      "4": "Make-up",
+      "5": "Blush",
+      "6": "Complexion",
+      "7": "Sun damage",
+      "8": "Lipstick",
+      "9": "Freckles",
+      "10": "Chest hair",
+      "11": "Body blemishes",
+      "12": "Extra blemishes"
+    },
+    "fallbackSlot": "Slot {{index}}",
+    "hint": {
+      "props": "Props (hats, glasses, watches …) are not yet shown in the preview.",
+      "faceFeatures": "Fine-tuners (FaceFeatures, e.g. nose width) are not shown in the preview — they stay saved.",
+      "skinFallback": "Skin tone could not be fully rendered — a parent skin texture is missing; the default skin is used.",
+      "eyeFallback": "Eye colour could not be rendered — the eye texture is missing; default eyes are used.",
+      "overlayFallback": "Overlay “{{label}}” was skipped — the selected variant is not available.",
+      "componentFallback": "Slot “{{slot}}” uses the default — drawable index not available (DLC clothing?)."
+    }
+  },
+  "viewer": {
+    "glbLoadFailed": "GLB could not be loaded"
+  },
+  "camera": {
+    "gesamt": "Full body",
+    "kopf": "Head",
+    "torso": "Torso",
+    "beine": "Legs",
+    "fuesse": "Feet"
+  },
+  "pose": {
+    "stand": "Stand (idle)",
+    "walk": "Walk (frozen)",
+    "sit": "Sit",
+    "hands_up": "Hands up",
+    "aim": "Aim",
+    "arms_crossed": "Arms crossed"
+  },
+  "presets": {
+    "standardMale": "Standard (male)",
+    "standardFemale": "Standard (female)"
+  }
+}

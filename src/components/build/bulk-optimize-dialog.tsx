@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CircleCheck, Images, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,7 @@ interface BulkOptimizeDialogProps {
 }
 
 export function BulkOptimizeDialog({ open, onOpenChange }: BulkOptimizeDialogProps) {
+  const { t } = useTranslation("build");
   const project = useProjectStore((s) => s.project);
   const projectDir = useProjectStore((s) => s.projectDir);
   const previews = usePreviewStore((s) => s.previews);
@@ -142,17 +144,21 @@ export function BulkOptimizeDialog({ open, onOpenChange }: BulkOptimizeDialogPro
           (sum, r) => sum + Math.max(0, r.before.sizeBytes - r.after.sizeBytes),
           0,
         );
-        toast.success(`${results.length} Textur(en) optimiert`, {
+        toast.success(t("bulk.toast.optimized", { count: results.length }), {
           description:
-            `${formatBytes(saved)} gespart` +
-            (failures.length > 0 ? ` · ${failures.length} fehlgeschlagen` : ""),
+            failures.length > 0
+              ? t("bulk.toast.savedWithFailures", {
+                  size: formatBytes(saved),
+                  count: failures.length,
+                })
+              : t("bulk.toast.saved", { size: formatBytes(saved) }),
         });
       }
       if (failures.length > 0) {
         toast.error(
           results.length > 0
-            ? "Einige Texturen konnten nicht optimiert werden"
-            : "Keine Textur optimiert",
+            ? t("bulk.toast.someFailed")
+            : t("bulk.toast.noneOptimized"),
           { description: failures.slice(0, 3).join("\n") },
         );
       }
@@ -174,24 +180,25 @@ export function BulkOptimizeDialog({ open, onOpenChange }: BulkOptimizeDialogPro
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
             <Images className="h-4 w-4 text-[#7289DA]" />
-            Übergroße Texturen optimieren
+            {t("bulk.title")}
           </DialogTitle>
           <DialogDescription className="text-white/50">
-            Findet Texturen über {OVERSIZE_THRESHOLD} px Kantenlänge und
-            verkleinert sie direkt im Projekt (Format bleibt erhalten).
+            {t("bulk.description", { threshold: OVERSIZE_THRESHOLD })}
           </DialogDescription>
         </DialogHeader>
 
         <p className="-mt-1 rounded-[8px] bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed text-amber-200/80">
-          Dauerhafte Änderung (nicht über Rückgängig umkehrbar) — Originale werden unter
-          „.atelier-cache/texture-backups" im Projektordner gesichert.
+          {t("bulk.permanentWarning")}
         </p>
 
         {running ? (
           <div className="flex flex-col gap-3 py-4">
             <div className="flex items-center gap-2 text-sm text-white">
               <Loader2 className="h-4 w-4 animate-spin text-[#7289DA]" />
-              Optimiere {Math.min(progress.done + 1, progress.total)}/{progress.total}…
+              {t("bulk.optimizing", {
+                done: Math.min(progress.done + 1, progress.total),
+                total: progress.total,
+              })}
             </div>
             <Progress
               value={progress.total > 0 ? (progress.done / progress.total) * 100 : 0}
@@ -205,18 +212,21 @@ export function BulkOptimizeDialog({ open, onOpenChange }: BulkOptimizeDialogPro
           <div className="flex flex-col items-center gap-3 py-8">
             <Loader2 className="h-6 w-6 animate-spin text-[#7289DA]" />
             <p className="text-xs text-white/45">
-              Analysiere Texturen… noch {scan.pending} von {textures.length}
+              {t("bulk.analyzing", {
+                pending: scan.pending,
+                total: textures.length,
+              })}
             </p>
           </div>
         ) : scan.oversized.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-8">
             <CircleCheck className="h-7 w-7 text-emerald-400" />
             <p className="text-sm text-white/60">
-              Keine übergroßen Texturen gefunden.
+              {t("bulk.noOversized")}
             </p>
             {scan.unreadable > 0 && (
               <p className="text-[11px] text-white/35">
-                {scan.unreadable} Datei(en) konnten nicht gelesen werden.
+                {t("bulk.unreadable", { count: scan.unreadable })}
               </p>
             )}
           </div>
@@ -247,7 +257,7 @@ export function BulkOptimizeDialog({ open, onOpenChange }: BulkOptimizeDialogPro
             </ScrollArea>
 
             <div className="flex items-center justify-between gap-3">
-              <Label className="text-xs text-white/70">Verkleinern auf</Label>
+              <Label className="text-xs text-white/70">{t("bulk.shrinkTo")}</Label>
               <Select
                 value={String(maxDimension)}
                 onValueChange={(v) => setMaxDimension(Number.parseInt(v, 10))}
@@ -264,8 +274,7 @@ export function BulkOptimizeDialog({ open, onOpenChange }: BulkOptimizeDialogPro
 
             {scan.unreadable > 0 && (
               <p className="text-[10px] text-white/35">
-                {scan.unreadable} Datei(en) konnten nicht analysiert werden und
-                werden übersprungen.
+                {t("bulk.skipped", { count: scan.unreadable })}
               </p>
             )}
           </div>
@@ -274,14 +283,14 @@ export function BulkOptimizeDialog({ open, onOpenChange }: BulkOptimizeDialogPro
         {!running && (
           <DialogFooter>
             <Button variant="outline" onClick={() => close(false)}>
-              Abbrechen
+              {t("common:cancel")}
             </Button>
             <Button
               disabled={scan.pending > 0 || scan.oversized.length === 0 || !projectDir}
               onClick={() => void run()}
             >
               <Images className="h-4 w-4" />
-              {scan.oversized.length} Textur(en) optimieren
+              {t("bulk.optimizeCount", { count: scan.oversized.length })}
             </Button>
           </DialogFooter>
         )}

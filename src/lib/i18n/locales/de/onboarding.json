@@ -1,0 +1,40 @@
+{
+  "welcomeTitle": "Willkommen bei atelier",
+  "welcomeSubtitle": "Lass uns das kurz einrichten.",
+  "steps": {
+    "language": "Sprache",
+    "server": "Server",
+    "gta": "GTA V",
+    "logs": "Logs"
+  },
+  "language": {
+    "title": "Sprache",
+    "description": "Wähle die Sprache für atelier. Du kannst das später in den Einstellungen ändern."
+  },
+  "server": {
+    "title": "Server-Adresse",
+    "description": "Adresse der atelier-api (Sync-Server). Prüfe, ob dort eine atelier-api antwortet.",
+    "check": "Prüfen",
+    "apiReachable": "atelier-api erreichbar.",
+    "apiRunningHere": "atelier-api v{{version}} läuft hier."
+  },
+  "gta": {
+    "title": "GTA V-Verzeichnis",
+    "description": "Für die Ped-Vorschau und den Pack-Export. Du kannst das auch später in den Einstellungen nachholen.",
+    "noPathYet": "Noch kein Pfad gewählt…",
+    "browse": "Durchsuchen",
+    "directorySet": "Verzeichnis gesetzt.",
+    "pickerTitle": "GTA V Installationsordner wählen",
+    "pathSaved": "GTA V Pfad gespeichert",
+    "pathSavedReady": "Ped-Vorschau ist jetzt verfügbar.",
+    "pathSavedUnverified": "Pfad gespeichert, aber nicht verifiziert — enthält der Ordner GTA5.exe und .rpf-Archive?",
+    "pickFailed": "Pfad konnte nicht gewählt werden"
+  },
+  "logs": {
+    "title": "Echtzeit-Logs",
+    "description": "Ein eigenes Fenster mit Live-Logs (App, Sidecar, Oberfläche) — praktisch beim Melden von Fehlern. Jederzeit per Strg+Shift+L.",
+    "enableWindow": "Log-Fenster aktivieren"
+  },
+  "finish": "Los geht's",
+  "finishFailed": "Einrichtung konnte nicht abgeschlossen werden"
+}

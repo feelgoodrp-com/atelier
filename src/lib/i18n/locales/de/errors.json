@@ -1,0 +1,68 @@
+{
+  "io": {
+    "corruptJson": "{{source}} ist beschädigt (ungültiges JSON).",
+    "invalidFormat": "{{source}} hat ein ungültiges Format{{where}}: {{message}}",
+    "invalidFormatField": " (Feld: {{field}})",
+    "unknownError": "unbekannter Fehler",
+    "projectExists": "Im gewählten Ordner existiert bereits ein atelier-Projekt.",
+    "createFolderFailed": "Projektordner konnte nicht angelegt werden. Prüfe Pfad und Schreibrechte.",
+    "readFolderFailed": "Ordner konnte nicht gelesen werden. Prüfe, ob der Pfad noch existiert.",
+    "noProjectFound": "Kein atelier-Projekt gefunden (pack.atelier fehlt in diesem Ordner).",
+    "readPackFailed": "pack.atelier konnte nicht gelesen werden.",
+    "saveFailed": "Projekt konnte nicht gespeichert werden. Prüfe Speicherplatz und Schreibrechte.",
+    "packLabel": "pack.atelier",
+    "autosaveLabel": "Autosave-Datei"
+  },
+  "migration": {
+    "noProjectObject": "pack.atelier enthält kein gültiges Projektobjekt.",
+    "newerVersion": "Das Projekt wurde mit einer neueren atelier-Version erstellt (fgcloth v{{version}}). Bitte aktualisiere atelier.",
+    "unknownVersion": "Unbekannte Projektversion (fgcloth={{version}})."
+  },
+  "import": {
+    "unsupportedFileType": "Dateityp wird nicht unterstützt (nur YDD, YTD, YLD).",
+    "yldUnmatched": "YLD konnte keinem Drawable zugeordnet werden.",
+    "normalSpecularNotVariant": "Normal-/Specular-Maps werden nicht als Variante importiert.",
+    "maxTextureVariants": "Maximal 26 Textur-Varianten pro Drawable (a–z).",
+    "noTexturesFound": "Keine Texturen gefunden — Drawable hat noch keine Variante.",
+    "genderNotDetected": "Geschlecht nicht erkannt — Standard ({{gender}}) verwendet.",
+    "noMatchingYdd": "Keine zugehörige YDD-Datei im Import gefunden.",
+    "noProjectOpen": "Kein Projekt geöffnet",
+    "noSupportedFiles": "Keine unterstützten Dateien (YDD, YTD, YLD) gefunden",
+    "importingOne": "Importiere 1 Datei…",
+    "importingMany": "Importiere {{count}} Dateien…",
+    "moreSkipped": "… und {{count}} weitere",
+    "filesCount": "{{count}} Datei(en)",
+    "unsupportedFileTypeShort": "Dateityp wird nicht unterstützt.",
+    "addedDrawables": "{{count}} Drawable(s) hinzugefügt",
+    "withoutSlot": "{{count}} ohne Slot",
+    "skippedCount": "{{count}} übersprungen",
+    "assignSlotGender": "Bitte Slot und Geschlecht zuweisen.",
+    "nothingImported": "Nichts importiert",
+    "importFailed": "Import fehlgeschlagen"
+  },
+  "sidecar": {
+    "unavailable": "Sidecar ist nicht verbunden",
+    "genericError": "Sidecar-Fehler ({{status}})",
+    "pedBodyUnavailable": "Ped-Body nicht verfügbar — GTA-Pfad in den Einstellungen setzen",
+    "poseUnavailable": "Pose nicht verfügbar",
+    "buildBusy": "Es läuft bereits ein Build — bitte warten, bis er fertig ist.",
+    "streamFailed": "Sidecar-Stream konnte nicht geöffnet werden.",
+    "progressLost": "Verbindung zum Build-Fortschritt abgerissen."
+  },
+  "menyoo": {
+    "valuesClamped": "Einige Werte lagen außerhalb des gültigen Bereichs und wurden angepasst.",
+    "noPedWithProperties": "Die Datei enthält keinen Ped mit PedProperties.",
+    "notReadableXml": "Die Datei ist kein lesbares XML (Menyoo-Outfit oder Spooner-Datei erwartet).",
+    "unknownXmlFormat": "Unbekanntes XML-Format („{{root}}“ statt OutfitPedData/SpoonerPlacements).",
+    "notFreemodePed": "Kein Freemode-Ped (ModelHash {{hash}}) — Komponenten-Indizes passen eventuell nicht zur Vorschau.",
+    "modelHashUnknown": "unbekannt",
+    "unknownComponentSlot": "Unbekannter Komponenten-Slot „_{{index}}“ ignoriert.",
+    "componentSlotUnreadable": "Komponenten-Slot „_{{index}}“ ist unlesbar und wird ignoriert.",
+    "componentSlotOutOfRange": "Komponenten-Slot „_{{index}}“: Wert außerhalb des gültigen Bereichs — Standard wird verwendet.",
+    "propSlotUnreadable": "Prop-Slot „_{{index}}“ ist unlesbar und wird ignoriert.",
+    "propSlotUnsupported": "Prop-Slot „_{{index}}“ wird nicht unterstützt und ignoriert.",
+    "propSlotOutOfRange": "Prop-Slot „_{{index}}“: Wert außerhalb des gültigen Bereichs — wird ignoriert.",
+    "propSlotDuplicate": "Prop-Slot „_{{index}}“ ist doppelt angegeben und wird ignoriert.",
+    "pedFallbackName": "Ped {{index}}"
+  }
+}

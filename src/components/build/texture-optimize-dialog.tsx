@@ -6,6 +6,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Loader2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,7 @@ export function TextureOptimizeDialog({
   texture,
   onClose,
 }: TextureOptimizeDialogProps) {
+  const { t } = useTranslation("build");
   const projectDir = useProjectStore((s) => s.projectDir);
   const preview = usePreviewStore((s) =>
     texture ? s.previews[texture.hash] : undefined,
@@ -85,14 +87,14 @@ export function TextureOptimizeDialog({
         regenerateMips,
       });
       applyOptimizedTextures([result]);
-      toast.success("Textur optimiert", {
+      toast.success(t("texture.toast.optimized"), {
         description:
           `${result.before.width}×${result.before.height} · ${formatBytes(result.before.sizeBytes)}` +
           ` → ${result.after.width}×${result.after.height} · ${formatBytes(result.after.sizeBytes)}`,
       });
       onClose();
     } catch (e) {
-      toast.error("Optimierung fehlgeschlagen", { description: errorMessage(e) });
+      toast.error(t("texture.toast.failed"), { description: errorMessage(e) });
     } finally {
       setBusy(false);
     }
@@ -112,34 +114,38 @@ export function TextureOptimizeDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-white">
             <Wand2 className="h-4 w-4 text-[#7289DA]" />
-            Textur optimieren
+            {t("texture.title")}
           </DialogTitle>
           <DialogDescription className="text-white/50">
             {texture
-              ? `${baseName(texture.path)} (${formatBytes(texture.size)}) wird direkt in der Projektdatei verkleinert.`
+              ? t("texture.description", {
+                  name: baseName(texture.path),
+                  size: formatBytes(texture.size),
+                })
               : ""}
           </DialogDescription>
         </DialogHeader>
 
         <p className="-mt-1 rounded-[8px] bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed text-amber-200/80">
-          Dauerhafte Änderung (nicht über Rückgängig umkehrbar) — das Original wird unter
-          „.atelier-cache/texture-backups" im Projektordner gesichert.
+          {t("texture.permanentWarning")}
         </p>
 
         {meta.length > 0 && (
           <p className="-mt-2 text-[11px] text-white/35">
-            Aktuell:{" "}
-            {meta
-              .slice(0, 3)
-              .map((t) => `${t.width}×${t.height} ${t.format}`)
-              .join(", ")}
-            {meta.length > 3 && ` … (+${meta.length - 3})`}
+            {t("texture.current", {
+              list: meta
+                .slice(0, 3)
+                .map((tx) => `${tx.width}×${tx.height} ${tx.format}`)
+                .join(", "),
+            })}
+            {meta.length > 3 &&
+              t("texture.currentMore", { count: meta.length - 3 })}
           </p>
         )}
 
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
-            <Label className="text-xs text-white/70">Maximale Kantenlänge</Label>
+            <Label className="text-xs text-white/70">{t("texture.maxEdge")}</Label>
             <Select
               value={String(maxDimension)}
               onValueChange={(v) => setMaxDimension(Number.parseInt(v, 10))}
@@ -158,29 +164,29 @@ export function TextureOptimizeDialog({
           </div>
 
           <div className="flex items-center justify-between gap-3">
-            <Label className="text-xs text-white/70">Format</Label>
+            <Label className="text-xs text-white/70">{t("texture.format")}</Label>
             <Select value={format} onValueChange={(v) => setFormat(v as FormatChoice)}>
               <SelectTrigger className="h-8 w-28 border-white/15 bg-white/5 text-xs text-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={KEEP_FORMAT}>Beibehalten</SelectItem>
-                <SelectItem value="BC1">BC1 (klein)</SelectItem>
-                <SelectItem value="BC3">BC3 (Alpha)</SelectItem>
-                <SelectItem value="BC7">BC7 (beste Qualität)</SelectItem>
+                <SelectItem value={KEEP_FORMAT}>{t("texture.formatKeep")}</SelectItem>
+                <SelectItem value="BC1">{t("texture.formatBC1")}</SelectItem>
+                <SelectItem value="BC3">{t("texture.formatBC3")}</SelectItem>
+                <SelectItem value="BC7">{t("texture.formatBC7")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="flex items-center justify-between gap-3">
-            <Label className="text-xs text-white/70">Mipmaps neu erzeugen</Label>
+            <Label className="text-xs text-white/70">{t("texture.regenerateMips")}</Label>
             <Switch checked={regenerateMips} onCheckedChange={setRegenerateMips} />
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" disabled={busy} onClick={onClose}>
-            Abbrechen
+            {t("common:cancel")}
           </Button>
           <Button disabled={busy || !projectDir} onClick={() => void run()}>
             {busy ? (
@@ -188,7 +194,7 @@ export function TextureOptimizeDialog({
             ) : (
               <Wand2 className="h-4 w-4" />
             )}
-            Optimieren
+            {t("texture.optimize")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,0 +1,40 @@
+{
+  "welcomeTitle": "Welcome to atelier",
+  "welcomeSubtitle": "Let's get you set up real quick.",
+  "steps": {
+    "language": "Language",
+    "server": "Server",
+    "gta": "GTA V",
+    "logs": "Logs"
+  },
+  "language": {
+    "title": "Language",
+    "description": "Pick the language for atelier. You can change this later in Settings."
+  },
+  "server": {
+    "title": "Server address",
+    "description": "Address of the atelier-api (sync server). Check that an atelier-api responds there.",
+    "check": "Check",
+    "apiReachable": "atelier-api reachable.",
+    "apiRunningHere": "atelier-api v{{version}} running here."
+  },
+  "gta": {
+    "title": "GTA V directory",
+    "description": "For the ped preview and the pack export. You can also do this later in Settings.",
+    "noPathYet": "No path selected yet…",
+    "browse": "Browse",
+    "directorySet": "Directory set.",
+    "pickerTitle": "Select GTA V installation folder",
+    "pathSaved": "GTA V path saved",
+    "pathSavedReady": "Ped preview is now available.",
+    "pathSavedUnverified": "Path saved, but not verified — does the folder contain GTA5.exe and .rpf archives?",
+    "pickFailed": "Could not select path"
+  },
+  "logs": {
+    "title": "Real-time logs",
+    "description": "A dedicated window with live logs (app, sidecar, UI) — handy when reporting bugs. Anytime via Ctrl+Shift+L.",
+    "enableWindow": "Enable log window"
+  },
+  "finish": "Let's go",
+  "finishFailed": "Setup could not be completed"
+}

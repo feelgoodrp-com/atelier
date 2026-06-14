@@ -18,6 +18,7 @@
 import { create, type StateCreator } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { toast } from "sonner";
+import i18n from "@/lib/i18n";
 import {
   PoseUnavailableError,
   fetchPreviewGlb,
@@ -445,16 +446,23 @@ const createPreview3dState: StateCreator<
         const poseId = e.pose ?? request.pose ?? null;
         if (poseId !== null) {
           const { poses, pose } = get();
-          const label = poses.find((p) => p.id === poseId)?.label ?? poseId;
+          // Prefer the localized pose label; fall back to the catalog label
+          // (live sidecar list) and finally the raw id for unknown poses.
+          const poseKey = `preview:pose.${poseId}`;
+          const localized = i18n.t(poseKey);
+          const label =
+            localized !== poseKey
+              ? localized
+              : (poses.find((p) => p.id === poseId)?.label ?? poseId);
           set({
             poses: poses.filter((p) => p.id !== poseId),
             ...(pose === poseId ? { pose: null } : {}),
           });
-          toast.error("Pose nicht verfügbar", {
+          toast.error(i18n.t("sync:pose.unavailable"), {
             // Stable id: queued prefetch items with the same dead pose would
             // otherwise stack one toast per request.
             id: `pose-unavailable-${poseId}`,
-            description: `„${label}“ kann auf dieser Installation nicht geladen werden — zurück zur Bind-Pose.`,
+            description: i18n.t("sync:pose.unavailableDescription", { label }),
           });
         }
       }

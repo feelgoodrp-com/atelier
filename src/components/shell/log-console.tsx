@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowDownToLine, Copy, Eraser, Pause, Play } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ function LogRow({ entry }: { entry: LogEntry }) {
 
 /** Toolbar + entry list, fills its container (the log window). */
 export function LogConsolePanel() {
+  const { t } = useTranslation("shell");
   const entries = useLogConsoleStore((s) => s.entries);
   const minLevel = useLogConsoleStore((s) => s.minLevel);
   const search = useLogConsoleStore((s) => s.search);
@@ -114,7 +116,7 @@ export function LogConsolePanel() {
           <SelectContent>
             {LOG_LEVELS.map((level) => (
               <SelectItem key={level} value={level}>
-                ab {level}
+                {t("log.level", { level })}
               </SelectItem>
             ))}
           </SelectContent>
@@ -123,7 +125,7 @@ export function LogConsolePanel() {
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Filtern (Nachricht oder Target)…"
+          placeholder={t("log.filterPlaceholder")}
           className="h-7 max-w-72 border-white/15 bg-white/5 text-xs"
         />
 
@@ -140,7 +142,7 @@ export function LogConsolePanel() {
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              {autoScroll ? "Auto-Scroll pausieren" : "Auto-Scroll fortsetzen"}
+              {autoScroll ? t("log.pauseScroll") : t("log.resumeScroll")}
             </TooltipContent>
           </Tooltip>
           {!autoScroll && (
@@ -158,7 +160,7 @@ export function LogConsolePanel() {
                   <ArrowDownToLine className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="bottom">Nach unten springen</TooltipContent>
+              <TooltipContent side="bottom">{t("log.jumpToBottom")}</TooltipContent>
             </Tooltip>
           )}
           <Tooltip>
@@ -173,14 +175,18 @@ export function LogConsolePanel() {
                     .join("\n");
                   void navigator.clipboard
                     .writeText(text)
-                    .then(() => toast.success(`${filtered.length} Zeilen kopiert`))
-                    .catch(() => toast.error("Kopieren fehlgeschlagen"));
+                    .then(() =>
+                      toast.success(
+                        t("log.linesCopied", { count: filtered.length }),
+                      ),
+                    )
+                    .catch(() => toast.error(t("log.copyFailed")));
                 }}
               >
                 <Copy className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">Sichtbare Zeilen kopieren</TooltipContent>
+            <TooltipContent side="bottom">{t("log.copyVisible")}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -188,7 +194,7 @@ export function LogConsolePanel() {
                 <Eraser className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">Leeren</TooltipContent>
+            <TooltipContent side="bottom">{t("log.clear")}</TooltipContent>
           </Tooltip>
         </div>
       </div>
@@ -207,7 +213,8 @@ export function LogConsolePanel() {
       >
         {filtered.length === 0 ? (
           <p className="px-3 py-6 text-center text-xs text-white/35">
-            Keine Log-Einträge {search || minLevel !== "TRACE" ? "(Filter aktiv)" : ""}
+            {t("log.noEntries")}{" "}
+            {search || minLevel !== "TRACE" ? t("log.filterActive") : ""}
           </p>
         ) : (
           filtered.map((entry, i) => <LogRow key={`${entry.ts}-${i}`} entry={entry} />)

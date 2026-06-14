@@ -8,6 +8,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronRight, Lock, RefreshCw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -27,11 +28,12 @@ import { cn } from "@/lib/utils";
 
 const PENDING_POLL_MS = 15_000;
 
-const LOGIN_PHASE_LABEL: Record<Exclude<LoginPhase, "idle">, string> = {
-  connecting: "Verbindung wird vorbereitet…",
-  awaiting: "Warte auf Bestätigung im Browser…",
-  exchanging: "Anmeldung wird abgeschlossen…",
-  success: "Angemeldet!",
+/** Maps a login sub-phase to its `login` namespace translation key. */
+const LOGIN_PHASE_KEY: Record<Exclude<LoginPhase, "idle">, string> = {
+  connecting: "phase.connecting",
+  awaiting: "phase.awaiting",
+  exchanging: "phase.exchanging",
+  success: "phase.success",
 };
 
 /** Animated green checkmark shown the moment auth succeeds (matches the
@@ -57,12 +59,13 @@ function SuccessCheck() {
 /** Loading bar (or checkmark on success) replacing the login button while an
  *  interactive Discord login runs. */
 function LoginProgress({ phase }: { phase: Exclude<LoginPhase, "idle"> }) {
+  const { t } = useTranslation("login");
   if (phase === "success") {
     return (
       <div className="mt-8 flex flex-col items-center gap-3">
         <SuccessCheck />
         <p className="text-sm font-medium text-emerald-300">
-          {LOGIN_PHASE_LABEL.success}
+          {t(LOGIN_PHASE_KEY.success)}
         </p>
       </div>
     );
@@ -72,7 +75,7 @@ function LoginProgress({ phase }: { phase: Exclude<LoginPhase, "idle"> }) {
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
         <div className="atelier-indeterminate h-full w-1/3 rounded-full bg-gradient-to-r from-[#5865F2] to-[#7289DA]" />
       </div>
-      <p className="text-center text-sm text-white/55">{LOGIN_PHASE_LABEL[phase]}</p>
+      <p className="text-center text-sm text-white/55">{t(LOGIN_PHASE_KEY[phase])}</p>
     </div>
   );
 }
@@ -108,6 +111,7 @@ export function GateShell({ children }: { children: React.ReactNode }) {
 }
 
 function ApiUrlAdvanced() {
+  const { t } = useTranslation("login");
   const apiUrl = useAuthStore((s) => s.apiUrl);
   const setApiUrl = useAuthStore((s) => s.setApiUrl);
   const [value, setValue] = useState(apiUrl);
@@ -119,11 +123,11 @@ function ApiUrlAdvanced() {
     <Collapsible open={open} onOpenChange={setOpen} className="w-full">
       <CollapsibleTrigger className="flex items-center gap-1 text-xs text-white/40 transition-colors hover:text-white/70">
         <ChevronRight className={cn("h-3 w-3 transition-transform", open && "rotate-90")} />
-        Erweitert: Server-Adresse
+        {t("advanced")}
       </CollapsibleTrigger>
       <CollapsibleContent className="pt-3">
         <Label htmlFor="gate-api-url" className="text-xs text-white/50">
-          atelier-api URL
+          {t("apiUrlLabel")}
         </Label>
         <div className="mt-1.5 flex gap-2">
           <Input
@@ -138,10 +142,10 @@ function ApiUrlAdvanced() {
             size="sm"
             className="h-8"
             onClick={() => {
-              void setApiUrl(value).then(() => toast.success("Server-Adresse gespeichert"));
+              void setApiUrl(value).then(() => toast.success(t("apiUrlSaved")));
             }}
           >
-            Speichern
+            {t("common:save")}
           </Button>
         </div>
       </CollapsibleContent>
@@ -150,16 +154,15 @@ function ApiUrlAdvanced() {
 }
 
 function LoginCard() {
+  const { t } = useTranslation("login");
   const loginPhase = useAuthStore((s) => s.loginPhase);
   const login = useAuthStore((s) => s.login);
   const busy = loginPhase !== "idle";
 
   return (
     <div className="liquid-glass w-full max-w-sm rounded-2xl p-8">
-      <h2 className="text-xl font-semibold text-white">Anmelden</h2>
-      <p className="mt-1 text-sm text-white/50">
-        Melde dich mit Discord an, um loszulegen.
-      </p>
+      <h2 className="text-xl font-semibold text-white">{t("signIn")}</h2>
+      <p className="mt-1 text-sm text-white/50">{t("signInSubtitle")}</p>
 
       {busy ? (
         <LoginProgress phase={loginPhase} />
@@ -168,13 +171,13 @@ function LoginCard() {
           className="mt-6 h-11 w-full bg-[#5865F2] text-white hover:bg-[#4752C4]"
           onClick={() => {
             login().catch((e: unknown) => {
-              toast.error("Anmeldung fehlgeschlagen", {
+              toast.error(t("signInFailed"), {
                 description: e instanceof Error ? e.message : String(e),
               });
             });
           }}
         >
-          Mit Discord anmelden
+          {t("signInWithDiscord")}
         </Button>
       )}
 
@@ -186,6 +189,7 @@ function LoginCard() {
 }
 
 function PendingCard() {
+  const { t } = useTranslation("login");
   const reloadUser = useAuthStore((s) => s.reloadUser);
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
@@ -203,10 +207,11 @@ function PendingCard() {
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/15">
         <ShieldCheck className="h-6 w-6 text-amber-300" />
       </div>
-      <h2 className="mt-4 text-lg font-semibold text-white">Warte auf Freigabe</h2>
+      <h2 className="mt-4 text-lg font-semibold text-white">{t("pending.title")}</h2>
       <p className="mt-2 text-sm text-white/55">
-        {user?.username ? `Hey ${user.username} — d` : "D"}ein Konto muss noch von
-        einem Admin freigegeben werden. Wir prüfen automatisch.
+        {user?.username
+          ? t("pending.bodyNamed", { name: user.username })
+          : t("pending.body")}
       </p>
       <div className="mt-6 flex justify-center gap-2">
         <Button
@@ -221,10 +226,10 @@ function PendingCard() {
           }}
         >
           <RefreshCw className={cn("h-4 w-4", checking && "animate-spin")} />
-          Status prüfen
+          {t("pending.checkStatus")}
         </Button>
         <Button variant="ghost" size="sm" onClick={() => void logout()}>
-          Abmelden
+          {t("pending.logout")}
         </Button>
       </div>
     </div>
@@ -232,18 +237,17 @@ function PendingCard() {
 }
 
 function LockedCard() {
+  const { t } = useTranslation("login");
   const logout = useAuthStore((s) => s.logout);
   return (
     <div className="liquid-glass w-full max-w-sm rounded-2xl p-8 text-center">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-500/15">
         <Lock className="h-6 w-6 text-red-400" />
       </div>
-      <h2 className="mt-4 text-lg font-semibold text-white">Konto gesperrt</h2>
-      <p className="mt-2 text-sm text-white/55">
-        Dein Konto wurde gesperrt. Melde dich bei einem Admin.
-      </p>
+      <h2 className="mt-4 text-lg font-semibold text-white">{t("locked.title")}</h2>
+      <p className="mt-2 text-sm text-white/55">{t("locked.body")}</p>
       <Button variant="ghost" size="sm" className="mt-6" onClick={() => void logout()}>
-        Abmelden
+        {t("locked.logout")}
       </Button>
     </div>
   );
@@ -267,6 +271,7 @@ export function BootSplash() {
 }
 
 export function LoginGate() {
+  const { t } = useTranslation("login");
   const status = useAuthStore((s) => s.status);
   const user = useAuthStore((s) => s.user);
 
@@ -289,7 +294,7 @@ export function LoginGate() {
               <span className="text-lg font-medium text-[#7289DA]">by feelgood</span>
             </div>
             <p className="mt-3 text-base text-white/55">
-              Für alle. Fuck Gatekeeping.
+              {t("tagline")}
             </p>
           </div>
         </div>

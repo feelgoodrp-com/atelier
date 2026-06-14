@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { History } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ interface RecoveryDialogProps {
  * that is newer than the saved pack.atelier (e.g. after a crash).
  */
 export function RecoveryDialog({ recovery, onClose }: RecoveryDialogProps) {
+  const { t, i18n } = useTranslation("dialogs");
   const [busy, setBusy] = useState(false);
 
   const resolve = async (restore: boolean) => {
@@ -34,10 +36,10 @@ export function RecoveryDialog({ recovery, onClose }: RecoveryDialogProps) {
     setBusy(true);
     try {
       await resolveRecovery(recovery, restore);
-      if (restore) toast.success("Autosave wiederhergestellt");
+      if (restore) toast.success(t("recovery.restored"));
       onClose();
     } catch (e) {
-      toast.error("Wiederherstellung fehlgeschlagen", {
+      toast.error(t("recovery.restoreError"), {
         description: errorMessage(e),
       });
     } finally {
@@ -60,11 +62,14 @@ export function RecoveryDialog({ recovery, onClose }: RecoveryDialogProps) {
             <History className="h-5 w-5 text-amber-300" />
           </div>
           <DialogTitle className="text-white">
-            Nicht gespeicherte Änderungen gefunden
+            {t("recovery.title")}
           </DialogTitle>
           <DialogDescription className="text-white/50">
             {recovery
-              ? `Für „${recovery.saved.name}“ existiert ein Autosave vom ${recovery.autosave.savedAt.toLocaleString("de-DE")}, das neuer ist als der letzte Speicherstand. Möchtest du es wiederherstellen?`
+              ? t("recovery.description", {
+                  name: recovery.saved.name,
+                  date: recovery.autosave.savedAt.toLocaleString(i18n.language),
+                })
               : ""}
           </DialogDescription>
         </DialogHeader>
@@ -74,10 +79,10 @@ export function RecoveryDialog({ recovery, onClose }: RecoveryDialogProps) {
             disabled={busy}
             onClick={() => void resolve(false)}
           >
-            Verwerfen
+            {t("recovery.discard")}
           </Button>
           <Button disabled={busy} onClick={() => void resolve(true)}>
-            Wiederherstellen
+            {t("recovery.restore")}
           </Button>
         </DialogFooter>
       </DialogContent>

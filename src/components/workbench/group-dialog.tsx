@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +38,7 @@ interface GroupDialogProps {
 
 /** Creates a new drawable group (name + color). */
 export function GroupDialog({ open, onOpenChange, onCreated }: GroupDialogProps) {
+  const { t } = useTranslation("workbench");
   const addGroup = useProjectStore((s) => s.addGroup);
   const [name, setName] = useState("");
   const [color, setColor] = useState(GROUP_COLORS[0]);
@@ -55,23 +57,23 @@ export function GroupDialog({ open, onOpenChange, onCreated }: GroupDialogProps)
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="liquid-glass border-white/15 sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle className="text-white">Neue Gruppe</DialogTitle>
+          <DialogTitle className="text-white">{t("groupDialog.title")}</DialogTitle>
           <DialogDescription className="text-white/50">
-            Gruppen markieren zusammengehörige Drawables farblich.
+            {t("groupDialog.description")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="group-name" className="text-white/70">
-              Name
+              {t("groupDialog.name")}
             </Label>
             <Input
               id="group-name"
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="z. B. Polizei-Uniformen"
+              placeholder={t("groupDialog.namePlaceholder")}
               className="border-white/15 bg-white/5 text-white"
               onKeyDown={(e) => {
                 if (e.key === "Enter") create();
@@ -80,13 +82,13 @@ export function GroupDialog({ open, onOpenChange, onCreated }: GroupDialogProps)
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label className="text-white/70">Farbe</Label>
+            <Label className="text-white/70">{t("groupDialog.color")}</Label>
             <div className="flex flex-wrap gap-2">
               {GROUP_COLORS.map((c) => (
                 <button
                   key={c}
                   type="button"
-                  aria-label={`Farbe ${c}`}
+                  aria-label={t("groupDialog.colorLabel", { color: c })}
                   onClick={() => setColor(c)}
                   className={cn(
                     "h-7 w-7 rounded-full border-2 transition-transform hover:scale-110",
@@ -101,11 +103,11 @@ export function GroupDialog({ open, onOpenChange, onCreated }: GroupDialogProps)
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Abbrechen
+            {t("common:cancel")}
           </Button>
           <Button disabled={!name.trim()} onClick={create}>
             <Plus className="h-4 w-4" />
-            Erstellen
+            {t("groupDialog.create")}
           </Button>
         </DialogFooter>
       </DialogContent>

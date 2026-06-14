@@ -1,0 +1,124 @@
+{
+  "dialog": {
+    "title": "Pack bauen",
+    "description": "Baut das Projekt als installierbare Clothing-Ressource für das gewählte Ziel."
+  },
+  "targets": {
+    "label": "Ziel",
+    "fivem": {
+      "label": "FiveM",
+      "description": "Streambare Server-Ressource mit echten YMT-Dateien (empfohlen)."
+    },
+    "singleplayer": {
+      "label": "Singleplayer",
+      "description": "dlc.rpf für den GTA-V-Einzelspieler (dlclist.xml-Eintrag nötig)."
+    },
+    "ragemp": {
+      "label": "RageMP",
+      "description": "dlc.rpf im Client-Format für RageMP-Server (experimentell)."
+    },
+    "altv": {
+      "label": "alt:V",
+      "description": "Ordner-Struktur als DLC-Ressource für alt:V (experimentell)."
+    }
+  },
+  "setup": {
+    "dlcName": "DLC-Name",
+    "dlcPlaceholder": "z. B. fgsommer",
+    "dlcInvalid": "Nur Kleinbuchstaben, Ziffern und Unterstriche (a–z, 0–9, _).",
+    "resourceName": "Ressourcen-Name (optional)",
+    "resourcePlaceholderFallback": "wie DLC-Name",
+    "resourceInvalid": "Erlaubt sind Buchstaben, Ziffern, _ und -.",
+    "outDir": "Ausgabeordner",
+    "outDirPlaceholder": "Noch kein Ordner gewählt…",
+    "browse": "Durchsuchen",
+    "outDirTitle": "Ausgabeordner für den Build wählen",
+    "shopMeta": "shop_ped_apparel.meta erzeugen",
+    "shopMetaHint": "Macht die Drawables für Shop-/Kleidungs-Scripts auffindbar.",
+    "next": "Weiter zur Prüfung"
+  },
+  "validating": "Projekt wird geprüft…",
+  "findings": {
+    "noIssues": "Keine Probleme gefunden — bereit zum Bauen.",
+    "jumpToWorkbench": "Im Workbench anzeigen",
+    "errorsBlock_one": "{{count}} Fehler verhindert den Build — bitte beheben und erneut prüfen.",
+    "errorsBlock_other": "{{count}} Fehler verhindern den Build — bitte beheben und erneut prüfen.",
+    "build": "Bauen"
+  },
+  "severity": {
+    "error": "Fehler",
+    "warn": "Warnungen",
+    "info": "Hinweise"
+  },
+  "phase": {
+    "validate": "Validierung",
+    "plan": "Build-Plan",
+    "copy": "Dateien kopieren",
+    "ymt": "YMT-Generierung",
+    "meta": "Manifeste schreiben",
+    "package": "Paketierung"
+  },
+  "building": {
+    "starting": "Build wird gestartet…"
+  },
+  "done": {
+    "title_one": "Build abgeschlossen — {{count}} Ressource erstellt.",
+    "title_other": "Build abgeschlossen — {{count}} Ressourcen erstellt.",
+    "drawables_one": "{{count}} Drawable",
+    "drawables_other": "{{count}} Drawables",
+    "openFolder": "Ordner öffnen"
+  },
+  "failed": {
+    "fallback": "Der Build ist fehlgeschlagen."
+  },
+  "toast": {
+    "validateFailed": "Validierung fehlgeschlagen",
+    "sidecarBusy": "Sidecar ist beschäftigt",
+    "buildDone": "Build abgeschlossen",
+    "buildDoneDesc_one": "{{count}} Ressource in {{dir}}",
+    "buildDoneDesc_other": "{{count}} Ressourcen in {{dir}}",
+    "openFolderFailed": "Ordner konnte nicht geöffnet werden"
+  },
+  "texture": {
+    "title": "Textur optimieren",
+    "description": "{{name}} ({{size}}) wird direkt in der Projektdatei verkleinert.",
+    "permanentWarning": "Dauerhafte Änderung (nicht über Rückgängig umkehrbar) — das Original wird unter „.atelier-cache/texture-backups“ im Projektordner gesichert.",
+    "current": "Aktuell: {{list}}",
+    "currentMore": " … (+{{count}})",
+    "maxEdge": "Maximale Kantenlänge",
+    "format": "Format",
+    "formatKeep": "Beibehalten",
+    "formatBC1": "BC1 (klein)",
+    "formatBC3": "BC3 (Alpha)",
+    "formatBC7": "BC7 (beste Qualität)",
+    "regenerateMips": "Mipmaps neu erzeugen",
+    "optimize": "Optimieren",
+    "toast": {
+      "optimized": "Textur optimiert",
+      "failed": "Optimierung fehlgeschlagen"
+    }
+  },
+  "bulk": {
+    "title": "Übergroße Texturen optimieren",
+    "description": "Findet Texturen über {{threshold}} px Kantenlänge und verkleinert sie direkt im Projekt (Format bleibt erhalten).",
+    "permanentWarning": "Dauerhafte Änderung (nicht über Rückgängig umkehrbar) — Originale werden unter „.atelier-cache/texture-backups“ im Projektordner gesichert.",
+    "optimizing": "Optimiere {{done}}/{{total}}…",
+    "analyzing": "Analysiere Texturen… noch {{pending}} von {{total}}",
+    "noOversized": "Keine übergroßen Texturen gefunden.",
+    "unreadable_one": "{{count}} Datei konnte nicht gelesen werden.",
+    "unreadable_other": "{{count}} Dateien konnten nicht gelesen werden.",
+    "shrinkTo": "Verkleinern auf",
+    "skipped_one": "{{count}} Datei konnte nicht analysiert werden und wird übersprungen.",
+    "skipped_other": "{{count}} Dateien konnten nicht analysiert werden und werden übersprungen.",
+    "optimizeCount_one": "{{count}} Textur optimieren",
+    "optimizeCount_other": "{{count}} Texturen optimieren",
+    "toast": {
+      "optimized_one": "{{count}} Textur optimiert",
+      "optimized_other": "{{count}} Texturen optimiert",
+      "saved": "{{size}} gespart",
+      "savedWithFailures": "{{size}} gespart · {{count}} fehlgeschlagen",
+      "someFailed": "Einige Texturen konnten nicht optimiert werden",
+      "noneOptimized": "Keine Textur optimiert"
+    }
+  }
+}

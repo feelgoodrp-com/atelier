@@ -1,0 +1,28 @@
+{
+  "phase": {
+    "connecting": "Verbindung wird vorbereitet…",
+    "awaiting": "Warte auf Bestätigung im Browser…",
+    "exchanging": "Anmeldung wird abgeschlossen…",
+    "success": "Angemeldet!"
+  },
+  "advanced": "Erweitert: Server-Adresse",
+  "apiUrlLabel": "atelier-api URL",
+  "apiUrlSaved": "Server-Adresse gespeichert",
+  "signIn": "Anmelden",
+  "signInSubtitle": "Melde dich mit Discord an, um loszulegen.",
+  "signInWithDiscord": "Mit Discord anmelden",
+  "signInFailed": "Anmeldung fehlgeschlagen",
+  "tagline": "Für alle. Fuck Gatekeeping.",
+  "pending": {
+    "title": "Warte auf Freigabe",
+    "bodyNamed": "Hey {{name}} — dein Konto muss noch von einem Admin freigegeben werden. Wir prüfen automatisch.",
+    "body": "Dein Konto muss noch von einem Admin freigegeben werden. Wir prüfen automatisch.",
+    "checkStatus": "Status prüfen",
+    "logout": "Abmelden"
+  },
+  "locked": {
+    "title": "Konto gesperrt",
+    "body": "Dein Konto wurde gesperrt. Melde dich bei einem Admin.",
+    "logout": "Abmelden"
+  }
+}

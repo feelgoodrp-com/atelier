@@ -1,0 +1,49 @@
+{
+  "title": "Welcome to atelier",
+  "subtitle": "The best tool for GTA V addon clothing.",
+  "actions": {
+    "newProject": {
+      "title": "New project",
+      "description": "Start an empty addon-clothing project.",
+      "cta": "Create"
+    },
+    "openProject": {
+      "title": "Open project",
+      "description": "Open an existing atelier project.",
+      "cta": "Browse"
+    },
+    "importPack": {
+      "title": "Import pack",
+      "description": "Import an existing clothing pack (YDD/YTD).",
+      "cta": "Import"
+    }
+  },
+  "cloud": {
+    "heading": "Cloud projects",
+    "emptyTitle": "No cloud projects",
+    "emptyHint": "As soon as a teammate uploads a pack to the cloud, it shows up here for cloning.",
+    "revision": "Rev {{revision}}",
+    "cloning": "Cloning…",
+    "clonedAndOpened": "“{{name}}” cloned and opened",
+    "clonePickerTitle": "Choose where to save the clone",
+    "cloneFailed": "Could not clone cloud project"
+  },
+  "recents": {
+    "heading": "Recently opened",
+    "emptyTitle": "No projects yet",
+    "emptyHint": "As soon as you create or open a project, it shows up here.",
+    "loading": "Loading project…",
+    "open": "Open",
+    "removeFromList": "Remove from list"
+  },
+  "projectPickerTitle": "Select atelier project folder",
+  "openProjectFailed": "Could not open project",
+  "selectFolderFailed": "Could not select folder",
+  "online": {
+    "title": "Online",
+    "you": "(you)",
+    "inLauncher": "In the launcher",
+    "nobodyOnline": "Nobody online",
+    "nobodyHint": "Teammates show up here as soon as they open atelier."
+  }
+}

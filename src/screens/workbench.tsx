@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FolderOpen, Shirt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,6 +59,7 @@ function useWorkbenchShortcuts() {
 }
 
 function NoProject() {
+  const { t } = useTranslation("workbench");
   const setScreen = useUiStore((s) => s.setScreen);
   return (
     <div className="flex h-full flex-col items-center justify-center px-6 text-center">
@@ -65,10 +67,10 @@ function NoProject() {
         <Shirt className="h-6 w-6 text-white/30" />
       </div>
       <p className="mt-4 text-sm font-medium text-white/60">
-        Kein Projekt geöffnet
+        {t("noProject.title")}
       </p>
       <p className="mt-1 max-w-64 text-xs text-white/35">
-        Erstelle oder öffne ein Projekt, um an Drawables zu arbeiten.
+        {t("noProject.description")}
       </p>
       <Button
         size="sm"
@@ -77,7 +79,7 @@ function NoProject() {
         onClick={() => setScreen("launcher")}
       >
         <FolderOpen className="h-4 w-4" />
-        Zum Start-Bildschirm
+        {t("noProject.toStart")}
       </Button>
     </div>
   );

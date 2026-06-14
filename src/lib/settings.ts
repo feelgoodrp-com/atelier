@@ -58,6 +58,17 @@ export async function setLogConsoleEnabled(enabled: boolean): Promise<void> {
   await store.set("logConsoleEnabled", enabled);
 }
 
+/** UI language code (e.g. "en", "de"). Null = not chosen yet (defaults to English). */
+export async function getLanguage(): Promise<string | null> {
+  const store = await getStore();
+  return (await store.get<string>("language")) ?? null;
+}
+
+export async function setLanguage(code: string): Promise<void> {
+  const store = await getStore();
+  await store.set("language", code);
+}
+
 export async function getApiUrl(): Promise<string> {
   const store = await getStore();
   return (await store.get<string>("apiUrl")) ?? DEFAULT_API_URL;

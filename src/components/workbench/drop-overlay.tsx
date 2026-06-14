@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { FileDown } from "lucide-react";
 import { runFileImport } from "@/lib/project/import-flow";
@@ -9,6 +10,7 @@ import { runFileImport } from "@/lib/project/import-flow";
  * routes dropped .ydd/.ytd/.yld paths through the stage-1 import pipeline.
  */
 export function DropOverlay() {
+  const { t } = useTranslation("workbench");
   const [dragging, setDragging] = useState(false);
 
   useEffect(() => {
@@ -44,10 +46,10 @@ export function DropOverlay() {
         <FileDown className="h-10 w-10 text-[#7289DA]" />
         <div className="text-center">
           <p className="text-lg font-semibold text-white">
-            Dateien hier ablegen
+            {t("dropOverlay.title")}
           </p>
           <p className="mt-1 text-sm text-white/50">
-            YDD, YTD und YLD werden automatisch zugeordnet.
+            {t("dropOverlay.description")}
           </p>
         </div>
       </div>

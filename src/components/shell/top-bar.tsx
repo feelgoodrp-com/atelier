@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   CircleUser,
@@ -30,13 +31,18 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { openLogWindow, useLogConsoleStore } from "@/lib/stores/log-console-store";
 import { useSidecarStore } from "@/lib/stores/sidecar-store";
 
-const NAV_ITEMS: Array<{ screen: Screen; label: string; icon: typeof House }> = [
-  { screen: "launcher", label: "Start", icon: House },
-  { screen: "workbench", label: "Werkbank", icon: Shirt },
-  { screen: "settings", label: "Einstellungen", icon: Settings },
+const NAV_ITEMS: Array<{
+  screen: Screen;
+  labelKey: string;
+  icon: typeof House;
+}> = [
+  { screen: "launcher", labelKey: "nav.start", icon: House },
+  { screen: "workbench", labelKey: "nav.workbench", icon: Shirt },
+  { screen: "settings", labelKey: "nav.settings", icon: Settings },
 ];
 
 function SidecarPill() {
+  const { t } = useTranslation("shell");
   const info = useSidecarStore((s) => s.info);
   const health = useSidecarStore((s) => s.health);
 
@@ -53,8 +59,8 @@ function SidecarPill() {
 
   const tooltip =
     info.status === "ready" && health === "failing"
-      ? "Sidecar antwortet nicht auf /health"
-      : (info.detail ?? "Sidecar-Status unbekannt");
+      ? t("sidecar.notResponding")
+      : (info.detail ?? t("sidecar.statusUnknown"));
 
   return (
     <Tooltip>
@@ -76,6 +82,7 @@ function SidecarPill() {
 }
 
 function UserChip() {
+  const { t } = useTranslation("shell");
   const user = useAuthStore((s) => s.user);
   const status = useAuthStore((s) => s.status);
   const login = useAuthStore((s) => s.login);
@@ -90,13 +97,13 @@ function UserChip() {
         disabled={status === "loggingIn"}
         onClick={() => {
           login().catch((e: unknown) => {
-            toast.error("Anmeldung fehlgeschlagen", {
+            toast.error(t("user.loginFailed"), {
               description: e instanceof Error ? e.message : String(e),
             });
           });
         }}
       >
-        {status === "loggingIn" ? "Anmeldung läuft…" : "Anmelden"}
+        {status === "loggingIn" ? t("user.loggingIn") : t("user.login")}
       </Button>
     );
   }
@@ -122,7 +129,7 @@ function UserChip() {
           <span className="max-w-32 truncate">{name}</span>
           {user.status === "pending" && (
             <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] text-amber-300">
-              Warte auf Freigabe
+              {t("user.pendingApproval")}
             </span>
           )}
         </button>
@@ -131,22 +138,22 @@ function UserChip() {
         <DropdownMenuLabel className="text-white/60">
           {name}
           <span className="block text-xs font-normal text-white/40">
-            {user.role === "admin" ? "Administrator" : "Mitglied"}
+            {user.role === "admin" ? t("user.admin") : t("user.member")}
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setScreen("settings")}>
           <Settings className="h-4 w-4" />
-          Einstellungen
+          {t("user.settings")}
         </DropdownMenuItem>
         <DropdownMenuItem
           variant="destructive"
           onClick={() => {
-            void logout().then(() => toast.success("Abgemeldet"));
+            void logout().then(() => toast.success(t("user.loggedOut")));
           }}
         >
           <LogOut className="h-4 w-4" />
-          Abmelden
+          {t("user.logout")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -155,6 +162,7 @@ function UserChip() {
 
 /** Custom window controls — the native title bar is disabled (decorations: false). */
 export function WindowControls() {
+  const { t } = useTranslation("shell");
   const [maximized, setMaximized] = useState(false);
 
   useEffect(() => {
@@ -180,7 +188,7 @@ export function WindowControls() {
       <button
         type="button"
         className={buttonClass}
-        aria-label="Minimieren"
+        aria-label={t("window.minimize")}
         onClick={() => void getCurrentWindow().minimize()}
       >
         <Minus className="h-4 w-4" />
@@ -188,7 +196,7 @@ export function WindowControls() {
       <button
         type="button"
         className={buttonClass}
-        aria-label={maximized ? "Wiederherstellen" : "Maximieren"}
+        aria-label={maximized ? t("window.restore") : t("window.maximize")}
         onClick={() => void getCurrentWindow().toggleMaximize()}
       >
         {maximized ? <Copy className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
@@ -196,7 +204,7 @@ export function WindowControls() {
       <button
         type="button"
         className="flex h-8 w-10 items-center justify-center rounded-[8px] text-white/55 transition-colors hover:bg-red-500/80 hover:text-white"
-        aria-label="Schließen"
+        aria-label={t("window.close")}
         onClick={() => void getCurrentWindow().close()}
       >
         <X className="h-4 w-4" />
@@ -206,6 +214,7 @@ export function WindowControls() {
 }
 
 export function TopBar() {
+  const { t } = useTranslation("shell");
   const screen = useUiStore((s) => s.screen);
   const setScreen = useUiStore((s) => s.setScreen);
 
@@ -231,24 +240,27 @@ export function TopBar() {
 
       {/* Nav */}
       <nav className="ml-4 flex items-center gap-1">
-        {NAV_ITEMS.map(({ screen: target, label, icon: Icon }) => (
-          <Tooltip key={target}>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={() => setScreen(target)}
-                className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-[10px] text-white/55 transition-colors hover:bg-white/10 hover:text-white",
-                  screen === target && "bg-[#5865F2]/20 text-[#7289DA]",
-                )}
-                aria-label={label}
-              >
-                <Icon className="h-4 w-4" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">{label}</TooltipContent>
-          </Tooltip>
-        ))}
+        {NAV_ITEMS.map(({ screen: target, labelKey, icon: Icon }) => {
+          const label = t(labelKey);
+          return (
+            <Tooltip key={target}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setScreen(target)}
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-[10px] text-white/55 transition-colors hover:bg-white/10 hover:text-white",
+                    screen === target && "bg-[#5865F2]/20 text-[#7289DA]",
+                  )}
+                  aria-label={label}
+                >
+                  <Icon className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">{label}</TooltipContent>
+            </Tooltip>
+          );
+        })}
       </nav>
 
       <div className="ml-auto flex items-center gap-3">
@@ -264,6 +276,7 @@ export function TopBar() {
 
 /** Only visible when the live log console is enabled in the settings. */
 function LogConsoleButton() {
+  const { t } = useTranslation("shell");
   const enabled = useLogConsoleStore((s) => s.enabled);
 
   if (!enabled) return null;
@@ -274,12 +287,12 @@ function LogConsoleButton() {
           type="button"
           onClick={() => openLogWindow()}
           className="flex h-8 w-8 items-center justify-center rounded-[10px] text-white/55 transition-colors hover:bg-white/10 hover:text-white"
-          aria-label="Echtzeit-Log"
+          aria-label={t("log.button")}
         >
           <Terminal className="h-4 w-4" />
         </button>
       </TooltipTrigger>
-      <TooltipContent side="bottom">Echtzeit-Log-Fenster (Strg+Shift+L)</TooltipContent>
+      <TooltipContent side="bottom">{t("log.buttonTooltip")}</TooltipContent>
     </Tooltip>
   );
 }

@@ -11,6 +11,7 @@
 import { create, type StateCreator } from "zustand";
 import { persist } from "zustand/middleware";
 import { toast } from "sonner";
+import i18n from "@/lib/i18n";
 import type { SlotId } from "@/lib/gta/components";
 import type { Gender } from "@/lib/project/schema";
 import type { ImportedDrawable } from "@/lib/project/import-assets";
@@ -118,7 +119,7 @@ const createWorkbenchState: StateCreator<
       await saveProject(projectDir, project);
       markSaved();
     } catch (e) {
-      toast.error("Speichern fehlgeschlagen", {
+      toast.error(i18n.t("sync:save.error"), {
         description: e instanceof Error ? e.message : String(e),
       });
     } finally {

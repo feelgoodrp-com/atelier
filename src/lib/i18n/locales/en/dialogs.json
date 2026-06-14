@@ -1,0 +1,26 @@
+{
+  "newProject": {
+    "title": "New project",
+    "description": "Creates a project folder with pack.atelier and assets/.",
+    "nameLabel": "Project name",
+    "namePlaceholder": "e.g. Feelgood Summer Pack",
+    "locationLabel": "Location",
+    "locationPlaceholder": "No folder selected yet…",
+    "browse": "Browse",
+    "willBeCreatedIn": "Will be created in: {{path}}",
+    "create": "Create",
+    "creating": "Creating…",
+    "pickLocationTitle": "Choose a location for the project",
+    "pickLocationError": "Could not select folder",
+    "created": "Project “{{name}}” created",
+    "createError": "Could not create project"
+  },
+  "recovery": {
+    "title": "Unsaved changes found",
+    "description": "An autosave from {{date}} exists for “{{name}}” that is newer than the last saved state. Do you want to restore it?",
+    "discard": "Discard",
+    "restore": "Restore",
+    "restored": "Autosave restored",
+    "restoreError": "Restore failed"
+  }
+}

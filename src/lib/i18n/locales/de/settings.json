@@ -1,0 +1,119 @@
+{
+  "title": "Einstellungen",
+  "tabs": {
+    "general": "Allgemein",
+    "account": "Konto",
+    "admin": "Admin"
+  },
+  "general": {
+    "language": {
+      "title": "Sprache",
+      "description": "Wähle die Anzeigesprache für atelier."
+    },
+    "gta": {
+      "title": "GTA V",
+      "description": "Wird für Vorschau-Modelle und Pack-Export benötigt.",
+      "installFolder": "Installationsordner",
+      "noPathYet": "Noch kein Pfad gewählt…",
+      "browse": "Durchsuchen",
+      "pickerTitle": "GTA V Installationsordner wählen",
+      "pathSaved": "GTA V Pfad gespeichert",
+      "pathSavedReady": "Ped-Vorschau ist jetzt verfügbar.",
+      "pathSavedUnverified": "Der Sidecar konnte den Pfad nicht verifizieren — stimmt der Installationsordner (enthält GTA5.exe und .rpf-Archive)?",
+      "pickFailed": "Pfad konnte nicht gewählt werden"
+    },
+    "backend": {
+      "title": "Backend",
+      "description": "Adresse des atelier-Sync-Servers.",
+      "apiUrlLabel": "API-URL",
+      "apiUrlSaved": "API-URL gespeichert",
+      "apiUrlSaveFailed": "API-URL konnte nicht gespeichert werden"
+    },
+    "sidecar": {
+      "title": "Sidecar",
+      "description": "Lokaler Hilfsprozess für YDD/YTD-Verarbeitung.",
+      "statusUnknown": "Status unbekannt",
+      "restart": "Neu starten",
+      "restarting": "Sidecar wird neu gestartet",
+      "restartFailed": "Neustart fehlgeschlagen"
+    },
+    "logs": {
+      "title": "Logs",
+      "description": "Täglich rotierende Log-Dateien (App, Sidecar, Oberfläche) — hilfreich für Fehlerberichte.",
+      "dirUnavailable": "Log-Verzeichnis nicht verfügbar",
+      "consoleTitle": "Echtzeit-Log-Fenster",
+      "consoleDescription": "Eigenes Fenster mit Live-Stream aller Logs (Terminal-Button oben rechts, Strg+Shift+L)."
+    },
+    "setup": {
+      "title": "Einrichtung",
+      "description": "Den Einrichtungs-Assistenten erneut durchlaufen (Server-Adresse, GTA-Pfad, Logs).",
+      "rerun": "Einrichtung erneut durchlaufen"
+    }
+  },
+  "account": {
+    "notSignedIn": "Nicht angemeldet",
+    "notSignedInDescription": "Melde dich mit Discord an, um Projekte zu synchronisieren.",
+    "signingIn": "Anmeldung läuft…",
+    "signInWithDiscord": "Mit Discord anmelden",
+    "signInFailed": "Anmeldung fehlgeschlagen",
+    "pendingTitle": "Warte auf Freigabe.",
+    "pendingBody": "Ein Admin muss dein Konto freischalten, bevor du synchronisieren kannst.",
+    "title": "Konto",
+    "discordId": "Discord-ID: {{id}}",
+    "roleAdmin": "Admin",
+    "roleMember": "Mitglied",
+    "statusApproved": "Freigegeben",
+    "statusPending": "Ausstehend",
+    "statusLocked": "Gesperrt",
+    "logout": "Abmelden",
+    "loggedOut": "Abgemeldet",
+    "devices": {
+      "title": "Geräte",
+      "description": "Angemeldete Geräte deines Kontos.",
+      "empty": "Keine Geräte gefunden.",
+      "thisDevice": "Dieses Gerät",
+      "revoked": "Gerät abgemeldet",
+      "revokeFailed": "Fehler"
+    }
+  },
+  "admin": {
+    "title": "Nutzerverwaltung",
+    "description": "Freigaben und Sperren für atelier-Konten.",
+    "loadFailed": "Nutzer konnten nicht geladen werden",
+    "statusPlaceholder": "Status",
+    "filter": {
+      "all": "Alle",
+      "pending": "Ausstehend",
+      "approved": "Freigegeben",
+      "locked": "Gesperrt"
+    },
+    "empty": "Keine Nutzer für diesen Filter.",
+    "columns": {
+      "user": "Nutzer",
+      "role": "Rolle",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "roleAdmin": "Admin",
+    "roleMember": "Mitglied",
+    "statusApproved": "Freigegeben",
+    "statusPending": "Ausstehend",
+    "statusLocked": "Gesperrt",
+    "approve": "Freigeben",
+    "lock": "Sperren",
+    "userApproved": "Nutzer freigegeben",
+    "userLocked": "Nutzer gesperrt",
+    "actionFailed": "Aktion fehlgeschlagen"
+  },
+  "credits": {
+    "title": "Credits & Danke",
+    "intro": "atelier ist ein eigenständiger Nachbau von <hl>grzyClothTool</hl> und nutzt <hl>CodeWalker</hl> für die 3D-Vorschau. Unterstütze die Leute, die das möglich gemacht haben:",
+    "openLink": "{{label}} öffnen",
+    "roles": {
+      "grzybeek": "grzyClothTool — die Vorlage für atelier",
+      "dexyfex": "CodeWalker — ohne ihn gäbe es keine 3D-Vorschau",
+      "jagodaMods": "Ideen & Motivation",
+      "ook": "Beiträge & Fixes"
+    }
+  }
+}

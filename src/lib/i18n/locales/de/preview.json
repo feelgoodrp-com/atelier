@@ -1,0 +1,161 @@
+{
+  "pane": {
+    "title": "3D-Vorschau",
+    "sidecarUnavailable": {
+      "heading": "Sidecar nicht verbunden",
+      "body": "Die 3D-Vorschau benötigt den lokalen Sidecar-Prozess. Starte ihn neu oder prüfe Einstellungen → Sidecar.",
+      "restart": "Sidecar neu starten",
+      "restarting": "Sidecar wird neu gestartet",
+      "restartFailed": "Neustart fehlgeschlagen"
+    },
+    "empty": {
+      "noYdd": "Kein YDD-Mesh in der Auswahl",
+      "nothing": "Nichts ausgewählt",
+      "noYddHint": "Die ausgewählten Drawables haben kein YDD-Mesh — weise zuerst eines zu.",
+      "nothingHint": "Wähle Drawables in der Liste aus, um sie hier in 3D zu sehen (Mehrfachauswahl = Outfit)."
+    },
+    "capToast": {
+      "title": "Vorschau zeigt maximal {{count}} Drawables",
+      "description_one": "{{count}} weiteres ausgewähltes Drawable wird nicht gerendert.",
+      "description_other": "{{count}} weitere ausgewählte Drawables werden nicht gerendert."
+    },
+    "pose": {
+      "ariaLabel": "Pose",
+      "bind": "Bind-Pose",
+      "tooltipActive": "Pose der Vorschau (statisch ins Mesh gebacken)",
+      "tooltipDisabled": "GTA-Pfad in den Einstellungen setzen"
+    },
+    "centerCamera": "Kamera zentrieren",
+    "centerCameraTooltip": "Kamera auf Auswahl zentrieren",
+    "autoRotate": "Autorotation",
+    "autoRotateOn": "Autorotation an",
+    "autoRotateOff": "Autorotation aus",
+    "pedBody": "Ped-Body",
+    "pedBodyAria": "Ped-Body anzeigen",
+    "pedBodyTooltipActive": "Freemode-Körper unter der Kleidung anzeigen",
+    "pedBodyTooltipDisabled": "GTA-Pfad in den Einstellungen setzen",
+    "collapse": "Vorschau einklappen",
+    "stats": "{{polys}} Polys · {{verts}} Verts",
+    "statsTitle": "Summe der {{count}} gerenderten Drawables",
+    "lodWarning_one": "{{count}} LOD-Warnung",
+    "lodWarning_other": "{{count}} LOD-Warnungen",
+    "lodMissing": "{{label}}: {{missing}}-LOD fehlt",
+    "untextured_one": "{{count}} ohne Textur",
+    "untextured_other": "{{count}} ohne Textur",
+    "loadingModels_one": "Lädt {{count}} Modell…",
+    "loadingModels_other": "Lädt {{count}} Modelle…",
+    "retryHint": "Klicken zum erneuten Laden",
+    "noName": "(ohne Namen)",
+    "unknownError": "Unbekannter Fehler"
+  },
+  "lod": {
+    "med": "Med",
+    "low": "Low"
+  },
+  "character": {
+    "trigger": "Charakter anpassen",
+    "triggerTooltipDisabled": "Ped-Body aktivieren, um den Charakter anzupassen",
+    "triggerTooltipActive": "Charakter anpassen (Komponenten, Menyoo-Import, Presets)",
+    "title": "Charakter",
+    "close": "Schließen",
+    "pickPed": "Die Datei enthält mehrere Peds — welcher soll importiert werden?",
+    "notFreemode": "kein Freemode",
+    "componentsHint": "Komponenten des Freemode-Bodys für die Vorschau — Drawable- und Textur-Index je Slot.",
+    "importMenyoo": "Menyoo-XML importieren…",
+    "importDialogTitle": "Menyoo-XML importieren",
+    "reset": "Charakter zurücksetzen",
+    "resetTooltip": "Zurücksetzen auf Spiel-Standard",
+    "faceOnlyHint": "Aus der Menyoo-Datei wird nur das Gesicht übernommen (Form, Hautton, Augenbrauen/Bart, Augenfarbe). Kleidung und Haare aus der Datei werden ignoriert — die stellst du im Tool selbst ein.",
+    "face": "Gesicht",
+    "removeFace": "Gesicht entfernen",
+    "removeFaceTooltip": "Gesicht entfernen (manuell gesetzte Komponenten bleiben)",
+    "faceFeaturesNote": "Feinregler (FaceFeatures) werden in der Vorschau nicht dargestellt.",
+    "presets": "Presets",
+    "applyPreset": "„{{name}}“ anwenden",
+    "deletePreset": "Preset „{{name}}“ löschen",
+    "presetNamePlaceholder": "Preset-Name…",
+    "savePreset": "Preset speichern",
+    "savePresetTooltip": "Aktuellen Charakter als Preset speichern",
+    "savePresetTooltipDisabled": "Erst Komponenten anpassen oder importieren",
+    "hints": "Hinweise",
+    "stepperDecrease": "{{label}} verringern",
+    "stepperIncrease": "{{label}} erhöhen",
+    "drawableAria": "{{label}} Drawable",
+    "textureAria": "{{label}} Textur",
+    "gender": {
+      "male": "männlich",
+      "female": "weiblich"
+    },
+    "genderMismatch": {
+      "title": "Geschlecht weicht ab",
+      "importDescription": "Die XML ist für einen {{xml}}en Ped, die Vorschau zeigt gerade einen {{preview}}en Body.",
+      "presetDescription": "Das Preset ist für {{preset}} gespeichert, die Vorschau zeigt gerade {{preview}}."
+    },
+    "faceImported": {
+      "title": "Gesicht aus „{{name}}“ importiert",
+      "description": "Nur das Gesicht wird übernommen (Form, Hautton, Augenbrauen/Bart, Augenfarbe). Kleidung und Haare aus der Datei werden ignoriert — die stellst du im Tool selbst ein."
+    },
+    "importFailed": "Import fehlgeschlagen",
+    "importNoPed": "Die Datei enthält keinen importierbaren Ped.",
+    "nameReserved": {
+      "title": "Name ist reserviert",
+      "description": "Bitte einen anderen Preset-Namen wählen."
+    },
+    "presetSaved": "Preset „{{name}}“ gespeichert",
+    "faceLines": {
+      "shapeDominantFirst": "Form: Elternteil {{parent}} (dominant)",
+      "shapeDominantSecond": "Form: Elternteil {{parent}} (dominant)",
+      "shapeMix": "Form-Mix: {{first}} ↔ {{second}} ({{percent}} %)",
+      "skinMix": "Hautton-Mix: {{percent}} %",
+      "overlays_one": "{{count}} aktives Overlay: {{names}}",
+      "overlays_other": "{{count}} aktive Overlays: {{names}}",
+      "eyeColour": "Augenfarbe: {{value}}"
+    },
+    "overlaySlots": {
+      "0": "Hautunreinheiten",
+      "1": "Bart",
+      "2": "Augenbrauen",
+      "3": "Alterung",
+      "4": "Make-up",
+      "5": "Rouge",
+      "6": "Teint",
+      "7": "Sonnenschäden",
+      "8": "Lippenstift",
+      "9": "Sommersprossen",
+      "10": "Brusthaar",
+      "11": "Körper-Makel",
+      "12": "Zusatz-Makel"
+    },
+    "fallbackSlot": "Slot {{index}}",
+    "hint": {
+      "props": "Props (Hüte, Brillen, Uhren …) werden in der Vorschau noch nicht angezeigt.",
+      "faceFeatures": "Feinregler (FaceFeatures, z. B. Nasenbreite) werden in der Vorschau nicht dargestellt — sie bleiben gespeichert.",
+      "skinFallback": "Hautton konnte nicht vollständig gerendert werden — eine Eltern-Hauttextur fehlt; Standard-Haut wird verwendet.",
+      "eyeFallback": "Augenfarbe konnte nicht gerendert werden — die Augen-Textur fehlt; Standard-Augen werden verwendet.",
+      "overlayFallback": "Overlay „{{label}}“ wurde übersprungen — die gewählte Variante ist nicht verfügbar.",
+      "componentFallback": "Slot „{{slot}}“ nutzt den Standard — Drawable-Index nicht verfügbar (DLC-Kleidung?)."
+    }
+  },
+  "viewer": {
+    "glbLoadFailed": "GLB konnte nicht geladen werden"
+  },
+  "camera": {
+    "gesamt": "Gesamt",
+    "kopf": "Kopf",
+    "torso": "Torso",
+    "beine": "Beine",
+    "fuesse": "Füße"
+  },
+  "pose": {
+    "stand": "Stehen (Idle)",
+    "walk": "Gehen (eingefroren)",
+    "sit": "Sitzen",
+    "hands_up": "Hände hoch",
+    "aim": "Zielen",
+    "arms_crossed": "Arme verschränkt"
+  },
+  "presets": {
+    "standardMale": "Standard (männlich)",
+    "standardFemale": "Standard (weiblich)"
+  }
+}

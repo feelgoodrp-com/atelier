@@ -1,0 +1,66 @@
+{
+  "push": {
+    "success": "Uploaded — rev {{revision}}",
+    "error": "Upload failed"
+  },
+  "pull": {
+    "success": "Rev {{revision}} loaded",
+    "downloaded_one": "{{count}} file downloaded.",
+    "downloaded_other": "{{count}} files downloaded.",
+    "allLocal": "All files were already available locally.",
+    "error": "Load failed"
+  },
+  "serverBuild": {
+    "ready": "Server build for rev {{revision}} is ready",
+    "startError": "Could not start server build",
+    "done": "Server build finished (rev {{revision}})",
+    "error": "Server build failed"
+  },
+  "save": {
+    "error": "Save failed"
+  },
+  "pose": {
+    "unavailable": "Pose unavailable",
+    "unavailableDescription": "“{{label}}” cannot be loaded on this installation — falling back to the bind pose."
+  },
+  "headChanged": {
+    "title": "New version available (rev {{revision}})",
+    "description": "A team member uploaded a new revision.",
+    "action": "Load now"
+  },
+  "oauthPage": {
+    "tagline": "For everyone. Fuck gatekeeping.",
+    "title": "Sign-in complete",
+    "body": "Welcome back! You can close this window and return to the app."
+  },
+  "auth": {
+    "unknownDevice": "Unknown device",
+    "loginTimeout": "Sign-in timed out",
+    "noCodeReceived": "No code received"
+  },
+  "api": {
+    "notConfigured": "ApiClient is not configured",
+    "requestFailed": "Request failed ({{status}})",
+    "invalidUrl": "The address must start with http:// or https://.",
+    "healthTimeout": "No response (timed out) — is the server running?",
+    "healthUnreachable": "Server unreachable — is the atelier-api running at this address?",
+    "healthBadStatus": "Server responded with HTTP {{status}}.",
+    "healthWrongService": "A different application is responding here, not the atelier-api."
+  },
+  "errors": {
+    "noProjectOpen": "No project open.",
+    "notLinked": "This project is not linked to the cloud yet.",
+    "fileMissing": "File missing locally: {{path}}",
+    "fileDrifted": "“{{name}}” was modified outside atelier (hash mismatch). Please re-import the file.",
+    "uploadHashFailed": "Upload of “{{name}}” failed (hash check). Please try again.",
+    "noCloudVersion": "No version of this pack exists in the cloud yet.",
+    "downloadCorrupt": "Download of “{{name}}” arrived corrupted. Please try again."
+  },
+  "progress": {
+    "checking": "Checking files…",
+    "done": "Done",
+    "committing": "Creating revision…",
+    "allLocal": "All files are already available locally",
+    "downloadStarting": "Download starting…"
+  }
+}

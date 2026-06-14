@@ -1,0 +1,19 @@
+{
+  "save": "Speichern",
+  "cancel": "Abbrechen",
+  "close": "Schließen",
+  "back": "Zurück",
+  "next": "Weiter",
+  "continue": "Weiter",
+  "skip": "Überspringen",
+  "delete": "Löschen",
+  "remove": "Entfernen",
+  "confirm": "Bestätigen",
+  "open": "Öffnen",
+  "retry": "Erneut versuchen",
+  "loading": "Lädt…",
+  "error": "Fehler",
+  "warning": "Warnung",
+  "language": "Sprache",
+  "settings": "Einstellungen"
+}
