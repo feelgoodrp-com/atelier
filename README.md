@@ -26,11 +26,13 @@ Manage clothing, preview it in real-time 3D, and build it in one click for
 atelier is a Windows desktop app for building, validating and publishing GTA-V
 addon clothing — built from scratch in the spirit of grzyClothTool. You manage
 drawables in a workbench, review everything in real-time 3D, and build an
-in-game-ready addon in one click. Optionally, you collaborate as a team over a
-cloud.
+in-game-ready addon in one click. It runs **fully standalone** — no account or
+backend needed — and you can optionally collaborate as a team over a cloud.
 
 ## Features
 
+- **Solo mode** — fully local: build, preview and export with **no account, no
+  backend, completely offline**. Sign in only if you want the team cloud.
 - **Real-time 3D preview** — multiple drawables at once, camera presets
   (head/torso/legs/feet), animation poses, hair-shrink & heel-height live,
   optionally on the real ped body. Textures and ped props included.
@@ -58,8 +60,9 @@ Grab the latest version from the
 | MSI | `atelier-*.msi` | managed environments |
 | Portable | `atelier-*-portable.zip` | unzip & run (app + sidecar included) |
 
-On first launch a short wizard walks you through the server address (optional,
-for the cloud), the GTA-V path and logs.
+On first launch a short wizard lets you pick a mode — **solo** (fully local, no
+account) or **team** (cloud) — then the GTA-V path and logs (plus the server
+address in team mode).
 
 ## Build from source
 
