@@ -23,16 +23,29 @@ const resources: Resource = {};
 const namespaces = new Set<string>(["common"]);
 
 // Eagerly bundle every locale JSON: ./locales/en/common.json, ./locales/de/…
-// `import.meta.glob` is a Vite build-time macro. In plain bun (the selftests
-// import i18n transitively) it is undefined, so fall back to reading the same
-// JSON files from disk — the locale set stays identical in both environments.
-const isViteRuntime = typeof import.meta.glob === "function";
-if (isViteRuntime) {
-  const modules = import.meta.glob<{ default: Record<string, unknown> }>(
+//
+// `import.meta.glob(...)` is a Vite BUILD-TIME macro: Vite rewrites this CALL
+// into a static import map in BOTH dev and production. It must be called
+// UNCONDITIONALLY. Do NOT gate it on `typeof import.meta.glob === "function"` —
+// that bare reference is left untouched by Vite and is `undefined` at runtime
+// in the built bundle, so the guard would be false in the shipped installer and
+// EVERY string would fall back to its raw key (the bug behind v1.0.0 showing no
+// translations). In plain bun (the selftests import i18n transitively)
+// `import.meta.glob` is undefined, so the call throws and we read the same JSON
+// files from disk instead — the locale set stays identical in both runtimes.
+let globbed: Record<string, { default: Record<string, unknown> }> | null = null;
+try {
+  globbed = import.meta.glob<{ default: Record<string, unknown> }>(
     "./locales/*/*.json",
     { eager: true },
   );
-  for (const [path, mod] of Object.entries(modules)) {
+} catch {
+  globbed = null; // plain bun: import.meta.glob is undefined → the call throws
+}
+
+const isViteRuntime = !!globbed && Object.keys(globbed).length > 0;
+if (isViteRuntime) {
+  for (const [path, mod] of Object.entries(globbed!)) {
     const match = /\/locales\/([a-z]{2})\/([a-z0-9_-]+)\.json$/u.exec(path);
     if (!match) continue;
     const [, lng, ns] = match;
