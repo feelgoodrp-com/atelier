@@ -79,6 +79,25 @@ export async function setApiUrl(url: string): Promise<void> {
   await store.set("apiUrl", url.trim().replace(/\/+$/, "") || DEFAULT_API_URL);
 }
 
+/**
+ * How the app runs:
+ *  - "cloud": Discord login + the atelier-api team backend (sync, presence, …)
+ *  - "solo":  fully local — no backend, no login; every cloud feature is hidden.
+ * Defaults to "cloud" so existing installs keep their behavior; new users pick
+ * during onboarding and can switch any time in Settings.
+ */
+export type AppMode = "solo" | "cloud";
+
+export async function getAppMode(): Promise<AppMode> {
+  const store = await getStore();
+  return (await store.get<AppMode>("appMode")) === "solo" ? "solo" : "cloud";
+}
+
+export async function setAppMode(mode: AppMode): Promise<void> {
+  const store = await getStore();
+  await store.set("appMode", mode);
+}
+
 /** Last output folder used by the build dialog (remembered across sessions). */
 export async function getLastBuildOutDir(): Promise<string | null> {
   const store = await getStore();

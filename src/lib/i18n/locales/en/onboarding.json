@@ -3,6 +3,7 @@
   "welcomeSubtitle": "Let's get you set up real quick.",
   "steps": {
     "language": "Language",
+    "mode": "Mode",
     "server": "Server",
     "gta": "GTA V",
     "logs": "Logs"
@@ -10,6 +11,18 @@
   "language": {
     "title": "Language",
     "description": "Pick the language for atelier. You can change this later in Settings."
+  },
+  "mode": {
+    "title": "How do you want to use atelier?",
+    "description": "Pick a mode now — you can switch any time in Settings.",
+    "solo": {
+      "title": "Solo — fully local",
+      "description": "Build clothing packs on your own machine. No account, no server — works completely offline."
+    },
+    "cloud": {
+      "title": "Team — with the cloud",
+      "description": "Sign in with Discord to sync packs and build together with your team."
+    }
   },
   "server": {
     "title": "Server address",

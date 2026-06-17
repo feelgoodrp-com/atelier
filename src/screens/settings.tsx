@@ -49,7 +49,7 @@ import { cn } from "@/lib/utils";
 import { CreditsPanel } from "@/components/settings/credits-panel";
 import i18n, { SUPPORTED_LANGUAGES } from "@/lib/i18n";
 import { changeLanguage } from "@/lib/i18n/language";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAuthStore, useCloudEnabled } from "@/lib/stores/auth-store";
 import { useUiStore } from "@/lib/stores/ui-store";
 import { useSidecarStore } from "@/lib/stores/sidecar-store";
 import { restartSidecar } from "@/lib/sidecar/client";
@@ -119,6 +119,7 @@ function LanguageCard() {
 
 function GeneralTab() {
   const { t } = useTranslation("settings");
+  const cloudEnabled = useCloudEnabled();
   const [gtaPath, setGtaPathState] = useState<string | null>(null);
   const apiUrl = useAuthStore((s) => s.apiUrl);
   const setApiUrl = useAuthStore((s) => s.setApiUrl);
@@ -186,6 +187,8 @@ function GeneralTab() {
     <div className="flex flex-col gap-4">
       <LanguageCard />
 
+      <ModeCard />
+
       <Card className="glass-border-subtle border-white/10 bg-transparent">
         <CardHeader>
           <CardTitle className="text-white">{t("general.gta.title")}</CardTitle>
@@ -213,35 +216,37 @@ function GeneralTab() {
         </CardContent>
       </Card>
 
-      <Card className="glass-border-subtle border-white/10 bg-transparent">
-        <CardHeader>
-          <CardTitle className="text-white">{t("general.backend.title")}</CardTitle>
-          <CardDescription className="text-white/50">
-            {t("general.backend.description")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2">
-          <Label htmlFor="api-url" className="text-white/70">
-            {t("general.backend.apiUrlLabel")}
-          </Label>
-          <div className="flex gap-2">
-            <Input
-              id="api-url"
-              value={apiUrlDraft}
-              onChange={(e) => setApiUrlDraft(e.target.value)}
-              placeholder="http://127.0.0.1:3095"
-              className="border-white/15 bg-white/5 text-white"
-            />
-            <Button
-              variant="outline"
-              disabled={apiUrlDraft === apiUrl}
-              onClick={() => void saveApiUrl()}
-            >
-              {t("common:save")}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {cloudEnabled && (
+        <Card className="glass-border-subtle border-white/10 bg-transparent">
+          <CardHeader>
+            <CardTitle className="text-white">{t("general.backend.title")}</CardTitle>
+            <CardDescription className="text-white/50">
+              {t("general.backend.description")}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            <Label htmlFor="api-url" className="text-white/70">
+              {t("general.backend.apiUrlLabel")}
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="api-url"
+                value={apiUrlDraft}
+                onChange={(e) => setApiUrlDraft(e.target.value)}
+                placeholder="http://127.0.0.1:3095"
+                className="border-white/15 bg-white/5 text-white"
+              />
+              <Button
+                variant="outline"
+                disabled={apiUrlDraft === apiUrl}
+                onClick={() => void saveApiUrl()}
+              >
+                {t("common:save")}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="glass-border-subtle border-white/10 bg-transparent">
         <CardHeader>
@@ -280,6 +285,46 @@ function GeneralTab() {
       <LogsCard />
       <SetupCard />
     </div>
+  );
+}
+
+/** Choose between offline solo mode and the team cloud. */
+function ModeCard() {
+  const { t } = useTranslation("settings");
+  const cloudEnabled = useCloudEnabled();
+  const setAppMode = useAuthStore((s) => s.setAppMode);
+
+  return (
+    <Card className="glass-border-subtle border-white/10 bg-transparent">
+      <CardHeader>
+        <CardTitle className="text-white">{t("general.mode.title")}</CardTitle>
+        <CardDescription className="text-white/50">
+          {cloudEnabled
+            ? t("general.mode.descriptionCloud")
+            : t("general.mode.descriptionSolo")}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex items-center justify-between gap-4">
+        <Badge
+          variant="outline"
+          className={cn(
+            "border-white/15 text-white/60",
+            cloudEnabled && "border-[#5865F2]/50 text-[#7289DA]",
+          )}
+        >
+          {cloudEnabled ? t("general.mode.cloud") : t("general.mode.solo")}
+        </Badge>
+        {cloudEnabled ? (
+          <Button variant="outline" onClick={() => void setAppMode("solo")}>
+            {t("general.mode.switchToSolo")}
+          </Button>
+        ) : (
+          <Button onClick={() => void setAppMode("cloud")}>
+            {t("general.mode.switchToCloud")}
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -370,6 +415,8 @@ function LogsCard() {
 
 function AccountTab() {
   const { t } = useTranslation("settings");
+  const cloudEnabled = useCloudEnabled();
+  const setAppMode = useAuthStore((s) => s.setAppMode);
   const user = useAuthStore((s) => s.user);
   const status = useAuthStore((s) => s.status);
   const login = useAuthStore((s) => s.login);
@@ -377,6 +424,7 @@ function AccountTab() {
   const [devices, setDevices] = useState<Device[] | null>(null);
 
   const loadDevices = useCallback(() => {
+    if (useAuthStore.getState().appMode !== "cloud") return;
     if (useAuthStore.getState().status !== "loggedIn") return;
     listDevices()
       .then(setDevices)
@@ -384,8 +432,27 @@ function AccountTab() {
   }, []);
 
   useEffect(() => {
+    if (!cloudEnabled) return;
     loadDevices();
-  }, [loadDevices, status]);
+  }, [cloudEnabled, loadDevices, status]);
+
+  if (!cloudEnabled) {
+    return (
+      <Card className="glass-border-subtle border-white/10 bg-transparent">
+        <CardHeader>
+          <CardTitle className="text-white">{t("account.soloTitle")}</CardTitle>
+          <CardDescription className="text-white/50">
+            {t("account.soloDescription")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={() => void setAppMode("cloud")}>
+            {t("account.soloEnableCloud")}
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (status !== "loggedIn" || !user) {
     return (
@@ -728,8 +795,9 @@ function AdminTab() {
 
 export function SettingsScreen() {
   const { t } = useTranslation("settings");
+  const cloudEnabled = useCloudEnabled();
   const user = useAuthStore((s) => s.user);
-  const isAdmin = user?.role === "admin";
+  const isAdmin = cloudEnabled && user?.role === "admin";
 
   return (
     <div className="screen-fade-in h-full overflow-y-auto px-10 py-10">

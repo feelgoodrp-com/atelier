@@ -40,7 +40,7 @@ import { formatRelativeTime } from "@/lib/format";
 import { listMyPacks, createPack, type Pack } from "@/lib/sync/api-client";
 import { linkProject } from "@/lib/sync/pack-sync";
 import type { SyncPhase } from "@/lib/sync/pack-sync";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAuthStore, useCloudEnabled } from "@/lib/stores/auth-store";
 import { useCollabStore } from "@/lib/stores/collab-store";
 import { useProjectStore } from "@/lib/stores/project-store";
 import { useSyncStore } from "@/lib/stores/sync-store";
@@ -605,6 +605,8 @@ function LinkedControls() {
 }
 
 export function CloudSection() {
+  if (!useCloudEnabled()) return null;
+
   const { t } = useTranslation("workbench");
   const linked = useProjectStore(
     (s) => (s.project?.sync.remoteProjectId ?? null) !== null,

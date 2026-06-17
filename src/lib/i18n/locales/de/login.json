@@ -12,6 +12,8 @@
   "signInSubtitle": "Melde dich mit Discord an, um loszulegen.",
   "signInWithDiscord": "Mit Discord anmelden",
   "signInFailed": "Anmeldung fehlgeschlagen",
+  "soloOption": "Ohne Konto nutzen (Solo)",
+  "soloHint": "Clothing-Packs lokal bauen — ohne Team-Cloud.",
   "tagline": "Für alle. Fuck Gatekeeping.",
   "pending": {
     "title": "Warte auf Freigabe",

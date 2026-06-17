@@ -184,6 +184,18 @@ function LoginCard() {
       <div className="mt-6 border-t border-white/10 pt-4">
         <ApiUrlAdvanced />
       </div>
+
+      <div className="mt-4 flex flex-col items-center gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-white/50 hover:text-white/80"
+          onClick={() => useAuthStore.getState().setAppMode("solo")}
+        >
+          {t("soloOption")}
+        </Button>
+        <p className="text-xs text-white/35">{t("soloHint")}</p>
+      </div>
     </div>
   );
 }

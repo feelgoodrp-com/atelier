@@ -11,8 +11,10 @@ import { useTranslation } from "react-i18next";
 import {
   Check,
   ChevronLeft,
+  Cloud,
   FolderOpen,
   Globe,
+  HardDrive,
   Loader2,
   ScrollText,
   ServerCog,
@@ -42,12 +44,15 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { openLogWindow, useLogConsoleStore } from "@/lib/stores/log-console-store";
 import { cn } from "@/lib/utils";
 
-const STEPS = [
+type Step = { id: string; title: string };
+
+const STEPS: readonly Step[] = [
   { id: "language", title: "Language" },
+  { id: "mode", title: "Mode" },
   { id: "server", title: "Server" },
   { id: "gta", title: "GTA V" },
   { id: "logs", title: "Logs" },
-] as const;
+];
 
 type HealthState = "idle" | "checking" | "ok" | "fail";
 
@@ -55,10 +60,10 @@ function errorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-function StepDots({ index }: { index: number }) {
+function StepDots({ steps, index }: { steps: readonly Step[]; index: number }) {
   return (
     <div className="flex items-center gap-2">
-      {STEPS.map((step, i) => (
+      {steps.map((step, i) => (
         <div key={step.id} className="flex items-center gap-2">
           <span
             className={cn(
@@ -70,7 +75,7 @@ function StepDots({ index }: { index: number }) {
           >
             {i < index ? <Check className="h-3.5 w-3.5" /> : i + 1}
           </span>
-          {i < STEPS.length - 1 && (
+          {i < steps.length - 1 && (
             <span className={cn("h-px w-6", i < index ? "bg-emerald-500/40" : "bg-white/10")} />
           )}
         </div>
@@ -89,7 +94,12 @@ export function OnboardingWizard({
 }) {
   const { t } = useTranslation("onboarding");
   const setApiUrl = useAuthStore((s) => s.setApiUrl);
+  const appMode = useAuthStore((s) => s.appMode);
+  const setAppMode = useAuthStore((s) => s.setAppMode);
   const [stepIdx, setStepIdx] = useState(0);
+
+  // Solo mode is fully local, so the sync-server step is dropped from the flow.
+  const steps = STEPS.filter((s) => s.id !== "server" || appMode === "cloud");
   // Re-render on language switch so the highlighted option stays in sync.
   const [currentLang, setCurrentLang] = useState(i18n.language);
 
@@ -152,11 +162,11 @@ export function OnboardingWizard({
   };
 
   const next = async () => {
-    // Persist the server address before leaving step 1.
-    if (STEPS[stepIdx].id === "server") {
+    // Persist the server address before leaving the server step (cloud only).
+    if (steps[stepIdx].id === "server") {
       await setApiUrl(apiDraft).catch(() => {});
     }
-    if (stepIdx < STEPS.length - 1) setStepIdx((i) => i + 1);
+    if (stepIdx < steps.length - 1) setStepIdx((i) => i + 1);
   };
 
   const finish = async () => {
@@ -175,8 +185,8 @@ export function OnboardingWizard({
     }
   };
 
-  const step = STEPS[stepIdx];
-  const isLast = stepIdx === STEPS.length - 1;
+  const step = steps[stepIdx];
+  const isLast = stepIdx === steps.length - 1;
 
   return (
     <GateShell>
@@ -189,7 +199,7 @@ export function OnboardingWizard({
               <p className="text-xs text-white/45">{t("welcomeSubtitle")}</p>
             </div>
             <div className="ml-auto">
-              <StepDots index={stepIdx} />
+              <StepDots steps={steps} index={stepIdx} />
             </div>
           </div>
 
@@ -222,6 +232,46 @@ export function OnboardingWizard({
                       >
                         <span>{lang.label}</span>
                         {active && <Check className="h-4 w-4 shrink-0 text-[#7289DA]" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {step.id === "mode" && (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2 text-white">
+                  <Cloud className="h-4 w-4 text-[#7289DA]" />
+                  <span className="text-sm font-medium">{t("mode.title")}</span>
+                </div>
+                <p className="text-sm text-white/50">{t("mode.description")}</p>
+                <div className="flex flex-col gap-2">
+                  {(["solo", "cloud"] as const).map((m) => {
+                    const active = appMode === m;
+                    const Icon = m === "solo" ? HardDrive : Cloud;
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => void setAppMode(m)}
+                        className={cn(
+                          "flex items-start gap-3 rounded-[10px] border px-3 py-3 text-left transition-colors",
+                          active
+                            ? "border-[#5865F2] bg-[#5865F2]/15"
+                            : "border-white/10 bg-white/5 hover:bg-white/10",
+                        )}
+                      >
+                        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-[#7289DA]" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-medium text-white">
+                            {t(`mode.${m}.title`)}
+                          </span>
+                          <span className="mt-0.5 block text-xs text-white/50">
+                            {t(`mode.${m}.description`)}
+                          </span>
+                        </span>
+                        {active && <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#7289DA]" />}
                       </button>
                     );
                   })}

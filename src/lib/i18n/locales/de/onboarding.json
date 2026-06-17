@@ -3,6 +3,7 @@
   "welcomeSubtitle": "Lass uns das kurz einrichten.",
   "steps": {
     "language": "Sprache",
+    "mode": "Modus",
     "server": "Server",
     "gta": "GTA V",
     "logs": "Logs"
@@ -10,6 +11,18 @@
   "language": {
     "title": "Sprache",
     "description": "Wähle die Sprache für atelier. Du kannst das später in den Einstellungen ändern."
+  },
+  "mode": {
+    "title": "Wie möchtest du atelier nutzen?",
+    "description": "Wähle jetzt einen Modus — du kannst ihn jederzeit in den Einstellungen wechseln.",
+    "solo": {
+      "title": "Solo — komplett lokal",
+      "description": "Baue Clothing-Packs auf deinem eigenen Rechner. Kein Konto, kein Server — funktioniert komplett offline."
+    },
+    "cloud": {
+      "title": "Team — mit der Cloud",
+      "description": "Mit Discord anmelden, um Packs zu syncen und im Team zu bauen."
+    }
   },
   "server": {
     "title": "Server-Adresse",

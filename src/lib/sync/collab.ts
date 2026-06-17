@@ -24,7 +24,7 @@ import {
   releaseLock,
   type PackLock,
 } from "@/lib/sync/api-client";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAuthStore, useCloudEnabled } from "@/lib/stores/auth-store";
 import { useCollabStore, type CollabLock, type CollabUser } from "@/lib/stores/collab-store";
 import { useProjectStore } from "@/lib/stores/project-store";
 import { useSyncStore } from "@/lib/stores/sync-store";
@@ -106,6 +106,8 @@ function scheduleReconnect(refreshTokensFirst: boolean): void {
 
 function connect(): void {
   if (!desiredPackId || socket) return;
+  // Solo mode: no backend — never open the collaboration socket.
+  if (useAuthStore.getState().appMode !== "cloud") return;
   const { accessToken, apiUrl } = useAuthStore.getState();
   if (!accessToken) {
     scheduleReconnect(true);
@@ -366,6 +368,7 @@ function releaseAllHeldLocks(): void {
  * and mirrors the drawable selection into advisory locks.
  */
 export function useCollab(): void {
+  const cloudEnabled = useCloudEnabled();
   const authStatus = useAuthStore((s) => s.status);
   const approved = useAuthStore((s) => s.user?.status === "approved");
   const remoteProjectId = useProjectStore(
@@ -375,9 +378,11 @@ export function useCollab(): void {
 
   useEffect(() => {
     const target =
-      authStatus === "loggedIn" && approved ? remoteProjectId : null;
+      cloudEnabled && authStatus === "loggedIn" && approved
+        ? remoteProjectId
+        : null;
     setCollabTarget(target);
-  }, [authStatus, approved, remoteProjectId]);
+  }, [cloudEnabled, authStatus, approved, remoteProjectId]);
 
   useEffect(() => {
     requestLockSync();

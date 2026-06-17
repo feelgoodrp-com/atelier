@@ -27,6 +27,7 @@ function App() {
   const bootstrapping = useAuthStore((s) => s.bootstrapping);
   const authStatus = useAuthStore((s) => s.status);
   const user = useAuthStore((s) => s.user);
+  const appMode = useAuthStore((s) => s.appMode);
 
   // First-run setup wizard gate (null = still loading the flag).
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
@@ -77,8 +78,12 @@ function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // HARD GATE: without a logged-in AND approved account the tool is unusable.
-  const authorized = authStatus === "loggedIn" && user?.status === "approved";
+  // HARD GATE (cloud mode only): without a logged-in AND approved account the
+  // tool is unusable. Solo mode is fully local and always authorized — the
+  // LoginGate below only renders in cloud mode when not yet authorized.
+  const cloudEnabled = appMode === "cloud";
+  const authorized =
+    !cloudEnabled || (authStatus === "loggedIn" && user?.status === "approved");
   // Setup wizard: first run (never configured + logged out) OR an explicit
   // re-run from Settings (works while logged in too).
   const showOnboarding =

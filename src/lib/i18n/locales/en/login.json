@@ -12,6 +12,8 @@
   "signInSubtitle": "Sign in with Discord to get started.",
   "signInWithDiscord": "Sign in with Discord",
   "signInFailed": "Sign-in failed",
+  "soloOption": "Use without an account (solo)",
+  "soloHint": "Build clothing packs locally — no team cloud.",
   "tagline": "For everyone. Fuck gatekeeping.",
   "pending": {
     "title": "Waiting for approval",

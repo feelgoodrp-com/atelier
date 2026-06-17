@@ -48,9 +48,21 @@
       "title": "Einrichtung",
       "description": "Den Einrichtungs-Assistenten erneut durchlaufen (Server-Adresse, GTA-Pfad, Logs).",
       "rerun": "Einrichtung erneut durchlaufen"
+    },
+    "mode": {
+      "title": "Modus",
+      "descriptionCloud": "Du nutzt die Team-Cloud — Projekte werden synchronisiert und Konto-Funktionen sind verfügbar.",
+      "descriptionSolo": "Du arbeitest offline im Solo-Modus — keine Konto- oder Cloud-Funktionen.",
+      "cloud": "Team-Cloud",
+      "solo": "Solo (offline)",
+      "switchToSolo": "In den Solo-Modus wechseln",
+      "switchToCloud": "Anmelden, um die Team-Cloud zu nutzen"
     }
   },
   "account": {
+    "soloTitle": "Solo-Modus",
+    "soloDescription": "Du arbeitest offline im Solo-Modus. Melde dich an, um die Team-Cloud für Projekt-Sync, Geräte und Admin-Funktionen zu aktivieren.",
+    "soloEnableCloud": "Anmelden, um die Team-Cloud zu aktivieren",
     "notSignedIn": "Nicht angemeldet",
     "notSignedInDescription": "Melde dich mit Discord an, um Projekte zu synchronisieren.",
     "signingIn": "Anmeldung läuft…",

@@ -48,9 +48,21 @@
       "title": "Setup",
       "description": "Run the setup wizard again (server address, GTA path, logs).",
       "rerun": "Run setup again"
+    },
+    "mode": {
+      "title": "Mode",
+      "descriptionCloud": "You are using the team cloud — projects sync and account features are available.",
+      "descriptionSolo": "You are working offline in solo mode — no account or cloud features.",
+      "cloud": "Team cloud",
+      "solo": "Solo (offline)",
+      "switchToSolo": "Switch to solo mode",
+      "switchToCloud": "Sign in to use the team cloud"
     }
   },
   "account": {
+    "soloTitle": "Solo mode",
+    "soloDescription": "You are working offline in solo mode. Sign in to enable the team cloud for project sync, devices and admin features.",
+    "soloEnableCloud": "Sign in to enable the team cloud",
     "notSignedIn": "Not signed in",
     "notSignedInDescription": "Sign in with Discord to sync projects.",
     "signingIn": "Signing in…",

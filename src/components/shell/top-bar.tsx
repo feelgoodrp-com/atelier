@@ -27,7 +27,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useUiStore, type Screen } from "@/lib/stores/ui-store";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAuthStore, useCloudEnabled } from "@/lib/stores/auth-store";
 import { openLogWindow, useLogConsoleStore } from "@/lib/stores/log-console-store";
 import { useSidecarStore } from "@/lib/stores/sidecar-store";
 
@@ -82,12 +82,15 @@ function SidecarPill() {
 }
 
 function UserChip() {
+  const cloudEnabled = useCloudEnabled();
   const { t } = useTranslation("shell");
   const user = useAuthStore((s) => s.user);
   const status = useAuthStore((s) => s.status);
   const login = useAuthStore((s) => s.login);
   const logout = useAuthStore((s) => s.logout);
   const setScreen = useUiStore((s) => s.setScreen);
+
+  if (!cloudEnabled) return null;
 
   if (status !== "loggedIn" || !user) {
     return (

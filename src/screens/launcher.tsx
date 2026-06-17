@@ -41,7 +41,7 @@ import {
   type RecentProject,
 } from "@/lib/recents";
 import { useWorkbenchStore } from "@/lib/stores/workbench-store";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAuthStore, useCloudEnabled } from "@/lib/stores/auth-store";
 import { listMyPacks, type Pack } from "@/lib/sync/api-client";
 import { clonePackToLocal } from "@/lib/sync/clone";
 import { formatRelativeTime } from "@/lib/format";
@@ -67,9 +67,14 @@ export function LauncherScreen() {
   const [openingPath, setOpeningPath] = useState<string | null>(null);
 
   // Cloud projects: every approved team member sees all packs and can clone
-  // one into a fresh local project with a single click.
+  // one into a fresh local project with a single click. In solo mode the cloud
+  // backend is disabled entirely, so nothing here renders or fires.
+  const cloudEnabled = useCloudEnabled();
   const apiReady = useAuthStore(
-    (s) => s.status === "loggedIn" && s.user?.status === "approved",
+    (s) =>
+      cloudEnabled &&
+      s.status === "loggedIn" &&
+      s.user?.status === "approved",
   );
   /** null = still loading, [] = loaded but empty/unavailable. */
   const [cloudPacks, setCloudPacks] = useState<Pack[] | null>(null);
@@ -358,10 +363,12 @@ export function LauncherScreen() {
         <GrzybeekCredits className="mt-14 justify-start" />
       </div>
 
-      {/* Right sidebar: who is online and in which project. */}
-      <aside className="hidden w-80 shrink-0 lg:block">
-        <OnlinePanel />
-      </aside>
+      {/* Right sidebar: who is online and in which project. Cloud-only. */}
+      {cloudEnabled && (
+        <aside className="hidden w-80 shrink-0 lg:block">
+          <OnlinePanel />
+        </aside>
+      )}
 
       <NewProjectDialog open={newProjectOpen} onOpenChange={setNewProjectOpen} />
       <RecoveryDialog recovery={recovery} onClose={() => setRecovery(null)} />

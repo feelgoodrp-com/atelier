@@ -23,9 +23,12 @@ import {
 import {
   DEFAULT_API_URL,
   getApiUrl as loadApiUrl,
+  getAppMode,
   getRefreshToken,
   setApiUrl as persistApiUrl,
+  setAppMode as persistAppMode,
   setRefreshToken,
+  type AppMode,
 } from "@/lib/settings";
 
 const LOGIN_TIMEOUT_MS = 5 * 60 * 1000;
@@ -107,11 +110,18 @@ interface AuthState {
   /** Kept in memory only — never persisted. */
   accessToken: string | null;
   apiUrl: string;
+  /**
+   * "cloud" = Discord login + team backend; "solo" = fully local, no backend.
+   * Loaded during {@link bootstrap}; gate + every cloud feature key off this.
+   */
+  appMode: AppMode;
   /** Loads persisted settings + tries a silent refresh. Call once on startup. */
   bootstrap: () => Promise<void>;
   login: () => Promise<void>;
   logout: () => Promise<void>;
   setApiUrl: (url: string) => Promise<void>;
+  /** Persists + applies the app mode (solo ⇄ cloud). Switching is instant. */
+  setAppMode: (mode: AppMode) => Promise<void>;
   /** Re-fetches /me (e.g. to poll the pending → approved transition). */
   reloadUser: () => Promise<void>;
 }
@@ -150,8 +160,25 @@ export const useAuthStore = create<AuthState>((set, get) => {
     user: null,
     accessToken: null,
     apiUrl: DEFAULT_API_URL,
+    appMode: "cloud",
 
     bootstrap: async () => {
+      // The mode must be known BEFORE the gate renders, otherwise a solo user
+      // briefly sees the login screen. Default "cloud" keeps existing installs.
+      let appMode: AppMode = "cloud";
+      try {
+        appMode = await getAppMode();
+      } catch {
+        // store plugin unavailable (plain browser dev) — keep default "cloud"
+      }
+      set({ appMode });
+
+      // Solo mode is fully local: never load the API URL, never call the backend.
+      if (appMode === "solo") {
+        set({ bootstrapping: false });
+        return;
+      }
+
       try {
         const apiUrl = await loadApiUrl();
         set({ apiUrl });
@@ -171,6 +198,11 @@ export const useAuthStore = create<AuthState>((set, get) => {
       } finally {
         set({ bootstrapping: false });
       }
+    },
+
+    setAppMode: async (mode: AppMode) => {
+      await persistAppMode(mode).catch(() => {});
+      set({ appMode: mode });
     },
 
     login: async () => {
@@ -264,3 +296,12 @@ export const useAuthStore = create<AuthState>((set, get) => {
     },
   };
 });
+
+/**
+ * Single source of truth for "are cloud features available?". Cloud (login,
+ * sync, presence, collab, admin) is enabled only in cloud mode; in solo mode
+ * every cloud surface hides and no backend call is made. Components use this
+ * hook; imperative call sites read `useAuthStore.getState().appMode`.
+ */
+export const useCloudEnabled = (): boolean =>
+  useAuthStore((s) => s.appMode === "cloud");

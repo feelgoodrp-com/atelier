@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CircleUser, Folder, Users } from "lucide-react";
 import { fetchPresence, type PresenceUser } from "@/lib/sync/api-client";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAuthStore, useCloudEnabled } from "@/lib/stores/auth-store";
 
 const REFRESH_MS = 15_000;
 
@@ -51,6 +51,9 @@ function UserRow({ user, isSelf }: { user: PresenceUser; isSelf: boolean }) {
 }
 
 export function OnlinePanel() {
+  // Solo mode has no cloud presence: hide the panel and never start the poll.
+  if (!useCloudEnabled()) return null;
+
   const { t } = useTranslation("launcher");
   const [users, setUsers] = useState<PresenceUser[] | null>(null);
   const selfId = useAuthStore((s) => s.user?.discordId);

@@ -6,18 +6,20 @@
 
 import { useEffect } from "react";
 import { sendPresence } from "@/lib/sync/api-client";
-import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAuthStore, useCloudEnabled } from "@/lib/stores/auth-store";
 import { useProjectStore } from "@/lib/stores/project-store";
 
 const HEARTBEAT_MS = 30_000;
 
 export function usePresenceHeartbeat(): void {
+  const cloudEnabled = useCloudEnabled();
   const authStatus = useAuthStore((s) => s.status);
   const userStatus = useAuthStore((s) => s.user?.status);
   const projectId = useProjectStore((s) => s.project?.id ?? null);
   const projectName = useProjectStore((s) => s.project?.name ?? null);
 
-  const active = authStatus === "loggedIn" && userStatus === "approved";
+  const active =
+    cloudEnabled && authStatus === "loggedIn" && userStatus === "approved";
 
   useEffect(() => {
     if (!active) return;
