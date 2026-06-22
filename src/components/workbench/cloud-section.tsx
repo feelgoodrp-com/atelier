@@ -91,17 +91,17 @@ function RosterStack() {
                 key={u.discordId}
                 src={u.avatar}
                 alt={u.username}
-                className="h-5 w-5 rounded-full border border-[#101010] object-cover"
+                className="h-7 w-7 rounded-full border border-[#101010] object-cover"
               />
             ) : (
               <CircleUser
                 key={u.discordId}
-                className="h-5 w-5 rounded-full border border-[#101010] bg-[#1a1a1a] text-white/40"
+                className="h-7 w-7 rounded-full border border-[#101010] bg-[#1a1a1a] text-white/40"
               />
             ),
           )}
           {extra > 0 && (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full border border-[#101010] bg-white/10 px-1 text-[9px] font-semibold text-white/70">
+            <span className="flex h-7 min-w-7 items-center justify-center rounded-full border border-[#101010] bg-white/10 px-1 text-[10px] font-semibold text-white/70">
               +{extra}
             </span>
           )}

@@ -2,26 +2,56 @@
  * Center column of the tattoos screen: a toolbar (search + import) and a grid of
  * tattoo cards filtered by the active zone + search. Import copies images into
  * assets/tattoos/ and appends ProjectTattoo entries (works without a GTA path).
+ *
+ * The right-click menu wraps the whole grid container (a real DOM <div>, like
+ * the clothing drawable-list) and acts on the grid selection — each card ensures
+ * itself into the selection on context-menu capture before the menu opens.
  */
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ImagePlus, Search, Stamp } from "lucide-react";
+import {
+  ArrowLeftRight,
+  Copy,
+  ImagePlus,
+  MapPin,
+  Search,
+  Stamp,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
+import {
+  TATTOO_ZONES,
+  type TattooGenderId,
+  type TattooZoneId,
+} from "@/lib/gta/tattoos";
+import { createTattoo } from "@/lib/project/schema";
 import { pickAndImportTattoos } from "@/lib/project/import-tattoos";
 import { useProjectStore } from "@/lib/stores/project-store";
 import { useTattooWorkbenchStore } from "@/lib/stores/tattoo-workbench-store";
 import { TattooCard } from "./tattoo-card";
-import { TattooContextMenu } from "./tattoo-context-menu";
 
 export function TattooGrid() {
   const { t } = useTranslation("tattoos");
   const project = useProjectStore((s) => s.project);
   const addTattoo = useProjectStore((s) => s.addTattoo);
+  const updateTattoo = useProjectStore((s) => s.updateTattoo);
+  const removeTattoos = useProjectStore((s) => s.removeTattoos);
+  const assignTattooGroup = useProjectStore((s) => s.assignTattooGroup);
   const projectDir = useProjectStore((s) => s.projectDir);
 
   const zoneFilter = useTattooWorkbenchStore((s) => s.zoneFilter);
@@ -41,6 +71,46 @@ export function TattooGrid() {
       return true;
     });
   }, [project, zoneFilter, search]);
+
+  // Right-click on a card that isn't selected → select just it, so the menu
+  // targets the clicked card; a card inside a multi-selection keeps the set.
+  const ensureInSelection = (id: string) => {
+    const sel = useTattooWorkbenchStore.getState().selection;
+    if (!sel.includes(id)) setSelection([id]);
+  };
+
+  const duplicate = () => {
+    const byId = new Map((project?.tattoos ?? []).map((tt) => [tt.id, tt]));
+    const copies: string[] = [];
+    for (const id of selection) {
+      const src = byId.get(id);
+      if (!src) continue;
+      const copy = createTattoo({
+        label: `${src.label} ${t("context.copySuffix")}`.trim(),
+        zone: src.zone,
+        gender: src.gender,
+        type: src.type,
+        garment: src.garment,
+        textLabel: src.textLabel,
+        eFacing: src.eFacing,
+        cost: src.cost,
+        image: src.image,
+        // names left null → re-derived to fresh unique overlay names.
+      });
+      addTattoo(copy);
+      copies.push(copy.id);
+    }
+    if (copies.length > 0) setSelection(copies);
+  };
+  const setZone = (zone: TattooZoneId) =>
+    selection.forEach((id) => updateTattoo(id, { zone }));
+  const setGender = (gender: TattooGenderId) =>
+    selection.forEach((id) => updateTattoo(id, { gender }));
+  const assign = (groupId: string | null) => assignTattooGroup(selection, groupId);
+  const remove = () => {
+    removeTattoos(selection);
+    setSelection([]);
+  };
 
   const onImport = async () => {
     if (!projectDir || importing) return;
@@ -70,6 +140,8 @@ export function TattooGrid() {
       setImporting(false);
     }
   };
+
+  const noSel = selection.length === 0;
 
   return (
     <div className="flex h-full flex-col">
@@ -103,26 +175,93 @@ export function TattooGrid() {
             <p className="mt-1 max-w-64 text-xs text-white/35">{t("grid.emptyHint")}</p>
           </div>
         ) : (
-          <div
-            className={cn(
-              "grid gap-2 p-3",
-              "grid-cols-[repeat(auto-fill,minmax(120px,1fr))]",
-            )}
-            onClick={(e) => {
-              // Click on empty grid space clears the selection.
-              if (e.target === e.currentTarget) setSelection([]);
-            }}
-          >
-            {visible.map((tat) => (
-              <TattooContextMenu key={tat.id} tattoo={tat}>
-                <TattooCard
-                  tattoo={tat}
-                  selected={selection.includes(tat.id)}
-                  onSelect={(additive) => toggleSelection(tat.id, additive)}
-                />
-              </TattooContextMenu>
-            ))}
-          </div>
+          <ContextMenu>
+            <ContextMenuTrigger asChild>
+              <div
+                className="grid gap-2 p-3 grid-cols-[repeat(auto-fill,minmax(120px,1fr))]"
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) setSelection([]);
+                }}
+              >
+                {visible.map((tat) => (
+                  <TattooCard
+                    key={tat.id}
+                    tattoo={tat}
+                    selected={selection.includes(tat.id)}
+                    onSelect={(additive) => toggleSelection(tat.id, additive)}
+                    onContextMenuCapture={() => ensureInSelection(tat.id)}
+                  />
+                ))}
+              </div>
+            </ContextMenuTrigger>
+            <ContextMenuContent className="w-52">
+              <ContextMenuItem disabled={noSel} onClick={duplicate}>
+                <Copy className="h-4 w-4" />
+                {t("context.duplicate")}
+              </ContextMenuItem>
+
+              <ContextMenuSub>
+                <ContextMenuSubTrigger disabled={noSel}>
+                  <MapPin className="mr-2 h-4 w-4" />
+                  {t("context.setZone")}
+                </ContextMenuSubTrigger>
+                <ContextMenuSubContent className="w-44">
+                  {TATTOO_ZONES.map((z) => (
+                    <ContextMenuItem key={z.id} onClick={() => setZone(z.id)}>
+                      {z.label}
+                    </ContextMenuItem>
+                  ))}
+                </ContextMenuSubContent>
+              </ContextMenuSub>
+
+              <ContextMenuSub>
+                <ContextMenuSubTrigger disabled={noSel}>
+                  <ArrowLeftRight className="mr-2 h-4 w-4" />
+                  {t("context.setGender")}
+                </ContextMenuSubTrigger>
+                <ContextMenuSubContent className="w-40">
+                  <ContextMenuItem onClick={() => setGender("both")}>
+                    {t("gender.both")}
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => setGender("male")}>
+                    {t("gender.male")}
+                  </ContextMenuItem>
+                  <ContextMenuItem onClick={() => setGender("female")}>
+                    {t("gender.female")}
+                  </ContextMenuItem>
+                </ContextMenuSubContent>
+              </ContextMenuSub>
+
+              {(project?.groups.length ?? 0) > 0 && (
+                <ContextMenuSub>
+                  <ContextMenuSubTrigger disabled={noSel}>
+                    <Users className="mr-2 h-4 w-4" />
+                    {t("context.assignGroup")}
+                  </ContextMenuSubTrigger>
+                  <ContextMenuSubContent className="w-48">
+                    {(project?.groups ?? []).map((g) => (
+                      <ContextMenuItem key={g.id} onClick={() => assign(g.id)}>
+                        <span
+                          className="h-2.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: g.color }}
+                        />
+                        {g.name}
+                      </ContextMenuItem>
+                    ))}
+                    <ContextMenuItem onClick={() => assign(null)}>
+                      {t("context.noGroup")}
+                    </ContextMenuItem>
+                  </ContextMenuSubContent>
+                </ContextMenuSub>
+              )}
+
+              <ContextMenuSeparator />
+              <ContextMenuItem variant="destructive" disabled={noSel} onClick={remove}>
+                <Trash2 className="h-4 w-4" />
+                {t("context.delete")}
+              </ContextMenuItem>
+            </ContextMenuContent>
+          </ContextMenu>
         )}
       </ScrollArea>
     </div>
