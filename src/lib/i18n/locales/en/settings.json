@@ -121,6 +121,7 @@
     "title": "Credits & thanks",
     "intro": "atelier is an independent reimplementation of <hl>grzyClothTool</hl> and uses <hl>CodeWalker</hl> for the 3D preview. Support the people who made it possible:",
     "openLink": "Open {{label}}",
+    "joinFeelgood": "Join the feelgood Discord",
     "roles": {
       "grzybeek": "grzyClothTool — the blueprint for atelier",
       "dexyfex": "CodeWalker — without him there would be no 3D preview",

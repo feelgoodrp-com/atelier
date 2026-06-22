@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 
 const PATREON_URL = "https://patreon.com/grzybeek";
 const KOFI_URL = "https://ko-fi.com/grzybeek";
+/** feelgood's own community Discord — shown in the footer next to grzybeek's links. */
+const FEELGOOD_DISCORD_URL = "https://discord.gg/Y8kkKyShZx";
 
 export function PatreonMark({ className }: { className?: string }) {
   return (
@@ -40,6 +42,14 @@ export function KofiMark({ className }: { className?: string }) {
         fill="currentColor"
         stroke="none"
       />
+    </svg>
+  );
+}
+
+export function DiscordMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M20.32 4.37A19.8 19.8 0 0 0 15.45 3c-.21.38-.46.9-.63 1.3a18.3 18.3 0 0 0-5.5 0C9.14 3.9 8.88 3.38 8.67 3a19.7 19.7 0 0 0-4.87 1.37C.7 8.97-.15 13.46.27 17.88a19.9 19.9 0 0 0 6 3.04c.49-.66.92-1.37 1.29-2.11-.71-.27-1.39-.6-2.03-.99.17-.13.34-.26.5-.4a14.2 14.2 0 0 0 12.06 0c.16.14.33.27.5.4-.64.39-1.32.72-2.03.99.37.74.8 1.45 1.29 2.11a19.9 19.9 0 0 0 6-3.04c.5-5.18-.84-9.63-3.52-13.51zM8.02 15.18c-1.18 0-2.15-1.08-2.15-2.41 0-1.33.95-2.42 2.15-2.42 1.21 0 2.18 1.09 2.16 2.42 0 1.33-.95 2.41-2.16 2.41zm7.96 0c-1.18 0-2.15-1.08-2.15-2.41 0-1.33.94-2.42 2.15-2.42 1.21 0 2.18 1.09 2.16 2.42 0 1.33-.95 2.41-2.16 2.41z" />
     </svg>
   );
 }
@@ -96,6 +106,13 @@ export function GrzybeekCredits({ className }: { className?: string }) {
           icon={<KofiMark className="h-4 w-4" />}
         />
       </div>
+      <span className="h-3.5 w-px bg-white/15" aria-hidden="true" />
+      <SupportLink
+        label="feelgood Discord"
+        url={FEELGOOD_DISCORD_URL}
+        hoverClass="hover:text-[#7289DA]"
+        icon={<DiscordMark className="h-4 w-4" />}
+      />
     </div>
   );
 }
