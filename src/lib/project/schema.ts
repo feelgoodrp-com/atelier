@@ -146,48 +146,35 @@ export const tattooPlacementSchema = z.object({
 });
 export type TattooPlacement = z.infer<typeof tattooPlacementSchema>;
 
-export const projectTattooSchema = z
-  .object({
-    id: z.uuid(),
-    label: z.string(),
-    groupId: z.uuid().nullable(),
+export const projectTattooSchema = z.object({
+  id: z.uuid(),
+  label: z.string(),
+  groupId: z.uuid().nullable(),
 
-    zone: z.enum(TATTOO_ZONE_IDS),
-    type: z.enum(TATTOO_TYPE_IDS),
-    gender: z.enum(TATTOO_GENDER_IDS),
+  zone: z.enum(TATTOO_ZONE_IDS),
+  type: z.enum(TATTOO_TYPE_IDS),
+  gender: z.enum(TATTOO_GENDER_IDS),
 
-    // Explicit overlay names; null => derive `<ytd>_M` / `<ytd>_F` at build time.
-    nameMale: overlayNameSchema.nullable(),
-    nameFemale: overlayNameSchema.nullable(),
+  // OPTIONAL overlay-name overrides. null => derive `<ytd>_M` / `<ytd>_F` at
+  // build time (selectDerivedTattooBuild), where `<ytd>` is the index-based YTD
+  // file name — so the default is always present and project-wide unique. The
+  // overlay nameHash is independent of txdHash (the YTD file name), so an
+  // override only needs to be unique, not tied to the file.
+  nameMale: overlayNameSchema.nullable(),
+  nameFemale: overlayNameSchema.nullable(),
 
-    // One decal image; no ydd, no texture variants.
-    image: assetRefSchema.nullable(),
+  // One decal image; no ydd, no texture variants.
+  image: assetRefSchema.nullable(),
 
-    // Stored, editable shop/overlay fields (only collection+preset are
-    // load-bearing at runtime; the rest are shop cosmetics).
-    garment: z.string().default("All"),
-    textLabel: z.string().default(""),
-    eFacing: z.string().nullable(), // null => derive from zone.defaultFacing
-    cost: z.number().int().nonnegative().default(0),
+  // Stored, editable shop/overlay fields (only collection+preset are
+  // load-bearing at runtime; the rest are shop cosmetics).
+  garment: z.string().default("All"),
+  textLabel: z.string().default(""),
+  eFacing: z.string().nullable(), // null => derive from zone.defaultFacing
+  cost: z.number().int().nonnegative().default(0),
 
-    placement: tattooPlacementSchema.nullable(), // optional; effect unconfirmed
-  })
-  .superRefine((t, ctx) => {
-    if ((t.gender === "both" || t.gender === "male") && !t.nameMale) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["nameMale"],
-        message: "Männlicher Overlay-Name erforderlich",
-      });
-    }
-    if ((t.gender === "both" || t.gender === "female") && !t.nameFemale) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["nameFemale"],
-        message: "Weiblicher Overlay-Name erforderlich",
-      });
-    }
-  });
+  placement: tattooPlacementSchema.nullable(), // optional; effect unconfirmed
+});
 export type ProjectTattoo = z.infer<typeof projectTattooSchema>;
 
 /** One shared overlay collection per pack (name derived from dlcName). */

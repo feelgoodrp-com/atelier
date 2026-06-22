@@ -490,36 +490,17 @@ if (tatRoundtrip.success) {
   checkEq("tattoo roundtrip is lossless", tatRoundtrip.data, tatProject);
 }
 
-// superRefine: gender coherence.
+// Null overlay names are valid — they are derived (index-based) at build time.
 check(
-  "gender 'both' without nameFemale is rejected",
-  !projectTattooSchema.safeParse({
-    id: crypto.randomUUID(),
-    label: "x",
-    groupId: null,
-    zone: "head",
-    type: "tattoo",
-    gender: "both",
-    nameMale: "x_M",
-    nameFemale: null,
-    image: null,
-    garment: "All",
-    textLabel: "",
-    eFacing: null,
-    cost: 0,
-    placement: null,
-  }).success,
-);
-check(
-  "gender 'male' with only nameMale is accepted",
+  "gender 'both' with null overlay names validates (derived at build)",
   projectTattooSchema.safeParse({
     id: crypto.randomUUID(),
     label: "x",
     groupId: null,
     zone: "head",
     type: "tattoo",
-    gender: "male",
-    nameMale: "x_M",
+    gender: "both",
+    nameMale: null,
     nameFemale: null,
     image: null,
     garment: "All",
