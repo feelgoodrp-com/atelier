@@ -24,10 +24,11 @@ Manage clothing, preview it in real-time 3D, and build it in one click for
 ## What is atelier?
 
 atelier is a Windows desktop app for building, validating and publishing GTA-V
-addon clothing — built from scratch in the spirit of grzyClothTool. You manage
-drawables in a workbench, review everything in real-time 3D, and build an
-in-game-ready addon in one click. It runs **fully standalone** — no account or
-backend needed — and you can optionally collaborate as a team over a cloud.
+addon clothing **and tattoos** — built from scratch in the spirit of
+grzyClothTool. You manage drawables in a workbench, author tattoos in a dedicated
+area, review everything in real-time 3D, and build an in-game-ready addon in one
+click. It runs **fully standalone** — no account or backend needed — and you can
+optionally collaborate as a team over a cloud.
 
 ## Features
 
@@ -39,6 +40,10 @@ backend needed — and you can optionally collaborate as a team over a cloud.
 - **Workbench** — category tree (12 component + 6 prop slots with warning
   badges), searchable drawable list (reorder, multi-select), inspector and
   texture panel (a–z) with duplicate detection.
+- **Tattoo authoring** _(new in 1.2)_ — a dedicated **Tattoos** area: import decals
+  (PNG/DDS/YTD), set zone, gender, type and draw order, then build a streamable
+  FiveM tattoo pack — YTD + `<PedDecorationCollection>` overlay + optional
+  `shop_tattoo.meta` + a `tattoos.json` runtime manifest for the server.
 - **Build** — real binary `CPedVariationInfo` YMTs via CodeWalker for **FiveM**,
   **Singleplayer**, **RageMP** and **alt:V**; automatic 128-split, shop metas
   and `fxmanifest.lua`.
