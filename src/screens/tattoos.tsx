@@ -14,6 +14,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { TattooHeader } from "@/components/tattoos/tattoo-header";
 import { TattooZoneTree } from "@/components/tattoos/tattoo-zone-tree";
 import { TattooGrid } from "@/components/tattoos/tattoo-grid";
 import { TattooInspector } from "@/components/tattoos/tattoo-inspector";
@@ -98,6 +99,7 @@ export function TattoosScreen() {
   return (
     <div className="screen-fade-in relative h-full p-3">
       <div className="glass-border-subtle glass-hover-none flex h-full flex-col rounded-[10px]">
+        <TattooHeader />
         <ResizablePanelGroup
           direction="horizontal"
           autoSaveId="atelier:tattoos:h"

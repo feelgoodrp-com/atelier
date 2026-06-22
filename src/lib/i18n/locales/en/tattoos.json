@@ -4,6 +4,22 @@
     "description": "Open or create a project to manage tattoos.",
     "toStart": "Go to start"
   },
+  "header": {
+    "badge": "Tattoos",
+    "build": "Build",
+    "buildTooltip": "Build tattoo pack",
+    "undo": "Undo",
+    "redo": "Redo"
+  },
+  "context": {
+    "duplicate": "Duplicate",
+    "copySuffix": "copy",
+    "setZone": "Change zone",
+    "setGender": "Change gender",
+    "assignGroup": "Assign group",
+    "noGroup": "No group",
+    "delete": "Delete"
+  },
   "zoneTree": {
     "title": "Zones",
     "all": "All"

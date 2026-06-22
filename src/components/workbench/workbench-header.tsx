@@ -68,7 +68,7 @@ export async function pickAndImportFiles(): Promise<void> {
   }
 }
 
-function ProjectName() {
+export function ProjectName() {
   const { t } = useTranslation("workbench");
   const name = useProjectStore((s) => s.project?.name ?? "");
   const renameProject = useProjectStore((s) => s.renameProject);
@@ -118,7 +118,7 @@ function ProjectName() {
   );
 }
 
-function SaveIndicator() {
+export function SaveIndicator() {
   const { t } = useTranslation("workbench");
   const dirty = useProjectStore((s) => s.dirty);
   const lastSavedAt = useProjectStore((s) => s.lastSavedAt);

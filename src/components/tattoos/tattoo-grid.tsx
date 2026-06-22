@@ -16,6 +16,7 @@ import { pickAndImportTattoos } from "@/lib/project/import-tattoos";
 import { useProjectStore } from "@/lib/stores/project-store";
 import { useTattooWorkbenchStore } from "@/lib/stores/tattoo-workbench-store";
 import { TattooCard } from "./tattoo-card";
+import { TattooContextMenu } from "./tattoo-context-menu";
 
 export function TattooGrid() {
   const { t } = useTranslation("tattoos");
@@ -113,12 +114,13 @@ export function TattooGrid() {
             }}
           >
             {visible.map((tat) => (
-              <TattooCard
-                key={tat.id}
-                tattoo={tat}
-                selected={selection.includes(tat.id)}
-                onSelect={(additive) => toggleSelection(tat.id, additive)}
-              />
+              <TattooContextMenu key={tat.id} tattoo={tat}>
+                <TattooCard
+                  tattoo={tat}
+                  selected={selection.includes(tat.id)}
+                  onSelect={(additive) => toggleSelection(tat.id, additive)}
+                />
+              </TattooContextMenu>
             ))}
           </div>
         )}
