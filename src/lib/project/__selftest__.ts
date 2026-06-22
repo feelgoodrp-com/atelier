@@ -13,14 +13,19 @@ import {
   atelierProjectSchema,
   createDrawable,
   createEmptyProject,
+  createTattoo,
+  projectTattooSchema,
   suggestDlcName,
   type AtelierProject,
 } from "./schema";
+import { validateTattoos } from "./validation";
 import {
   clearProjectHistory,
   selectDerivedDrawableIds,
+  selectDerivedTattooBuild,
   selectDrawablesBy,
   selectDuplicateYddMap,
+  selectTattoosByZone,
   useProjectStore,
 } from "@/lib/stores/project-store";
 import {
@@ -114,7 +119,33 @@ checkEq("suggestDlcName slugs", suggestDlcName("Feelgood Süßer-Pack 2!"), "fee
 console.log("\n[2] migrations");
 // ---------------------------------------------------------------------------
 
-check("v1 passthrough", migrateProjectFile(JSON.parse(JSON.stringify(sample))) !== null);
+check("v2 passthrough", migrateProjectFile(JSON.parse(JSON.stringify(sample))) !== null);
+
+// v1 → v2 lift: strip the v2-only fields, drop the version, then migrate.
+const v1doc = JSON.parse(JSON.stringify(createEmptyProject("Legacy Pack"))) as Record<
+  string,
+  unknown
+>;
+delete v1doc.tattooCollection;
+delete v1doc.tattoos;
+v1doc.fgcloth = 1;
+const v1settings = v1doc.settings as { dlcName: string };
+const lifted = migrateProjectFile(v1doc) as {
+  fgcloth: number;
+  tattoos: unknown[];
+  tattooCollection: { name: string; label: string };
+};
+checkEq("v1→v2 bumps version + adds empty tattoos", [lifted.fgcloth, lifted.tattoos], [2, []]);
+checkEq(
+  "v1→v2 derives the collection name from dlcName",
+  lifted.tattooCollection.name,
+  v1settings.dlcName,
+);
+check(
+  "lifted v1 project validates against the v2 schema",
+  atelierProjectSchema.safeParse(lifted).success,
+);
+
 let migrationThrew = false;
 try {
   migrateProjectFile({ fgcloth: 99 });
@@ -429,6 +460,166 @@ checkEq(
   "setSyncState records NO undo step",
   useProjectStore.temporal.getState().pastStates.length,
   0,
+);
+
+// ---------------------------------------------------------------------------
+console.log("\n[7] tattoos");
+// ---------------------------------------------------------------------------
+
+// zod roundtrip incl. a tattoo (lossless through migrate + parse).
+const tatProject = createEmptyProject("Ink Pack");
+tatProject.tattoos.push(
+  createTattoo({
+    label: "Totenkopf",
+    zone: "torso",
+    gender: "both",
+    nameMale: "skull_M",
+    nameFemale: "skull_F",
+    image: { path: "assets/tattoos/skull.dds", hash: hash("a"), size: 2048 },
+  }),
+);
+const tatRoundtrip = atelierProjectSchema.safeParse(
+  migrateProjectFile(JSON.parse(JSON.stringify(tatProject))),
+);
+check(
+  "project with a tattoo validates",
+  tatRoundtrip.success,
+  tatRoundtrip.success ? undefined : JSON.stringify(tatRoundtrip.error.issues[0]),
+);
+if (tatRoundtrip.success) {
+  checkEq("tattoo roundtrip is lossless", tatRoundtrip.data, tatProject);
+}
+
+// superRefine: gender coherence.
+check(
+  "gender 'both' without nameFemale is rejected",
+  !projectTattooSchema.safeParse({
+    id: crypto.randomUUID(),
+    label: "x",
+    groupId: null,
+    zone: "head",
+    type: "tattoo",
+    gender: "both",
+    nameMale: "x_M",
+    nameFemale: null,
+    image: null,
+    garment: "All",
+    textLabel: "",
+    eFacing: null,
+    cost: 0,
+    placement: null,
+  }).success,
+);
+check(
+  "gender 'male' with only nameMale is accepted",
+  projectTattooSchema.safeParse({
+    id: crypto.randomUUID(),
+    label: "x",
+    groupId: null,
+    zone: "head",
+    type: "tattoo",
+    gender: "male",
+    nameMale: "x_M",
+    nameFemale: null,
+    image: null,
+    garment: "All",
+    textLabel: "",
+    eFacing: null,
+    cost: 0,
+    placement: null,
+  }).success,
+);
+
+// bad overlay-name charset.
+const badName = JSON.parse(JSON.stringify(tatProject)) as {
+  tattoos: { nameMale: string }[];
+};
+badName.tattoos[0].nameMale = "bad name!";
+check("invalid overlay-name charset is rejected", !atelierProjectSchema.safeParse(badName).success);
+
+// bad collection-name charset.
+const badCollection = JSON.parse(JSON.stringify(tatProject)) as {
+  tattooCollection: { name: string };
+};
+badCollection.tattooCollection.name = "Bad Name";
+check(
+  "invalid tattooCollection name charset is rejected",
+  !atelierProjectSchema.safeParse(badCollection).success,
+);
+
+// derived build names (GLOBAL index) + reorder follows + convention fallback.
+const buildProj = createEmptyProject("derive_ink");
+const t0 = createTattoo({ label: "a", zone: "torso", gender: "both", nameMale: "a_M", nameFemale: "a_F" });
+const t1 = createTattoo({ label: "b", zone: "head", gender: "male", nameMale: "b_M" });
+const t2 = createTattoo({ label: "c", zone: "torso", gender: "both" }); // names null → convention
+buildProj.tattoos.push(t0, t1, t2);
+
+const build = selectDerivedTattooBuild(buildProj);
+checkEq(
+  "ytdFileName is global-indexed, zero-padded",
+  [build[t0.id].ytdFileName, build[t1.id].ytdFileName, build[t2.id].ytdFileName],
+  ["derive_ink_tat_000", "derive_ink_tat_001", "derive_ink_tat_002"],
+);
+checkEq(
+  "convention fallback derives <ytd>_M/_F when names are null",
+  [build[t2.id].nameMale, build[t2.id].nameFemale],
+  ["derive_ink_tat_002_M", "derive_ink_tat_002_F"],
+);
+checkEq(
+  "single-gender tattoo has only the relevant overlay name",
+  [build[t1.id].nameMale, build[t1.id].nameFemale],
+  ["b_M", null],
+);
+
+checkEq(
+  "selectTattoosByZone returns the zone bucket in order",
+  selectTattoosByZone(buildProj, "torso").map((t) => t.id),
+  [t0.id, t2.id],
+);
+
+// validation: duplicate nameHash + missing image.
+const dupProj = createEmptyProject("dup_ink");
+dupProj.tattoos.push(
+  createTattoo({ label: "x", zone: "torso", gender: "male", nameMale: "dup", image: { path: "a.dds", hash: hash("a"), size: 1 } }),
+  createTattoo({ label: "y", zone: "head", gender: "male", nameMale: "dup", image: { path: "b.dds", hash: hash("b"), size: 1 } }),
+  createTattoo({ label: "z", zone: "head", gender: "male", nameMale: "z_M" }), // no image
+);
+const tatFindings = validateTattoos(dupProj);
+check(
+  "validateTattoos flags duplicate overlay names",
+  tatFindings.some((f) => f.message.includes("dup")),
+);
+check(
+  "validateTattoos flags a tattoo without an image",
+  tatFindings.some((f) => f.message.includes("kein Bild")),
+);
+
+// store: reorder within zone + undo, and removeGroup nulls tattoo groupId.
+const tatStore = useProjectStore.getState();
+tatStore.openProject("C:/tmp/tattoo-selftest", createEmptyProject("tattoo store"));
+clearProjectHistory();
+const groupId = useProjectStore.getState().addGroup("Sleeve", "#5865F2");
+const s0 = createTattoo({ label: "s0", zone: "left_arm", gender: "male", nameMale: "s0_M", groupId });
+const s1 = createTattoo({ label: "s1", zone: "left_arm", gender: "male", nameMale: "s1_M" });
+useProjectStore.getState().addTattoo(s0);
+useProjectStore.getState().addTattoo(s1);
+useProjectStore.getState().reorderTattoo(s1.id, 0);
+checkEq(
+  "reorderTattoo moves within the zone bucket",
+  useProjectStore.getState().project!.tattoos.map((t) => t.id),
+  [s1.id, s0.id],
+);
+useProjectStore.temporal.getState().undo();
+checkEq(
+  "undo restores the tattoo order",
+  useProjectStore.getState().project!.tattoos.map((t) => t.id),
+  [s0.id, s1.id],
+);
+useProjectStore.getState().removeGroup(groupId);
+checkEq(
+  "removeGroup nulls the tattoo groupId",
+  useProjectStore.getState().project!.tattoos.find((t) => t.id === s0.id)!.groupId,
+  null,
 );
 
 // ---------------------------------------------------------------------------
