@@ -104,6 +104,10 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_process::init())
+        // In-app auto-updater. Checks the GitHub-releases `latest.json`, verifies
+        // the downloaded installer against the bundled public key, then runs it.
+        // Relaunch after install goes through the process plugin above.
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_oauth::init())
         .manage(sidecar::SidecarState::new())
         .invoke_handler(tauri::generate_handler![

@@ -34,6 +34,7 @@
     },
     "store:default",
     "process:default",
+    "updater:default",
     "oauth:allow-start",
     "oauth:allow-cancel"
   ]
