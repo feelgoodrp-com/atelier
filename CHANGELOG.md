@@ -4,6 +4,13 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.2.4] — 2026-06-23
+
+### Changed
+
+- Maintenance release that validates the automatic updater end to end. No
+  functional changes.
+
 ## [1.2.3] — 2026-06-22
 
 ### Added
@@ -73,6 +80,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
+[1.2.4]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.4
 [1.2.3]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.3
 [1.2.2]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.2
 [1.0.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.0.1
