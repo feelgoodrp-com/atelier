@@ -4,6 +4,23 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.2.3] — 2026-06-22
+
+### Added
+
+- **Automatic updates** — atelier now checks for a new release on startup and
+  installs it with one click; a manual **Check for updates** card also lives in
+  Settings → General. Updates are downloaded from GitHub and cryptographically
+  verified against a signing key before they install, then the app restarts into
+  the new version.
+
+> ⚠️ **One-time manual update required.** Versions before 1.2.3 don't have the
+> updater yet, so you must download and install the **latest version manually
+> once** — grab the `*-setup.exe` from the
+> [releases page](https://github.com/feelgoodrp-com/atelier/releases/latest).
+> From then on, updates install themselves. (The portable ZIP does **not**
+> auto-update — use the `setup.exe` installer to get automatic updates.)
+
 ## [1.2.2] — 2026-06-22
 
 ### Added
@@ -56,6 +73,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
+[1.2.3]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.3
 [1.2.2]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.2
 [1.0.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.0.1
 [1.0.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.0.0

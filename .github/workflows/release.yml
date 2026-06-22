@@ -167,6 +167,14 @@ jobs:
         with:
           tag_name: v${{ env.VERSION }}
           name: atelier v${{ env.VERSION }}
+          # Prepended to the auto-generated notes. Migration banner for anyone
+          # still on a pre-updater build (< 1.2.3).
+          body: |
+            > ⚠️ **Updating from a version before 1.2.3?** Older builds don't have
+            > the auto-updater, so you need to download and install this version
+            > **manually once** — use the `*-setup.exe` below. After that, atelier
+            > updates itself automatically (Settings → General → Updates).
+            > The portable ZIP does not auto-update.
           generate_release_notes: true
           files: |
             src-tauri/target/release/bundle/nsis/*-setup.exe
