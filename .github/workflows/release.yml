@@ -100,6 +100,13 @@ jobs:
 
       - name: Build app + installers
         run: bun run tauri build
+        env:
+          # Signs the NSIS/MSI bundles and emits the `.sig` files the updater
+          # verifies against the public key in tauri.conf.json. Both secrets are
+          # REQUIRED now that bundle.createUpdaterArtifacts is on — without them
+          # the build fails. Generate locally with `tauri signer generate`.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       # --- Portable build: app exe + sidecar in one ZIP, no installer ---
       - name: Assemble portable ZIP
@@ -125,6 +132,36 @@ jobs:
           Set-Content -Path "$out/LIESMICH.txt" -Value $readme -Encoding utf8
           Compress-Archive -Path $out -DestinationPath "atelier-$env:VERSION-portable.zip" -Force
 
+      # --- Updater manifest: rename the signed NSIS installer to a stable,
+      # space-free asset name (GitHub rewrites spaces in upload names, which
+      # would break the download URL) and emit the latest.json the in-app
+      # updater polls. The signature is the verbatim content of the .sig file. ---
+      - name: Build updater manifest (latest.json)
+        shell: pwsh
+        run: |
+          $nsis = "src-tauri/target/release/bundle/nsis"
+          $exe = Get-ChildItem "$nsis/*-setup.exe" | Select-Object -First 1
+          $sig = Get-ChildItem "$nsis/*-setup.exe.sig" | Select-Object -First 1
+          if (-not $exe) { throw "NSIS installer not found under $nsis" }
+          if (-not $sig) { throw "NSIS .sig not found — is TAURI_SIGNING_PRIVATE_KEY set?" }
+          $asset = "atelier_$($env:VERSION)_x64-setup.exe"
+          Move-Item $exe.FullName "$nsis/$asset" -Force
+          $signature = (Get-Content $sig.FullName -Raw).Trim()
+          $url = "https://github.com/feelgoodrp-com/atelier/releases/download/v$($env:VERSION)/$asset"
+          $manifest = [ordered]@{
+            version   = $env:VERSION
+            notes     = "See the release notes at https://github.com/feelgoodrp-com/atelier/releases/tag/v$($env:VERSION)"
+            pub_date  = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+            platforms = [ordered]@{
+              "windows-x86_64" = [ordered]@{
+                signature = $signature
+                url       = $url
+              }
+            }
+          }
+          $manifest | ConvertTo-Json -Depth 6 | Set-Content -Path "latest.json" -Encoding utf8
+          Write-Host "Wrote latest.json -> $url"
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
@@ -132,6 +169,7 @@ jobs:
           name: atelier v${{ env.VERSION }}
           generate_release_notes: true
           files: |
-            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/nsis/*-setup.exe
             src-tauri/target/release/bundle/msi/*.msi
             atelier-${{ env.VERSION }}-portable.zip
+            latest.json

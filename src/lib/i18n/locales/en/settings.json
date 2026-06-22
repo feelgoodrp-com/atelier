@@ -59,6 +59,23 @@
       "switchToCloud": "Sign in to use the team cloud"
     }
   },
+  "updates": {
+    "title": "Updates",
+    "description": "Keep atelier up to date — new versions are downloaded and verified automatically.",
+    "currentVersion": "Current version:",
+    "check": "Check for updates",
+    "checking": "Checking…",
+    "upToDate": "You're on the latest version.",
+    "checkFailed": "Could not check for updates.",
+    "available": "Version {{version}} is available",
+    "install": "Download & install",
+    "installFailed": "Update failed",
+    "downloading": "Downloading… {{pct}}% ({{downloaded}} / {{total}})",
+    "preparing": "Preparing download…",
+    "restarting": "Installed — restarting atelier…",
+    "toastTitle": "Update available: v{{version}}",
+    "toastBody": "A newer version of atelier is ready to install."
+  },
   "account": {
     "soloTitle": "Solo mode",
     "soloDescription": "You are working offline in solo mode. Sign in to enable the team cloud for project sync, devices and admin features.",

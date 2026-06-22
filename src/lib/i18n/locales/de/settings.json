@@ -59,6 +59,23 @@
       "switchToCloud": "Anmelden, um die Team-Cloud zu nutzen"
     }
   },
+  "updates": {
+    "title": "Updates",
+    "description": "Halte atelier aktuell — neue Versionen werden automatisch geladen und verifiziert.",
+    "currentVersion": "Aktuelle Version:",
+    "check": "Nach Updates suchen",
+    "checking": "Suche…",
+    "upToDate": "Du nutzt die neueste Version.",
+    "checkFailed": "Update-Suche fehlgeschlagen.",
+    "available": "Version {{version}} ist verfügbar",
+    "install": "Herunterladen & installieren",
+    "installFailed": "Update fehlgeschlagen",
+    "downloading": "Lädt… {{pct}}% ({{downloaded}} / {{total}})",
+    "preparing": "Download wird vorbereitet…",
+    "restarting": "Installiert — atelier startet neu…",
+    "toastTitle": "Update verfügbar: v{{version}}",
+    "toastBody": "Eine neuere Version von atelier kann installiert werden."
+  },
   "account": {
     "soloTitle": "Solo-Modus",
     "soloDescription": "Du arbeitest offline im Solo-Modus. Melde dich an, um die Team-Cloud für Projekt-Sync, Geräte und Admin-Funktionen zu aktivieren.",

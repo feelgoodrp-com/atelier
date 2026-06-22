@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { CreditsPanel } from "@/components/settings/credits-panel";
+import { UpdatesCard } from "@/components/settings/updates-card";
 import i18n, { SUPPORTED_LANGUAGES } from "@/lib/i18n";
 import { changeLanguage } from "@/lib/i18n/language";
 import { useAuthStore, useCloudEnabled } from "@/lib/stores/auth-store";
@@ -186,6 +187,8 @@ function GeneralTab() {
   return (
     <div className="flex flex-col gap-4">
       <LanguageCard />
+
+      <UpdatesCard />
 
       <ModeCard />
 

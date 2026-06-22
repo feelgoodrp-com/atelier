@@ -33,11 +33,21 @@
   "plugins": {
     "fs": {
       "requireLiteralLeadingDot": false
+    },
+    "updater": {
+      "endpoints": [
+        "https://github.com/feelgoodrp-com/atelier/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDExNjFEREU3NDNERTgzOTkKUldTWmc5NUQ1OTFoRWY4S2phb0dLT25zcHpYRHNQbDJQWUpDVitaVmEzZklCSE1JNmR6UlZHazcK",
+      "windows": {
+        "installMode": "passive"
+      }
     }
   },
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "externalBin": ["binaries/fg-atelier-sidecar"],
     "icon": [
       "icons/32x32.png",

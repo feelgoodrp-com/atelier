@@ -19,6 +19,7 @@ import { openLogWindow, useLogConsoleStore } from "@/lib/stores/log-console-stor
 import { usePresenceHeartbeat } from "@/lib/sync/presence";
 import { useCollab } from "@/lib/sync/collab";
 import { startAutosave } from "@/lib/project/autosave";
+import { useUpdateStore } from "@/lib/stores/update-store";
 
 function App() {
   const screen = useUiStore((s) => s.screen);
@@ -58,6 +59,13 @@ function App() {
 
   // Recovery snapshots for the open project (5s debounce / 60s ceiling).
   useEffect(() => startAutosave(), []);
+
+  // Silent auto-update check on startup — pops a toast (with a one-click
+  // install action) only when a newer release is available. No-ops outside the
+  // Tauri runtime, so dev/browser builds are unaffected.
+  useEffect(() => {
+    void useUpdateStore.getState().check({ notify: true });
+  }, []);
 
   // Restore the live-log-console feature switch (Settings → Logs).
   useEffect(() => {
