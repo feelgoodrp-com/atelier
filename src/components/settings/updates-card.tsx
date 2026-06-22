@@ -17,6 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { ReleaseNotes } from "@/components/settings/release-notes";
 import { useUpdateStore } from "@/lib/stores/update-store";
 
 function formatBytes(n: number): string {
@@ -104,9 +105,14 @@ export function UpdatesCard() {
               </span>
             </div>
             {available.notes && (
-              <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap break-words text-xs text-white/60">
-                {available.notes}
-              </pre>
+              <div className="flex flex-col gap-1.5">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-white/40">
+                  {t("updates.whatsNew", { version: available.version })}
+                </p>
+                <div className="max-h-56 overflow-y-auto pr-1">
+                  <ReleaseNotes markdown={available.notes} />
+                </div>
+              </div>
             )}
             <Button className="self-start" onClick={() => void install()}>
               <Download className="h-4 w-4" />

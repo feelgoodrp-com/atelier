@@ -68,6 +68,8 @@
     "upToDate": "Du nutzt die neueste Version.",
     "checkFailed": "Update-Suche fehlgeschlagen.",
     "available": "Version {{version}} ist verfügbar",
+    "whatsNew": "Neu in v{{version}}",
+    "viewNotes": "Anzeigen",
     "install": "Herunterladen & installieren",
     "installFailed": "Update fehlgeschlagen",
     "downloading": "Lädt… {{pct}}% ({{downloaded}} / {{total}})",

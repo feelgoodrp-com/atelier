@@ -68,6 +68,8 @@
     "upToDate": "You're on the latest version.",
     "checkFailed": "Could not check for updates.",
     "available": "Version {{version}} is available",
+    "whatsNew": "What's new in v{{version}}",
+    "viewNotes": "View notes",
     "install": "Download & install",
     "installFailed": "Update failed",
     "downloading": "Downloading… {{pct}}% ({{downloaded}} / {{total}})",

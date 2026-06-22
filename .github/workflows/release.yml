@@ -148,9 +148,24 @@ jobs:
           Move-Item $exe.FullName "$nsis/$asset" -Force
           $signature = (Get-Content $sig.FullName -Raw).Trim()
           $url = "https://github.com/feelgoodrp-com/atelier/releases/download/v$($env:VERSION)/$asset"
+          # Release notes shown in the in-app updater: the matching CHANGELOG
+          # section, falling back to a link if this version isn't documented.
+          $notes = "See https://github.com/feelgoodrp-com/atelier/releases/tag/v$($env:VERSION)"
+          if (Test-Path "CHANGELOG.md") {
+            $cl = Get-Content "CHANGELOG.md"
+            $start = -1; $end = $cl.Count
+            for ($i = 0; $i -lt $cl.Count; $i++) {
+              if ($cl[$i] -match "^##\s+\[$([regex]::Escape($env:VERSION))\]") { $start = $i + 1; continue }
+              if ($start -ge 0 -and $cl[$i] -match "^##\s+\[") { $end = $i; break }
+            }
+            if ($start -ge 0 -and $start -le ($end - 1)) {
+              $section = ($cl[$start..($end - 1)] -join "`n").Trim()
+              if ($section) { $notes = $section }
+            }
+          }
           $manifest = [ordered]@{
             version   = $env:VERSION
-            notes     = "See the release notes at https://github.com/feelgoodrp-com/atelier/releases/tag/v$($env:VERSION)"
+            notes     = $notes
             pub_date  = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
             platforms = [ordered]@{
               "windows-x86_64" = [ordered]@{
