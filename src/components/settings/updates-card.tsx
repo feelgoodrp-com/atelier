@@ -97,8 +97,8 @@ export function UpdatesCard() {
         </div>
 
         {phase === "available" && available && (
-          <div className="flex flex-col gap-3 rounded-[10px] border border-[#5865F2]/30 bg-[#5865F2]/10 px-4 py-3">
-            <div className="flex items-center gap-2 text-sm text-white">
+          <div className="flex flex-col gap-3 rounded-[10px] border border-white/10 bg-white/[0.035] px-4 py-3">
+            <div className="flex items-center gap-2 text-sm text-white/90">
               <Sparkles className="h-4 w-4 text-[#7289DA]" />
               <span className="font-medium">
                 {t("updates.available", { version: available.version })}

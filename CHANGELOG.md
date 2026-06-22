@@ -4,6 +4,16 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.2.6] — 2026-06-23
+
+### Changed
+
+- **Calmer update card** — the "update available" panel uses a more subtle
+  background so it no longer dominates the Settings page.
+- Release notes now render as proper **Markdown** (headings, bullet lists,
+  emphasis and [links](https://github.com/feelgoodrp-com/atelier)) instead of
+  raw text.
+
 ## [1.2.5] — 2026-06-23
 
 ### Added
@@ -89,6 +99,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
+[1.2.6]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.6
 [1.2.5]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.5
 [1.2.4]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.4
 [1.2.3]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.3
