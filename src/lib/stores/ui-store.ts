@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type Screen = "launcher" | "workbench" | "settings";
+export type Screen = "launcher" | "workbench" | "tattoos" | "settings";
 
 interface UiState {
   screen: Screen;

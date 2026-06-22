@@ -10,6 +10,7 @@ import {
   Settings,
   Shirt,
   Square,
+  Stamp,
   Terminal,
   X,
 } from "lucide-react";
@@ -38,6 +39,7 @@ const NAV_ITEMS: Array<{
 }> = [
   { screen: "launcher", labelKey: "nav.start", icon: House },
   { screen: "workbench", labelKey: "nav.workbench", icon: Shirt },
+  { screen: "tattoos", labelKey: "nav.tattoos", icon: Stamp },
   { screen: "settings", labelKey: "nav.settings", icon: Settings },
 ];
 

@@ -1,0 +1,60 @@
+{
+  "noProject": {
+    "title": "No project open",
+    "description": "Open or create a project to manage tattoos.",
+    "toStart": "Go to start"
+  },
+  "zoneTree": {
+    "title": "Zones",
+    "all": "All"
+  },
+  "grid": {
+    "searchPlaceholder": "Search tattoos…",
+    "import": "Import",
+    "empty": "No tattoos yet",
+    "emptyHint": "Import images (PNG, DDS or YTD) to create tattoos.",
+    "noMatches": "No matches"
+  },
+  "import": {
+    "running": "Importing…",
+    "done": "Imported {{count}} tattoo(s)",
+    "partial": "{{ok}} imported, {{skipped}} skipped",
+    "failed": "Import failed"
+  },
+  "card": {
+    "untitled": "Untitled"
+  },
+  "gender": {
+    "both": "Both",
+    "male": "Male",
+    "female": "Female"
+  },
+  "filePicker": {
+    "filterName": "Images"
+  },
+  "inspector": {
+    "title": "Properties",
+    "label": "Name",
+    "zone": "Zone",
+    "gender": "Gender",
+    "type": "Type",
+    "nameMale": "Overlay name (M)",
+    "nameFemale": "Overlay name (F)",
+    "garment": "Garment",
+    "drawOrder": "Draw order",
+    "shopSection": "Shop",
+    "cost": "Price",
+    "textLabel": "Shop label",
+    "facing": "Facing",
+    "facingDefault": "Default ({{facing}})",
+    "buildSection": "Build output",
+    "placementSection": "Advanced (experimental)",
+    "placementEnable": "Override placement",
+    "placementWarning": "Tattoos are fixed-UV decals — the effect of these values is unconfirmed and is not applied in the preview.",
+    "delete": "Delete tattoo",
+    "multi": "{{count}} tattoos selected",
+    "deleteMany": "Delete {{count}} tattoos",
+    "bulkPlaceholder": "Set for all…",
+    "noSelection": "Select a tattoo to edit it."
+  }
+}
