@@ -369,7 +369,10 @@ export function WorkbenchHeader({ onOpenDuplicates }: WorkbenchHeaderProps) {
             <Button
               size="sm"
               className="h-7 px-3 text-xs"
-              disabled={(project?.drawables.length ?? 0) === 0}
+              disabled={
+                (project?.drawables.length ?? 0) === 0 &&
+                (project?.tattoos.length ?? 0) === 0
+              }
               onClick={() => setBuildOpen(true)}
             >
               <Hammer className="h-3.5 w-3.5" />

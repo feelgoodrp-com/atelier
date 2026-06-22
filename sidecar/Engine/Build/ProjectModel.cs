@@ -10,7 +10,10 @@ public sealed record AtelierProjectDto(
     string? Id,
     string? Name,
     ProjectSettingsDto? Settings,
-    List<ProjectDrawableDto>? Drawables);
+    List<ProjectDrawableDto>? Drawables,
+    // fgcloth v2 additions (optional so v1 senders still bind):
+    List<ProjectTattooDto>? Tattoos = null,
+    TattooCollectionDto? TattooCollection = null);
 
 public sealed record ProjectSettingsDto(string? DlcName, string? DefaultGender);
 
@@ -37,6 +40,55 @@ public sealed record ProjectDrawableDto(
     public bool IsProp => Kind == "prop";
     public bool IsReplace => Mode == "replace";
     public string DisplayLabel => string.IsNullOrWhiteSpace(Label) ? (Type ?? "?") : Label!;
+}
+
+/// <summary>Tattoo (ped decoration) — C# mirror of ProjectTattoo (schema.ts v2).</summary>
+public sealed record ProjectTattooDto(
+    string? Id,
+    string? Label,
+    string? GroupId,
+    string? Zone,
+    string? Type,
+    string? Gender,
+    string? NameMale,
+    string? NameFemale,
+    AssetRefDto? Image,
+    string? Garment,
+    string? TextLabel,
+    string? EFacing,
+    int Cost,
+    TattooPlacementDto? Placement);
+
+public sealed record TattooPlacementDto(
+    double UvPosX, double UvPosY, double ScaleX, double ScaleY, double Rotation);
+
+public sealed record TattooCollectionDto(string? Name, string? Label);
+
+/// <summary>
+/// Authorable tattoo zones — byte-identical to atelier/src/lib/gta/tattoos.ts
+/// (TATTOO_ZONES). zone id → numeric enum, overlay <zone> name, shop PDZ_* name
+/// and the default shop eFacing. Only the six body zones are authorable.
+/// </summary>
+public sealed record TattooZoneDef(
+    string Id, int ZoneValue, string OverlayName, string ShopZone, string DefaultFacing);
+
+public static class TattooZones
+{
+    public static readonly TattooZoneDef[] All =
+    {
+        new("torso", 0, "ZONE_TORSO", "PDZ_TORSO", "TATTOO_CHEST"),
+        new("head", 1, "ZONE_HEAD", "PDZ_HEAD", "TATTOO_FRONT"),
+        new("left_arm", 2, "ZONE_LEFT_ARM", "PDZ_LEFT_ARM", "TATTOO_LEFT"),
+        new("right_arm", 3, "ZONE_RIGHT_ARM", "PDZ_RIGHT_ARM", "TATTOO_RIGHT"),
+        new("left_leg", 4, "ZONE_LEFT_LEG", "PDZ_LEFT_LEG", "TATTOO_LEFT"),
+        new("right_leg", 5, "ZONE_RIGHT_LEG", "PDZ_RIGHT_LEG", "TATTOO_RIGHT"),
+    };
+
+    public static TattooZoneDef? ById(string? id) =>
+        id == null ? null : Array.Find(All, z => z.Id == id);
+
+    public static string OverlayType(string? type) =>
+        type == "badge" ? "TYPE_BADGE" : "TYPE_TATTOO";
 }
 
 /// <summary>
