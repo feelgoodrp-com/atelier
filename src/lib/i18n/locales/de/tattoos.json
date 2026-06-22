@@ -1,0 +1,76 @@
+{
+  "noProject": {
+    "title": "Kein Projekt geöffnet",
+    "description": "Öffne oder erstelle ein Projekt, um Tattoos zu verwalten.",
+    "toStart": "Zum Start"
+  },
+  "header": {
+    "badge": "Tattoos",
+    "build": "Bauen",
+    "buildTooltip": "Tattoo-Pack bauen",
+    "undo": "Rückgängig",
+    "redo": "Wiederholen"
+  },
+  "context": {
+    "duplicate": "Duplizieren",
+    "copySuffix": "Kopie",
+    "setZone": "Zone ändern",
+    "setGender": "Geschlecht ändern",
+    "assignGroup": "Gruppe zuweisen",
+    "noGroup": "Keine Gruppe",
+    "delete": "Löschen"
+  },
+  "zoneTree": {
+    "title": "Zonen",
+    "all": "Alle"
+  },
+  "grid": {
+    "searchPlaceholder": "Tattoos durchsuchen…",
+    "import": "Importieren",
+    "empty": "Noch keine Tattoos",
+    "emptyHint": "Importiere Bilder (PNG, DDS oder YTD), um Tattoos anzulegen.",
+    "noMatches": "Keine Treffer"
+  },
+  "import": {
+    "running": "Importiere…",
+    "done": "{{count}} Tattoo(s) importiert",
+    "partial": "{{ok}} importiert, {{skipped}} übersprungen",
+    "failed": "Import fehlgeschlagen"
+  },
+  "card": {
+    "untitled": "Unbenannt"
+  },
+  "gender": {
+    "both": "Beide",
+    "male": "Männlich",
+    "female": "Weiblich"
+  },
+  "filePicker": {
+    "filterName": "Bilder"
+  },
+  "inspector": {
+    "title": "Eigenschaften",
+    "label": "Name",
+    "zone": "Zone",
+    "gender": "Geschlecht",
+    "type": "Typ",
+    "nameMale": "Overlay-Name (M)",
+    "nameFemale": "Overlay-Name (W)",
+    "garment": "Kleidungsstück",
+    "drawOrder": "Zeichenreihenfolge",
+    "shopSection": "Shop",
+    "cost": "Preis",
+    "textLabel": "Shop-Bezeichnung",
+    "facing": "Ausrichtung",
+    "facingDefault": "Standard ({{facing}})",
+    "buildSection": "Build-Ausgabe",
+    "placementSection": "Erweitert (experimentell)",
+    "placementEnable": "Platzierung überschreiben",
+    "placementWarning": "Tattoos sind Fixed-UV-Decals — die Wirkung dieser Werte ist unbestätigt und wird in der Vorschau nicht angewendet.",
+    "delete": "Tattoo löschen",
+    "multi": "{{count}} Tattoos ausgewählt",
+    "deleteMany": "{{count}} Tattoos löschen",
+    "bulkPlaceholder": "Für alle setzen…",
+    "noSelection": "Wähle ein Tattoo, um es zu bearbeiten."
+  }
+}

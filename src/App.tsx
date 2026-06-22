@@ -5,6 +5,7 @@ import { TopBar } from "@/components/shell/top-bar";
 import { ImportWizard } from "@/components/workbench/import-wizard";
 import { LauncherScreen } from "@/screens/launcher";
 import { WorkbenchScreen } from "@/screens/workbench";
+import { TattoosScreen } from "@/screens/tattoos";
 import { SettingsScreen } from "@/screens/settings";
 import { BootSplash, LoginGate } from "@/screens/login";
 import { OnboardingWizard } from "@/screens/onboarding";
@@ -78,6 +79,28 @@ function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Suppress the native WebView context menu app-wide — it shows on right-click
+  // in dev (off in release) and looks out of place. Text fields keep it for
+  // copy/paste. Radix context menus attach their own handlers on the React root
+  // (which fires first) so they still open where defined; this only kills the
+  // native fallback everywhere else.
+  useEffect(() => {
+    const onContextMenu = (e: MouseEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (
+        el &&
+        (el.tagName === "INPUT" ||
+          el.tagName === "TEXTAREA" ||
+          el.isContentEditable)
+      ) {
+        return;
+      }
+      e.preventDefault();
+    };
+    window.addEventListener("contextmenu", onContextMenu);
+    return () => window.removeEventListener("contextmenu", onContextMenu);
+  }, []);
+
   // HARD GATE (cloud mode only): without a logged-in AND approved account the
   // tool is unusable. Solo mode is fully local and always authorized — the
   // LoginGate below only renders in cloud mode when not yet authorized.
@@ -105,9 +128,9 @@ function App() {
         <LoginGate />
       ) : (
         <div className="relative flex h-full flex-col overflow-hidden text-foreground">
-          {/* Hero video backdrop on Home + Settings; the workbench keeps a
-              plain grid so the 3D preview stays distraction free. */}
-          {screen === "workbench" ? (
+          {/* Hero video backdrop on Home + Settings; the editing screens keep a
+              plain grid so the previews stay distraction free. */}
+          {screen === "workbench" || screen === "tattoos" ? (
             <div className="grid-background absolute inset-0" aria-hidden="true" />
           ) : (
             <HeroBackdrop strong />
@@ -116,6 +139,7 @@ function App() {
           <main className="relative z-10 min-h-0 flex-1 overflow-hidden">
             {screen === "launcher" && <LauncherScreen />}
             {screen === "workbench" && <WorkbenchScreen />}
+            {screen === "tattoos" && <TattoosScreen />}
             {screen === "settings" && <SettingsScreen />}
           </main>
           {/* Mounted app-wide so the wizard survives launcher → workbench switches. */}

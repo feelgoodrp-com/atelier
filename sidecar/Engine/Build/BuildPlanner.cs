@@ -10,7 +10,8 @@ public sealed record BuildOptions(
     string DlcName,
     string ResourceName,
     bool GenerateShopMeta,
-    int SplitAt);
+    int SplitAt,
+    bool GenerateTattooShopMeta = false);
 
 public enum PlanFileKind { Ydd, Ytd, Yld, FirstPersonYdd }
 
@@ -82,11 +83,37 @@ public sealed class BuildPart
     public int DrawableCount => AddonDrawableCount + ReplaceDrawableCount;
 }
 
+/// <summary>
+/// One tattoo overlay as it will be built. The YTD file name IS txdHash IS
+/// txtHash (hard engine rule). Index is the GLOBAL position in project.tattoos
+/// (matches selectDerivedTattooBuild on the TS side exactly).
+/// </summary>
+public sealed record TattooPlanItem(
+    int Index,
+    string YtdName,
+    string SourceImagePath,
+    string ZoneOverlay,
+    string ZoneShop,
+    string EFacing,
+    string OverlayType,
+    string Gender,
+    string? NameMale,
+    string? NameFemale,
+    string Label,
+    string TextLabel,
+    int Cost,
+    double UvPosX, double UvPosY, double ScaleX, double ScaleY, double Rotation);
+
+/// <summary>Shared overlay collection + its overlays (FiveM only).</summary>
+public sealed record TattooPlanCollection(string Collection, List<TattooPlanItem> Items);
+
 public sealed class BuildPlan
 {
     public required BuildOptions Options { get; init; }
     public required List<BuildPart> Parts { get; init; }
     public required List<string> Warnings { get; init; }
+    /// <summary>Tattoo overlays (emitted into part 1 by the FiveM builder only).</summary>
+    public required TattooPlanCollection Tattoos { get; init; }
 }
 
 // ---------------------------------------------------------------------------
@@ -269,7 +296,73 @@ public static class BuildPlanner
             });
         }
 
-        return new BuildPlan { Options = options, Parts = parts, Warnings = warnings };
+        var tattoos = PlanTattoos(project, projectDir, warnings);
+
+        return new BuildPlan { Options = options, Parts = parts, Warnings = warnings, Tattoos = tattoos };
+    }
+
+    /// <summary>
+    /// Plans the tattoo overlays. The collection name comes from the project's
+    /// tattooCollection (NOT the part-suffixed dlc) so it matches the TS-side
+    /// selectDerivedTattooBuild. The YTD name uses the GLOBAL index into
+    /// project.tattoos so both sides agree even if an entry is skipped.
+    /// </summary>
+    private static TattooPlanCollection PlanTattoos(
+        AtelierProjectDto project, string projectDir, List<string> warnings)
+    {
+        var collection = project.TattooCollection?.Name
+            ?? project.Settings?.DlcName
+            ?? "atelier_pack";
+        var items = new List<TattooPlanItem>();
+        var tattoos = project.Tattoos ?? new List<ProjectTattooDto>();
+
+        for (var i = 0; i < tattoos.Count; i++)
+        {
+            var t = tattoos[i];
+            var ytdName = $"{collection}_tat_{i:D3}";
+
+            if (t.Image?.Path == null)
+            {
+                warnings.Add($"Tattoo \"{t.Label ?? ytdName}\" hat kein Bild und wurde übersprungen.");
+                continue;
+            }
+            var zone = TattooZones.ById(t.Zone);
+            if (zone == null)
+            {
+                warnings.Add($"Tattoo \"{t.Label ?? ytdName}\" hat eine unbekannte Zone \"{t.Zone}\" und wurde übersprungen.");
+                continue;
+            }
+
+            var gender = t.Gender ?? "both";
+            var wantsMale = gender is "both" or "male";
+            var wantsFemale = gender is "both" or "female";
+            var nameMale = wantsMale
+                ? (string.IsNullOrEmpty(t.NameMale) ? $"{ytdName}_M" : t.NameMale)
+                : null;
+            var nameFemale = wantsFemale
+                ? (string.IsNullOrEmpty(t.NameFemale) ? $"{ytdName}_F" : t.NameFemale)
+                : null;
+            var facing = string.IsNullOrEmpty(t.EFacing) ? zone.DefaultFacing : t.EFacing!;
+            var p = t.Placement;
+
+            items.Add(new TattooPlanItem(
+                i,
+                ytdName,
+                Resolve(projectDir, t.Image!.Path!),
+                zone.OverlayName,
+                zone.ShopZone,
+                facing,
+                TattooZones.OverlayType(t.Type),
+                gender,
+                nameMale,
+                nameFemale,
+                t.Label ?? string.Empty,
+                string.IsNullOrEmpty(t.TextLabel) ? (t.Label ?? string.Empty) : t.TextLabel!,
+                t.Cost,
+                p?.UvPosX ?? 0, p?.UvPosY ?? 0, p?.ScaleX ?? 1, p?.ScaleY ?? 1, p?.Rotation ?? 0));
+        }
+
+        return new TattooPlanCollection(collection, items);
     }
 
     private static BuildPlanGender PlanGender(

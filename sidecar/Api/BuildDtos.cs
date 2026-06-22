@@ -10,7 +10,8 @@ public sealed record BuildRequestOptions(
     string? DlcName,
     string? ResourceName,
     bool? GenerateShopMeta,
-    int? SplitAt);
+    int? SplitAt,
+    bool? GenerateTattooShopMeta);
 
 public sealed record BuildRequest(
     string? ProjectDir,

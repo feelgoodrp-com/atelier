@@ -85,13 +85,16 @@ public static class BuildEndpoints
         if (splitAt is < 1 or > 128)
             return Results.BadRequest(new ErrorResponse("Feld 'options.splitAt' muss zwischen 1 und 128 liegen."));
 
-        if (project.Drawables == null || project.Drawables.Count == 0)
-            return Results.BadRequest(new ErrorResponse("Projekt enthält keine Drawables."));
+        var hasDrawables = project.Drawables is { Count: > 0 };
+        var hasTattoos = project.Tattoos is { Count: > 0 };
+        if (!hasDrawables && !hasTattoos)
+            return Results.BadRequest(new ErrorResponse("Projekt enthält weder Drawables noch Tattoos."));
 
         var options = new BuildOptions(
             target, dlcName, resourceName,
             request.Options?.GenerateShopMeta ?? true,
-            splitAt);
+            splitAt,
+            request.Options?.GenerateTattooShopMeta ?? false);
 
         var job = jobs.TryStart();
         if (job == null)
@@ -126,13 +129,15 @@ public static class BuildEndpoints
             job.Report("plan", 0, 1, "Erstelle Build-Plan");
             var plan = BuildPlanner.Plan(project, projectDir, options);
             var totalDrawables = plan.Parts.Sum(p => p.DrawableCount);
-            if (totalDrawables == 0)
+            // Tattoos are only emitted for the fivem target.
+            var tattooCount = options.Target == "fivem" ? plan.Tattoos.Items.Count : 0;
+            if (totalDrawables == 0 && tattooCount == 0)
             {
-                job.Fail("Build-Plan enthält keine baubaren Drawables.");
+                job.Fail("Build-Plan enthält keine baubaren Drawables oder Tattoos.");
                 return;
             }
             job.Report("plan", 1, 1,
-                $"{totalDrawables} Drawable(s) in {plan.Parts.Count} Ressource(n) geplant");
+                $"{totalDrawables} Drawable(s), {tattooCount} Tattoo(s) in {plan.Parts.Count} Ressource(n) geplant");
 
             Directory.CreateDirectory(outDir);
             void Progress(string phase, int current, int total, string message) =>
@@ -392,9 +397,9 @@ public static class BuildEndpoints
             return Results.BadRequest(new ErrorResponse($"Projektordner nicht gefunden: {projectDir}"));
         if (project == null)
             return Results.BadRequest(new ErrorResponse("Feld 'project' fehlt."));
-        if (project.Fgcloth != 1)
+        if (project.Fgcloth is not (1 or 2))
             return Results.BadRequest(new ErrorResponse(
-                $"Nicht unterstützte Projektversion (fgcloth={project.Fgcloth}, erwartet 1)."));
+                $"Nicht unterstützte Projektversion (fgcloth={project.Fgcloth}, erwartet 1 oder 2)."));
         return null;
     }
 }

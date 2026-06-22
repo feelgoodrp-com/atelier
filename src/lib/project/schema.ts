@@ -14,11 +14,26 @@ import {
   isPropSlotId,
   type SlotId,
 } from "@/lib/gta/components";
+import {
+  TATTOO_GENDER_IDS,
+  TATTOO_TYPE_IDS,
+  TATTOO_ZONE_IDS,
+  type TattooGenderId,
+  type TattooTypeId,
+  type TattooZoneId,
+} from "@/lib/gta/tattoos";
 
 // Re-exported so project code can import everything from one place.
 export type { ComponentSlotId, PropSlotId, SlotId } from "@/lib/gta/components";
+export type {
+  TattooGenderId,
+  TattooTypeId,
+  TattooZoneId,
+} from "@/lib/gta/tattoos";
 
-export const PROJECT_FILE_VERSION = 1;
+// fgcloth v2 added the tattoo-authoring model (tattooCollection + tattoos[]);
+// v1 projects are lifted in migrations.ts (additive: empty tattoos array).
+export const PROJECT_FILE_VERSION = 2;
 
 // ---------------------------------------------------------------------------
 // Building blocks
@@ -106,6 +121,70 @@ export const projectDrawableSchema = z
 export type ProjectDrawable = z.infer<typeof projectDrawableSchema>;
 
 // ---------------------------------------------------------------------------
+// Tattoo (ped decoration / overlay)
+// ---------------------------------------------------------------------------
+//
+// Unlike drawables, a tattoo is a fixed-UV decal: one source image, no ydd, no
+// texture variants, no in-game drawableId. Its build identity is the derived
+// YTD file name (txdHash == txtHash == file name — a hard engine rule) plus the
+// per-gender overlay nameHash. See lib/stores/project-store.ts
+// (selectDerivedTattooBuild) for the deterministic naming.
+
+/** Overlay nameHash charset (joaat'd at runtime; must be filename-safe). */
+const overlayNameSchema = z
+  .string()
+  .min(1)
+  .regex(/^[A-Za-z0-9_]+$/, "nur Buchstaben, Ziffern und _");
+
+/** Authoring-time placement hints (uvPos/scale/rotation). Effect unconfirmed. */
+export const tattooPlacementSchema = z.object({
+  uvPosX: z.number(),
+  uvPosY: z.number(),
+  scaleX: z.number(),
+  scaleY: z.number(),
+  rotation: z.number(),
+});
+export type TattooPlacement = z.infer<typeof tattooPlacementSchema>;
+
+export const projectTattooSchema = z.object({
+  id: z.uuid(),
+  label: z.string(),
+  groupId: z.uuid().nullable(),
+
+  zone: z.enum(TATTOO_ZONE_IDS),
+  type: z.enum(TATTOO_TYPE_IDS),
+  gender: z.enum(TATTOO_GENDER_IDS),
+
+  // OPTIONAL overlay-name overrides. null => derive `<ytd>_M` / `<ytd>_F` at
+  // build time (selectDerivedTattooBuild), where `<ytd>` is the index-based YTD
+  // file name — so the default is always present and project-wide unique. The
+  // overlay nameHash is independent of txdHash (the YTD file name), so an
+  // override only needs to be unique, not tied to the file.
+  nameMale: overlayNameSchema.nullable(),
+  nameFemale: overlayNameSchema.nullable(),
+
+  // One decal image; no ydd, no texture variants.
+  image: assetRefSchema.nullable(),
+
+  // Stored, editable shop/overlay fields (only collection+preset are
+  // load-bearing at runtime; the rest are shop cosmetics).
+  garment: z.string().default("All"),
+  textLabel: z.string().default(""),
+  eFacing: z.string().nullable(), // null => derive from zone.defaultFacing
+  cost: z.number().int().nonnegative().default(0),
+
+  placement: tattooPlacementSchema.nullable(), // optional; effect unconfirmed
+});
+export type ProjectTattoo = z.infer<typeof projectTattooSchema>;
+
+/** One shared overlay collection per pack (name derived from dlcName). */
+export const tattooCollectionSchema = z.object({
+  name: z.string().regex(/^[a-z0-9_]+$/, "nur Kleinbuchstaben, Ziffern und _"),
+  label: z.string(),
+});
+export type TattooCollection = z.infer<typeof tattooCollectionSchema>;
+
+// ---------------------------------------------------------------------------
 // Project
 // ---------------------------------------------------------------------------
 
@@ -131,6 +210,8 @@ export const atelierProjectSchema = z.object({
   settings: projectSettingsSchema,
   groups: z.array(projectGroupSchema),
   drawables: z.array(projectDrawableSchema),
+  tattooCollection: tattooCollectionSchema,
+  tattoos: z.array(projectTattooSchema),
   sync: projectSyncSchema,
 });
 export type AtelierProject = z.infer<typeof atelierProjectSchema>;
@@ -153,15 +234,18 @@ export function suggestDlcName(name: string): string {
 
 export function createEmptyProject(name: string): AtelierProject {
   const now = new Date().toISOString();
+  const dlcName = suggestDlcName(name);
   return {
     fgcloth: PROJECT_FILE_VERSION,
     id: crypto.randomUUID(),
     name,
     createdAt: now,
     updatedAt: now,
-    settings: { dlcName: suggestDlcName(name), defaultGender: "male" },
+    settings: { dlcName, defaultGender: "male" },
     groups: [],
     drawables: [],
+    tattooCollection: { name: dlcName, label: "Tattoos" },
+    tattoos: [],
     sync: { remoteProjectId: null, baseRevision: null, lastSyncedAt: null },
   };
 }
@@ -199,5 +283,39 @@ export function createDrawable(input: CreateDrawableInput): ProjectDrawable {
       highHeels: input.flags?.highHeels ?? false,
       hairScaleValue: input.flags?.hairScaleValue ?? null,
     },
+  };
+}
+
+export interface CreateTattooInput {
+  label: string;
+  zone: TattooZoneId;
+  gender?: TattooGenderId;
+  type?: TattooTypeId;
+  nameMale?: string | null;
+  nameFemale?: string | null;
+  image?: AssetRef | null;
+  groupId?: string | null;
+  garment?: string;
+  textLabel?: string;
+  eFacing?: string | null;
+  cost?: number;
+}
+
+export function createTattoo(input: CreateTattooInput): ProjectTattoo {
+  return {
+    id: crypto.randomUUID(),
+    label: input.label,
+    groupId: input.groupId ?? null,
+    zone: input.zone,
+    type: input.type ?? "tattoo",
+    gender: input.gender ?? "both",
+    nameMale: input.nameMale ?? null,
+    nameFemale: input.nameFemale ?? null,
+    image: input.image ?? null,
+    garment: input.garment ?? "All",
+    textLabel: input.textLabel ?? "",
+    eFacing: input.eFacing ?? null,
+    cost: input.cost ?? 0,
+    placement: null,
   };
 }

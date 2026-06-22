@@ -12,6 +12,7 @@
 import { create } from "zustand";
 import { temporal } from "zundo";
 import type { Gender, SlotId } from "@/lib/project/schema";
+import type { TattooZoneId } from "@/lib/gta/tattoos";
 import type {
   AssetRef,
   AtelierProject,
@@ -19,6 +20,8 @@ import type {
   ProjectGroup,
   ProjectSettings,
   ProjectSync,
+  ProjectTattoo,
+  TattooCollection,
 } from "@/lib/project/schema";
 
 export interface ProjectHistoryState {
@@ -73,6 +76,15 @@ interface ProjectState {
    * file bytes are gone) — clears the undo history to keep it consistent.
    */
   updateTexturesBatch: (updates: Array<{ path: string; next: AssetRef }>) => void;
+
+  // -- tattoos --------------------------------------------------------------
+  addTattoo: (tattoo: ProjectTattoo) => void;
+  updateTattoo: (id: string, patch: Partial<Omit<ProjectTattoo, "id">>) => void;
+  removeTattoos: (ids: string[]) => void;
+  /** Moves a tattoo to `toIndex` within its zone bucket. */
+  reorderTattoo: (id: string, toIndex: number) => void;
+  updateTattooCollection: (patch: Partial<TattooCollection>) => void;
+  assignTattooGroup: (tattooIds: string[], groupId: string | null) => void;
 
   // -- groups ---------------------------------------------------------------
   addGroup: (name: string, color: string) => string;
@@ -216,6 +228,77 @@ export const useProjectStore = create<ProjectState>()(
             return { ...project, drawables };
           }),
 
+        addTattoo: (tattoo) =>
+          mutate((project) => ({
+            ...project,
+            tattoos: [...project.tattoos, tattoo],
+          })),
+
+        updateTattoo: (id, patch) =>
+          mutate((project) => ({
+            ...project,
+            tattoos: project.tattoos.map((t) =>
+              t.id === id ? { ...t, ...patch, id: t.id } : t,
+            ),
+          })),
+
+        removeTattoos: (ids) => {
+          const remove = new Set(ids);
+          mutate((project) => ({
+            ...project,
+            tattoos: project.tattoos.filter((t) => !remove.has(t.id)),
+          }));
+        },
+
+        reorderTattoo: (id, toIndex) =>
+          mutate((project) => {
+            const target = project.tattoos.find((t) => t.id === id);
+            if (!target) return project;
+
+            const bucketPositions: number[] = [];
+            const bucket: ProjectTattoo[] = [];
+            project.tattoos.forEach((t, index) => {
+              if (t.zone === target.zone) {
+                bucketPositions.push(index);
+                bucket.push(t);
+              }
+            });
+
+            const from = bucket.findIndex((t) => t.id === id);
+            const to = Math.max(0, Math.min(bucket.length - 1, toIndex));
+            if (from === -1 || from === to) return project;
+
+            const reordered = [...bucket];
+            const [moved] = reordered.splice(from, 1);
+            reordered.splice(to, 0, moved);
+
+            const tattoos = [...project.tattoos];
+            bucketPositions.forEach((position, i) => {
+              tattoos[position] = reordered[i];
+            });
+            return { ...project, tattoos };
+          }),
+
+        updateTattooCollection: (patch) =>
+          mutate((project) => ({
+            ...project,
+            tattooCollection: { ...project.tattooCollection, ...patch },
+          })),
+
+        assignTattooGroup: (tattooIds, groupId) => {
+          const targets = new Set(tattooIds);
+          if (groupId !== null) {
+            const exists = get().project?.groups.some((g) => g.id === groupId);
+            if (!exists) return;
+          }
+          mutate((project) => ({
+            ...project,
+            tattoos: project.tattoos.map((t) =>
+              targets.has(t.id) ? { ...t, groupId } : t,
+            ),
+          }));
+        },
+
         setTextures: (drawableId, textures) =>
           mutateDrawable(drawableId, (d) => ({ ...d, textures })),
 
@@ -292,6 +375,10 @@ export const useProjectStore = create<ProjectState>()(
             groups: project.groups.filter((g) => g.id !== id),
             drawables: project.drawables.map((d) =>
               d.groupId === id ? { ...d, groupId: null } : d,
+            ),
+            // Groups are shared with tattoos — orphan their refs too.
+            tattoos: project.tattoos.map((t) =>
+              t.groupId === id ? { ...t, groupId: null } : t,
             ),
           })),
 
@@ -441,4 +528,48 @@ export function selectDuplicateYddMap(
     if (ids.length >= 2) duplicates[hash] = ids;
   }
   return duplicates;
+}
+
+/** Tattoos of one zone bucket in canonical (array) order. */
+export function selectTattoosByZone(
+  project: AtelierProject,
+  zone: TattooZoneId,
+): ProjectTattoo[] {
+  return project.tattoos.filter((t) => t.zone === zone);
+}
+
+export interface DerivedTattooBuild {
+  /** YTD file name (without extension) == txdHash == txtHash (hard engine rule). */
+  ytdFileName: string;
+  /** Male overlay nameHash, or null when this tattoo has no male variant. */
+  nameMale: string | null;
+  /** Female overlay nameHash, or null when this tattoo has no female variant. */
+  nameFemale: string | null;
+  /** Shared overlay collection name. */
+  collection: string;
+}
+
+/**
+ * Deterministic build identity per tattoo uuid. The YTD file name is GLOBAL
+ * (index into `project.tattoos` in array order, NOT bucketed per zone) so the TS
+ * side matches the sidecar's PlanTattoos numbering exactly. Per-gender overlay
+ * names fall back to the `<ytd>_M` / `<ytd>_F` convention when not set explicitly.
+ */
+export function selectDerivedTattooBuild(
+  project: AtelierProject,
+): Record<string, DerivedTattooBuild> {
+  const collection = project.tattooCollection.name;
+  const out: Record<string, DerivedTattooBuild> = {};
+  project.tattoos.forEach((t, index) => {
+    const ytdFileName = `${collection}_tat_${String(index).padStart(3, "0")}`;
+    const wantsMale = t.gender === "both" || t.gender === "male";
+    const wantsFemale = t.gender === "both" || t.gender === "female";
+    out[t.id] = {
+      ytdFileName,
+      nameMale: wantsMale ? (t.nameMale ?? `${ytdFileName}_M`) : null,
+      nameFemale: wantsFemale ? (t.nameFemale ?? `${ytdFileName}_F`) : null,
+      collection,
+    };
+  });
+  return out;
 }

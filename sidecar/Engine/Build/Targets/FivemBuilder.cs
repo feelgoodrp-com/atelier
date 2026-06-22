@@ -19,6 +19,7 @@ public static class FivemBuilder
 
         var totalFiles = plan.Parts.Sum(p => p.Files.Count);
         var copied = 0;
+        var firstPart = true;
 
         foreach (var part in plan.Parts)
         {
@@ -82,42 +83,91 @@ public static class FivemBuilder
                     BuildFirstPersonMeta(firstPersonFiles));
             }
 
+            // Tattoos do not split — they ride along in part 1 only. The overlay
+            // metadata + shop meta + runtime manifest are data_files at the
+            // resource ROOT; the YTDs are streamed.
+            string? overlayFile = null;
+            string? tattooShopFile = null;
+            string? tattooManifestFile = null;
+            if (firstPart && plan.Tattoos.Items.Count > 0)
+            {
+                progress("tattoos", 0, plan.Tattoos.Items.Count,
+                    $"Erzeuge {plan.Tattoos.Items.Count} Tattoo-Overlay(s)");
+
+                var tattooDone = 0;
+                foreach (var item in plan.Tattoos.Items)
+                {
+                    var ytdBytes = TattooTextureBuilder.BuildYtd(item.SourceImagePath, item.YtdName);
+                    File.WriteAllBytes(Path.Combine(streamFolder, $"{item.YtdName}.ytd"), ytdBytes);
+                    progress("tattoos", ++tattooDone, plan.Tattoos.Items.Count, $"{item.YtdName}.ytd");
+                }
+
+                overlayFile = $"{plan.Tattoos.Collection}_overlays.xml";
+                File.WriteAllText(
+                    Path.Combine(partFolder, overlayFile),
+                    TattooOverlayGenerator.BuildXml(plan.Tattoos));
+
+                if (plan.Options.GenerateTattooShopMeta)
+                {
+                    tattooShopFile = "shop_tattoo.meta";
+                    File.WriteAllText(
+                        Path.Combine(partFolder, tattooShopFile),
+                        TattooShopMetaGenerator.Build(plan.Tattoos));
+                }
+
+                tattooManifestFile = "tattoos.json";
+                File.WriteAllText(
+                    Path.Combine(partFolder, tattooManifestFile),
+                    TattooManifestGenerator.Build(plan.Tattoos, part.FolderName));
+            }
+
             File.WriteAllText(
                 Path.Combine(partFolder, "fxmanifest.lua"),
-                BuildFxManifest(shopMetaFiles, firstPersonMeta));
+                BuildFxManifest(shopMetaFiles, firstPersonMeta, overlayFile, tattooShopFile, tattooManifestFile));
 
             BuildCommon.WriteBuildManifest(partFolder, "fivem", part.DlcName, part.DrawableCount);
 
             resources.Add(new BuildResourceReport(part.FolderName, part.DrawableCount));
+            firstPart = false;
         }
 
         return new BuildReport(resources, warnings);
     }
 
-    private static string BuildFxManifest(List<string> shopMetaFiles, string? firstPersonMeta)
+    private static string BuildFxManifest(
+        List<string> shopMetaFiles,
+        string? firstPersonMeta,
+        string? overlayFile,
+        string? tattooShopFile,
+        string? tattooManifestFile)
     {
+        // Root-level files must be listed explicitly — the glob is stream/-scoped.
+        var files = new List<string>
+        {
+            "stream/*.ydd", "stream/*.ytd", "stream/*.yld", "stream/*.meta", "stream/*.ymt",
+        };
+        if (firstPersonMeta != null) files.Add(firstPersonMeta);
+        if (overlayFile != null) files.Add(overlayFile);
+        if (tattooShopFile != null) files.Add(tattooShopFile);
+        if (tattooManifestFile != null) files.Add(tattooManifestFile);
+
         var sb = new StringBuilder();
         sb.AppendLf("fx_version 'cerulean'");
         sb.AppendLf("game 'gta5'");
         sb.AppendLf();
         sb.AppendLf("files {");
-        sb.AppendLf("  'stream/*.ydd',");
-        sb.AppendLf("  'stream/*.ytd',");
-        sb.AppendLf("  'stream/*.yld',");
-        sb.AppendLf("  'stream/*.meta',");
-        sb.Append("  'stream/*.ymt'");
-        if (firstPersonMeta != null)
-        {
-            sb.AppendLf(",");
-            sb.Append($"  '{firstPersonMeta}'");
-        }
-        sb.AppendLf();
+        for (var i = 0; i < files.Count; i++)
+            sb.AppendLf($"  '{files[i]}'{(i < files.Count - 1 ? "," : string.Empty)}");
         sb.AppendLf("}");
         sb.AppendLf();
         foreach (var metaFile in shopMetaFiles)
             sb.AppendLf($"data_file 'SHOP_PED_APPAREL_META_FILE' '{metaFile}'");
         if (firstPersonMeta != null)
             sb.AppendLf($"data_file 'PED_FIRST_PERSON_ALTERNATE_DATA' '{firstPersonMeta}'");
+        if (overlayFile != null)
+            sb.AppendLf($"data_file 'PED_OVERLAY_FILE' '{overlayFile}'");
+        if (tattooShopFile != null)
+            sb.AppendLf($"data_file 'TATTOO_SHOP_DLC_FILE' '{tattooShopFile}'");
         return sb.ToString();
     }
 

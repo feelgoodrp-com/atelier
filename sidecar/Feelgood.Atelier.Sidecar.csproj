@@ -26,6 +26,9 @@
   <ItemGroup>
     <!-- BC1/BC3/BC7 texture (re)compression for POST /texture/optimize (MIT). -->
     <PackageReference Include="BCnEncoder.Net" Version="2.1.0" />
+    <!-- PNG/JPG/WEBP decode for tattoo decal import (Apache-2.0). Same family
+         the texture_magic prior-art tool uses. -->
+    <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="13.5.0" />
   </ItemGroup>
 
 </Project>

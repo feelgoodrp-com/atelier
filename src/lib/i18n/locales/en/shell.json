@@ -2,6 +2,7 @@
   "nav": {
     "start": "Start",
     "workbench": "Workbench",
+    "tattoos": "Tattoos",
     "settings": "Settings"
   },
   "sidecar": {
