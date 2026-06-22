@@ -33,7 +33,6 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   TATTOO_ZONES,
   type TattooGenderId,
@@ -162,9 +161,12 @@ export function TattooGrid() {
         </Button>
       </div>
 
-      {/* Grid */}
-      <ScrollArea className="min-h-0 flex-1">
-        {visible.length === 0 ? (
+      {/* Grid — context menu wraps a plain overflow-y-auto div (NOT a Radix
+          ScrollArea), matching the working clothing drawable-list: a Radix
+          ScrollArea viewport as the trigger swallowed the contextmenu event, so
+          the native webview menu showed instead. */}
+      {visible.length === 0 ? (
+        <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex h-full min-h-48 flex-col items-center justify-center px-6 py-12 text-center">
             <div className="glass-border-subtle flex h-12 w-12 items-center justify-center rounded-[10px]">
               <Stamp className="h-5 w-5 text-white/30" />
@@ -174,9 +176,11 @@ export function TattooGrid() {
             </p>
             <p className="mt-1 max-w-64 text-xs text-white/35">{t("grid.emptyHint")}</p>
           </div>
-        ) : (
-          <ContextMenu>
-            <ContextMenuTrigger asChild>
+        </div>
+      ) : (
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <div className="min-h-0 flex-1 overflow-y-auto">
               <div
                 className="grid gap-2 p-3 grid-cols-[repeat(auto-fill,minmax(120px,1fr))]"
                 onClick={(e) => {
@@ -193,8 +197,9 @@ export function TattooGrid() {
                   />
                 ))}
               </div>
-            </ContextMenuTrigger>
-            <ContextMenuContent className="w-52">
+            </div>
+          </ContextMenuTrigger>
+          <ContextMenuContent className="w-52">
               <ContextMenuItem disabled={noSel} onClick={duplicate}>
                 <Copy className="h-4 w-4" />
                 {t("context.duplicate")}
@@ -262,8 +267,7 @@ export function TattooGrid() {
               </ContextMenuItem>
             </ContextMenuContent>
           </ContextMenu>
-        )}
-      </ScrollArea>
+      )}
     </div>
   );
 }
