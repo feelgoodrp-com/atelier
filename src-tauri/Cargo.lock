@@ -189,7 +189,7 @@ dependencies = [
 
 [[package]]
 name = "atelier"
-version = "1.2.2"
+version = "1.2.3"
 dependencies = [
  "keyring",
  "rand",
