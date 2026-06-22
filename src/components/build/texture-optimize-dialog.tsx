@@ -111,12 +111,12 @@ export function TextureOptimizeDialog({
           if (busy) e.preventDefault();
         }}
       >
-        <DialogHeader>
+        <DialogHeader className="min-w-0">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Wand2 className="h-4 w-4 text-[#7289DA]" />
             {t("texture.title")}
           </DialogTitle>
-          <DialogDescription className="text-white/50">
+          <DialogDescription className="min-w-0 [overflow-wrap:anywhere] text-white/50">
             {texture
               ? t("texture.description", {
                   name: baseName(texture.path),

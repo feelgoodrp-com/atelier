@@ -83,7 +83,7 @@ function TextureMetaTooltip({ texture }: { texture: AssetRef }) {
   const preview = usePreviewStore((s) => s.previews[texture.hash]);
   const meta = preview?.textures ?? [];
   return (
-    <div className="flex flex-col gap-0.5 text-xs">
+    <div className="flex flex-col gap-0.5 text-xs [overflow-wrap:anywhere]">
       <span className="font-medium">{baseName(texture.path)}</span>
       <span className="text-white/60">{formatBytes(texture.size)}</span>
       {meta.length === 0 && preview?.status === "ready" && (
