@@ -79,6 +79,28 @@ function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Suppress the native WebView context menu app-wide — it shows on right-click
+  // in dev (off in release) and looks out of place. Text fields keep it for
+  // copy/paste. Radix context menus attach their own handlers on the React root
+  // (which fires first) so they still open where defined; this only kills the
+  // native fallback everywhere else.
+  useEffect(() => {
+    const onContextMenu = (e: MouseEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (
+        el &&
+        (el.tagName === "INPUT" ||
+          el.tagName === "TEXTAREA" ||
+          el.isContentEditable)
+      ) {
+        return;
+      }
+      e.preventDefault();
+    };
+    window.addEventListener("contextmenu", onContextMenu);
+    return () => window.removeEventListener("contextmenu", onContextMenu);
+  }, []);
+
   // HARD GATE (cloud mode only): without a logged-in AND approved account the
   // tool is unusable. Solo mode is fully local and always authorized — the
   // LoginGate below only renders in cloud mode when not yet authorized.
