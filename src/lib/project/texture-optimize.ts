@@ -24,11 +24,25 @@ import { usePreviewStore } from "@/lib/stores/preview-store";
 import { useProjectStore } from "@/lib/stores/project-store";
 import type { AssetRef, AtelierProject } from "@/lib/project/schema";
 
+/** Dropdown sentinel: keep the source's compression family. */
+export const KEEP_FORMAT = "keep";
+
+/** Explicitly forced output formats (uncompressed RGBA8888 included). */
+export type ForcedFormat = "BC1" | "BC3" | "BC7" | "RGBA8888";
+
+/** A format dropdown value: a forced format or "keep". */
+export type FormatChoice = typeof KEEP_FORMAT | ForcedFormat;
+
+/** Maps a dropdown choice to the sidecar `format` (null = keep family). */
+export function resolveFormatChoice(choice: FormatChoice): ForcedFormat | null {
+  return choice === KEEP_FORMAT ? null : choice;
+}
+
 export interface OptimizeSettings {
   /** Longest-edge cap in pixels (512/1024/2048 in the UI). */
   maxDimension: number;
-  /** Forced BC format; null keeps the source's BC family. */
-  format: "BC1" | "BC3" | "BC7" | null;
+  /** Forced format; null keeps the source's BC family. */
+  format: ForcedFormat | null;
   regenerateMips: boolean;
 }
 
