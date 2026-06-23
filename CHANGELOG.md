@@ -4,6 +4,15 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.2.7] — 2026-06-23
+
+### Added
+
+- **Help tab** — the full documentation (overview, the desktop app, and the
+  self-hosted backend) is now built into atelier under a new **Help** tab, so you
+  can read it offline without leaving the app — solo mode included. Available in
+  English and German, following the app language.
+
 ## [1.2.6] — 2026-06-23
 
 ### Changed
@@ -99,6 +108,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
+[1.2.7]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.7
 [1.2.6]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.6
 [1.2.5]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.5
 [1.2.4]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.4

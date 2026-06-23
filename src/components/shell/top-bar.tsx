@@ -4,6 +4,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   CircleUser,
   Copy,
+  HelpCircle,
   House,
   LogOut,
   Minus,
@@ -40,6 +41,7 @@ const NAV_ITEMS: Array<{
   { screen: "launcher", labelKey: "nav.start", icon: House },
   { screen: "workbench", labelKey: "nav.workbench", icon: Shirt },
   { screen: "tattoos", labelKey: "nav.tattoos", icon: Stamp },
+  { screen: "help", labelKey: "nav.help", icon: HelpCircle },
   { screen: "settings", labelKey: "nav.settings", icon: Settings },
 ];
 

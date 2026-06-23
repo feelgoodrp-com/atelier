@@ -7,6 +7,7 @@ import { LauncherScreen } from "@/screens/launcher";
 import { WorkbenchScreen } from "@/screens/workbench";
 import { TattoosScreen } from "@/screens/tattoos";
 import { SettingsScreen } from "@/screens/settings";
+import { HelpScreen } from "@/screens/help";
 import { BootSplash, LoginGate } from "@/screens/login";
 import { OnboardingWizard } from "@/screens/onboarding";
 import { HeroBackdrop } from "@/components/shell/hero-backdrop";
@@ -138,7 +139,7 @@ function App() {
         <div className="relative flex h-full flex-col overflow-hidden text-foreground">
           {/* Hero video backdrop on Home + Settings; the editing screens keep a
               plain grid so the previews stay distraction free. */}
-          {screen === "workbench" || screen === "tattoos" ? (
+          {screen === "workbench" || screen === "tattoos" || screen === "help" ? (
             <div className="grid-background absolute inset-0" aria-hidden="true" />
           ) : (
             <HeroBackdrop strong />
@@ -149,6 +150,7 @@ function App() {
             {screen === "workbench" && <WorkbenchScreen />}
             {screen === "tattoos" && <TattoosScreen />}
             {screen === "settings" && <SettingsScreen />}
+            {screen === "help" && <HelpScreen />}
           </main>
           {/* Mounted app-wide so the wizard survives launcher → workbench switches. */}
           <ImportWizard />

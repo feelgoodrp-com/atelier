@@ -3,6 +3,7 @@
     "start": "Start",
     "workbench": "Workbench",
     "tattoos": "Tattoos",
+    "help": "Help",
     "settings": "Settings"
   },
   "sidecar": {
