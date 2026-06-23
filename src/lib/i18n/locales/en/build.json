@@ -91,6 +91,8 @@
     "formatBC1": "BC1 (small)",
     "formatBC3": "BC3 (alpha)",
     "formatBC7": "BC7 (best quality)",
+    "formatRGBA8888": "RGBA8888 (uncompressed)",
+    "rgbaSizeHint": "Lossless, but a noticeably larger file (no compression).",
     "regenerateMips": "Regenerate mipmaps",
     "optimize": "Optimize",
     "toast": {
