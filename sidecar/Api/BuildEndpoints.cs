@@ -244,8 +244,8 @@ public static class BuildEndpoints
             return Results.BadRequest(new ErrorResponse("Feld 'maxDimension' muss zwischen 16 und 8192 liegen."));
 
         var format = string.IsNullOrWhiteSpace(request.Format) ? null : request.Format.Trim().ToUpperInvariant();
-        if (format is not (null or "BC1" or "BC3" or "BC7"))
-            return Results.BadRequest(new ErrorResponse("Feld 'format' muss BC1, BC3, BC7 oder null sein."));
+        if (format is not (null or "BC1" or "BC3" or "BC7" or "RGBA8888"))
+            return Results.BadRequest(new ErrorResponse("Feld 'format' muss BC1, BC3, BC7, RGBA8888 oder null sein."));
 
         try
         {
