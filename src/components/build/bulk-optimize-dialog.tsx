@@ -85,6 +85,15 @@ export function BulkOptimizeDialog({ open, onOpenChange }: BulkOptimizeDialogPro
     }
   }, [open, projectDir, textures, ensurePreview]);
 
+  // Reset the controls each time the dialog opens so a previous run's format
+  // (especially the file-enlarging RGBA8888) never silently carries over.
+  useEffect(() => {
+    if (open) {
+      setFormat(KEEP_FORMAT);
+      setMaxDimension(2048);
+    }
+  }, [open]);
+
   const scan = useMemo(() => {
     let pending = 0;
     let unreadable = 0;

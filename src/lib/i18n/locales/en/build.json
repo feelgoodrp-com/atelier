@@ -102,7 +102,7 @@
   },
   "bulk": {
     "title": "Optimize oversized textures",
-    "description": "Finds textures larger than {{threshold}} px edge length and shrinks them directly in the project (format is preserved).",
+    "description": "Finds textures larger than {{threshold}} px edge length and shrinks them directly in the project.",
     "permanentWarning": "Permanent change (cannot be reverted via undo) — originals are backed up under „.atelier-cache/texture-backups“ in the project folder.",
     "optimizing": "Optimizing {{done}}/{{total}}…",
     "analyzing": "Analyzing textures… {{pending}} of {{total}} remaining",
