@@ -118,7 +118,8 @@ public static class TextureOptimizer
                 "BC1" => CompressionFormat.Bc1,
                 "BC3" => CompressionFormat.Bc3,
                 "BC7" => CompressionFormat.Bc7,
-                _ => throw new ArgumentException($"Unbekanntes Format '{requested}' — erlaubt sind BC1, BC3, BC7."),
+                "RGBA8888" => CompressionFormat.Rgba,
+                _ => throw new ArgumentException($"Unbekanntes Format '{requested}' — erlaubt sind BC1, BC3, BC7, RGBA8888."),
             };
         }
 
