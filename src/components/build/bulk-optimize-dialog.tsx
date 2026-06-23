@@ -34,8 +34,11 @@ import { joinPath } from "@/lib/project/io";
 import {
   applyOptimizedTextures,
   collectProjectTextures,
+  KEEP_FORMAT,
   maxEdgeOf,
   optimizeProjectTexture,
+  resolveFormatChoice,
+  type FormatChoice,
   type OptimizedTexture,
 } from "@/lib/project/texture-optimize";
 import { usePreviewStore } from "@/lib/stores/preview-store";
@@ -62,6 +65,7 @@ export function BulkOptimizeDialog({ open, onOpenChange }: BulkOptimizeDialogPro
   const ensurePreview = usePreviewStore((s) => s.ensurePreview);
 
   const [maxDimension, setMaxDimension] = useState<number>(2048);
+  const [format, setFormat] = useState<FormatChoice>(KEEP_FORMAT);
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number; label: string }>(
     { done: 0, total: 0, label: "" },
@@ -126,7 +130,7 @@ export function BulkOptimizeDialog({ open, onOpenChange }: BulkOptimizeDialogPro
           results.push(
             await optimizeProjectTexture(projectDir, texture, {
               maxDimension,
-              format: null, // keep the source's BC family
+              format: resolveFormatChoice(format),
               regenerateMips: true,
             }),
           );
@@ -271,6 +275,28 @@ export function BulkOptimizeDialog({ open, onOpenChange }: BulkOptimizeDialogPro
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="flex items-center justify-between gap-3">
+              <Label className="text-xs text-white/70">{t("texture.format")}</Label>
+              <Select value={format} onValueChange={(v) => setFormat(v as FormatChoice)}>
+                <SelectTrigger className="h-8 w-28 border-white/15 bg-white/5 text-xs text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={KEEP_FORMAT}>{t("texture.formatKeep")}</SelectItem>
+                  <SelectItem value="BC1">{t("texture.formatBC1")}</SelectItem>
+                  <SelectItem value="BC3">{t("texture.formatBC3")}</SelectItem>
+                  <SelectItem value="BC7">{t("texture.formatBC7")}</SelectItem>
+                  <SelectItem value="RGBA8888">{t("texture.formatRGBA8888")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {format === "RGBA8888" && (
+              <p className="text-[11px] leading-relaxed text-amber-200/70">
+                {t("texture.rgbaSizeHint")}
+              </p>
+            )}
 
             {scan.unreadable > 0 && (
               <p className="text-[10px] text-white/35">
