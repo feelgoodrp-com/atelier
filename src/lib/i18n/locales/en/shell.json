@@ -45,6 +45,7 @@
   "credits": {
     "inspiredBy": "Inspired by",
     "by": "by",
-    "supportHim": "— support him:"
+    "supportHim": "— support him:",
+    "version": "App version"
   }
 }

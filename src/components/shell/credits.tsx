@@ -5,8 +5,10 @@
  * Patreon/Ko-fi. Brand marks as inline SVGs (not in lucide).
  */
 
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { open as openInBrowser } from "@tauri-apps/plugin-shell";
+import { getVersion } from "@tauri-apps/api/app";
 import { cn } from "@/lib/utils";
 
 const PATREON_URL = "https://patreon.com/grzybeek";
@@ -83,6 +85,7 @@ function SupportLink({
 
 export function GrzybeekCredits({ className }: { className?: string }) {
   const { t } = useTranslation("shell");
+  const version = useAppVersion();
   return (
     <div className={cn("flex flex-wrap items-center justify-center gap-3", className)}>
       <span className="text-xs text-white/35">
@@ -113,6 +116,25 @@ export function GrzybeekCredits({ className }: { className?: string }) {
         hoverClass="hover:text-[#7289DA]"
         icon={<DiscordMark className="h-4 w-4" />}
       />
+      {version && (
+        <>
+          <span className="h-3.5 w-px bg-white/15" aria-hidden="true" />
+          <span className="text-xs font-medium text-white/30" title={t("credits.version")}>
+            atelier v{version}
+          </span>
+        </>
+      )}
     </div>
   );
+}
+
+/** The running app version (e.g. "1.2.7"); null until resolved / outside Tauri. */
+function useAppVersion(): string | null {
+  const [version, setVersion] = useState<string | null>(null);
+  useEffect(() => {
+    getVersion()
+      .then(setVersion)
+      .catch(() => setVersion(null));
+  }, []);
+  return version;
 }
