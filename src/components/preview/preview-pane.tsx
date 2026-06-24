@@ -48,6 +48,7 @@ import type { PreviewAnyRequest } from "@/lib/stores/preview-3d-store";
 import {
   CAMERA_PRESETS,
   PREVIEW_MAX_MODELS,
+  appearanceKey,
   clampTextureIndex,
   drawableHairScale,
   drawableHasHeelLift,
@@ -59,6 +60,7 @@ import {
   type CameraPreset,
 } from "@/lib/stores/preview-3d-store";
 import { HEEL_LIFT_M } from "@/lib/preview/appearance";
+import { CharacterPopover } from "./character-popover";
 import { useProjectStore } from "@/lib/stores/project-store";
 import { useSidecarStore } from "@/lib/stores/sidecar-store";
 import { useWorkbenchStore } from "@/lib/stores/workbench-store";
@@ -187,6 +189,7 @@ export function PreviewPane() {
   const animationsLoaded = usePreview3dStore((s) => s.animationsLoaded);
   const playing = usePreview3dStore((s) => s.playing);
   const playbackSpeed = usePreview3dStore((s) => s.playbackSpeed);
+  const appearance = usePreview3dStore((s) => s.appearance);
   const frameNonce = usePreview3dStore((s) => s.frameNonce);
   const ensureGlb = usePreview3dStore((s) => s.ensureGlb);
   const retryGlb = usePreview3dStore((s) => s.retryGlb);
@@ -333,7 +336,7 @@ export function PreviewPane() {
             parts,
             pedModel,
             poseActive,
-            "default",
+            appearanceKey(appearance),
             heelLift,
             animActive,
           ),
@@ -342,9 +345,9 @@ export function PreviewPane() {
             pedModel,
             includePedBody: true,
             pose: poseActive,
-            // The preview always renders the CLEAN default freemode ped — no
-            // appearance/face (the Menyoo-derived head). Keeps the ped reliable
-            // (e.g. the male head was lost on the composited face path).
+            // Appearance only matters when the ped body is merged — the
+            // garment-only branch below stays appearance-free on purpose.
+            ...(appearance ? { appearance } : {}),
             // Global scene lift — numeric meters, only when a feet heel item is
             // in the scene (client.ts drops the field otherwise).
             ...(heelLift ? { heelLift: HEEL_LIFT_M } : {}),
@@ -412,6 +415,7 @@ export function PreviewPane() {
     pedBodyActive,
     poseActive,
     animActive,
+    appearance,
   ]);
 
   // Fetch GLBs + /parse/ydd metadata (LOD chips) for the rendered set.
@@ -446,6 +450,23 @@ export function PreviewPane() {
       }),
     [requests, entries],
   );
+
+  /**
+   * Appearance fallback slots of the CURRENTLY RENDERED entries — per-entry
+   * state, so cache hits keep their warnings and prefetch responses for other
+   * genders/appearances never leak into the popover. With ped body there is
+   * exactly one outfit request; without it appearance is not applied.
+   */
+  const appearanceFallbacks = useMemo(() => {
+    if (!pedBodyActive) return [];
+    const slots = new Set<string>();
+    for (const { key } of requests) {
+      for (const slot of entries[key]?.appearanceFallbacks ?? []) {
+        slots.add(slot);
+      }
+    }
+    return [...slots].sort();
+  }, [pedBodyActive, requests, entries]);
 
   const loadingCount = requests.filter(
     (r) => entries[r.key]?.status === "loading",
@@ -736,6 +757,12 @@ export function PreviewPane() {
                 : t("pane.pedBodyTooltipDisabled")}
             </TooltipContent>
           </Tooltip>
+
+          <CharacterPopover
+            disabled={!pedBodyActive}
+            pedModel={rendered.length > 0 ? pedModelFor(rendered[0]) : null}
+            fallbackSlots={appearanceFallbacks}
+          />
 
           <div className="mx-1 h-5 w-px bg-white/10" />
 
