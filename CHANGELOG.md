@@ -4,6 +4,28 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] — 2026-06-24
+
+### Added
+
+- **Preferences tab** (Settings → Preferences) with time-saving defaults and
+  toggles, all wired to real behavior:
+  - **Texture optimization** — a default optimize format (Keep / BC1 / BC3 /
+    BC7 / RGBA8888) the optimize dialogs pre-select, an "optimize textures on
+    import" toggle, and a max size on import.
+  - **Build & projects** — a default export target (pre-selected in the build
+    dialog) and a default project folder that pre-fills the new/open-project
+    pickers.
+  - **Editor** — confirm before deleting, auto-open the 3D preview on selection,
+    render the ped body by default, and recovery autosave on/off + interval.
+  - **Updates** — check for updates on startup, and optionally install a found
+    update automatically.
+
+### Changed
+
+- Numbers (byte sizes, poly/vertex counts) now follow the app language instead
+  of a fixed German format.
+
 ## [1.3.0] — 2026-06-24
 
 ### Added
@@ -123,6 +145,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
+[1.4.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.4.0
 [1.3.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.3.0
 [#6]: https://github.com/feelgoodrp-com/atelier/pull/6
 [1.2.7]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.7
