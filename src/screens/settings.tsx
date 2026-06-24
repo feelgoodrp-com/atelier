@@ -62,8 +62,12 @@ import {
   setGtaPath,
   setLogConsoleEnabled,
   IMPORT_MAX_DIMENSIONS,
+  AUTOSAVE_INTERVALS,
   type ImportMaxDimension,
+  type AutosaveInterval,
 } from "@/lib/settings";
+import { usePreview3dStore } from "@/lib/stores/preview-3d-store";
+import type { BuildTarget } from "@/lib/sidecar/types";
 import { openLogWindow, useLogConsoleStore } from "@/lib/stores/log-console-store";
 import {
   adminApproveUser,
@@ -221,11 +225,202 @@ function TextureOptimizeCard() {
   );
 }
 
+/** Compact label + description row with a trailing switch (preferences toggles). */
+function PrefToggleRow({
+  title,
+  description,
+  checked,
+  onCheckedChange,
+}: {
+  title: string;
+  description: string;
+  checked: boolean;
+  onCheckedChange: (value: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-[10px] bg-white/5 px-3 py-2.5">
+      <div className="min-w-0">
+        <p className="text-sm text-white/85">{title}</p>
+        <p className="text-xs text-white/45">{description}</p>
+      </div>
+      <Switch checked={checked} onCheckedChange={onCheckedChange} />
+    </div>
+  );
+}
+
+const BUILD_TARGET_OPTIONS: ReadonlyArray<{ value: BuildTarget; label: string }> = [
+  { value: "fivem", label: "FiveM" },
+  { value: "singleplayer", label: "Singleplayer" },
+  { value: "ragemp", label: "RageMP" },
+  { value: "altv", label: "alt:V" },
+];
+
+const formatAutosaveInterval = (seconds: number): string =>
+  seconds >= 60 ? `${seconds / 60} min` : `${seconds} s`;
+
+/** Default export target + default project folder. */
+function BuildProjectsCard() {
+  const { t } = useTranslation("settings");
+  const defaultExportTarget = usePreferencesStore((s) => s.defaultExportTarget);
+  const defaultProjectFolder = usePreferencesStore((s) => s.defaultProjectFolder);
+  const setDefaultExportTarget = usePreferencesStore((s) => s.setDefaultExportTarget);
+  const setDefaultProjectFolder = usePreferencesStore((s) => s.setDefaultProjectFolder);
+
+  const pickFolder = async () => {
+    try {
+      const selected = await openDialog({
+        directory: true,
+        title: t("preferences.projects.pickFolder"),
+        defaultPath: defaultProjectFolder ?? undefined,
+      });
+      if (typeof selected === "string") setDefaultProjectFolder(selected);
+    } catch {
+      /* picker cancelled / unavailable */
+    }
+  };
+
+  return (
+    <Card className="glass-border-subtle border-white/10 bg-transparent">
+      <CardHeader>
+        <CardTitle className="text-white">{t("preferences.projects.title")}</CardTitle>
+        <CardDescription className="text-white/50">
+          {t("preferences.projects.description")}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <Label className="text-white/70">
+            {t("preferences.projects.exportTargetLabel")}
+          </Label>
+          <Select
+            value={defaultExportTarget}
+            onValueChange={(v) => setDefaultExportTarget(v as BuildTarget)}
+          >
+            <SelectTrigger className="w-full border-white/15 bg-white/5 text-white sm:w-72">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {BUILD_TARGET_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label className="text-white/70">
+            {t("preferences.projects.folderLabel")}
+          </Label>
+          <div className="flex gap-2">
+            <Input
+              readOnly
+              value={defaultProjectFolder ?? ""}
+              placeholder={t("preferences.projects.folderPlaceholder")}
+              className="border-white/15 bg-white/5 text-white"
+            />
+            <Button variant="outline" onClick={() => void pickFolder()}>
+              <FolderOpen className="h-4 w-4" />
+              {t("general.gta.browse")}
+            </Button>
+            {defaultProjectFolder && (
+              <Button variant="outline" onClick={() => setDefaultProjectFolder(null)}>
+                {t("preferences.projects.clear")}
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Editor behavior: delete confirmation, auto-preview, default ped body, autosave. */
+function EditorPreferencesCard() {
+  const { t } = useTranslation("settings");
+  const confirmBeforeDelete = usePreferencesStore((s) => s.confirmBeforeDelete);
+  const autoOpenPreview = usePreferencesStore((s) => s.autoOpenPreview);
+  const autosaveEnabled = usePreferencesStore((s) => s.autosaveEnabled);
+  const autosaveInterval = usePreferencesStore((s) => s.autosaveInterval);
+  const setConfirmBeforeDelete = usePreferencesStore((s) => s.setConfirmBeforeDelete);
+  const setAutoOpenPreview = usePreferencesStore((s) => s.setAutoOpenPreview);
+  const setAutosaveEnabled = usePreferencesStore((s) => s.setAutosaveEnabled);
+  const setAutosaveInterval = usePreferencesStore((s) => s.setAutosaveInterval);
+  // The "render ped body by default" toggle mirrors the live preview switch
+  // (one source of truth — the persisted preview-3d-store value).
+  const includePedBody = usePreview3dStore((s) => s.includePedBody);
+  const setIncludePedBody = usePreview3dStore((s) => s.setIncludePedBody);
+
+  return (
+    <Card className="glass-border-subtle border-white/10 bg-transparent">
+      <CardHeader>
+        <CardTitle className="text-white">{t("preferences.editor.title")}</CardTitle>
+        <CardDescription className="text-white/50">
+          {t("preferences.editor.description")}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <PrefToggleRow
+          title={t("preferences.editor.confirmDeleteTitle")}
+          description={t("preferences.editor.confirmDeleteDescription")}
+          checked={confirmBeforeDelete}
+          onCheckedChange={setConfirmBeforeDelete}
+        />
+        <PrefToggleRow
+          title={t("preferences.editor.autoPreviewTitle")}
+          description={t("preferences.editor.autoPreviewDescription")}
+          checked={autoOpenPreview}
+          onCheckedChange={setAutoOpenPreview}
+        />
+        <PrefToggleRow
+          title={t("preferences.editor.pedBodyTitle")}
+          description={t("preferences.editor.pedBodyDescription")}
+          checked={includePedBody}
+          onCheckedChange={setIncludePedBody}
+        />
+        <PrefToggleRow
+          title={t("preferences.editor.autosaveTitle")}
+          description={t("preferences.editor.autosaveDescription")}
+          checked={autosaveEnabled}
+          onCheckedChange={setAutosaveEnabled}
+        />
+        {autosaveEnabled && (
+          <div className="flex flex-col gap-2">
+            <Label className="text-white/70">
+              {t("preferences.editor.autosaveIntervalLabel")}
+            </Label>
+            <Select
+              value={String(autosaveInterval)}
+              onValueChange={(v) =>
+                setAutosaveInterval(Number(v) as AutosaveInterval)
+              }
+            >
+              <SelectTrigger className="w-full border-white/15 bg-white/5 text-white sm:w-72">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {AUTOSAVE_INTERVALS.map((s) => (
+                  <SelectItem key={s} value={String(s)}>
+                    {formatAutosaveInterval(s)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 /** Update behavior preferences. */
 function UpdatePreferencesCard() {
   const { t } = useTranslation("settings");
   const autoCheckUpdates = usePreferencesStore((s) => s.autoCheckUpdates);
+  const autoInstallUpdates = usePreferencesStore((s) => s.autoInstallUpdates);
   const setAutoCheckUpdates = usePreferencesStore((s) => s.setAutoCheckUpdates);
+  const setAutoInstallUpdates = usePreferencesStore((s) => s.setAutoInstallUpdates);
 
   return (
     <Card className="glass-border-subtle border-white/10 bg-transparent">
@@ -237,21 +432,21 @@ function UpdatePreferencesCard() {
           {t("preferences.updates.description")}
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between gap-4 rounded-[10px] bg-white/5 px-3 py-2.5">
-          <div className="min-w-0">
-            <p className="text-sm text-white/85">
-              {t("preferences.updates.autoCheckTitle")}
-            </p>
-            <p className="text-xs text-white/45">
-              {t("preferences.updates.autoCheckDescription")}
-            </p>
-          </div>
-          <Switch
-            checked={autoCheckUpdates}
-            onCheckedChange={setAutoCheckUpdates}
+      <CardContent className="flex flex-col gap-3">
+        <PrefToggleRow
+          title={t("preferences.updates.autoCheckTitle")}
+          description={t("preferences.updates.autoCheckDescription")}
+          checked={autoCheckUpdates}
+          onCheckedChange={setAutoCheckUpdates}
+        />
+        {autoCheckUpdates && (
+          <PrefToggleRow
+            title={t("preferences.updates.autoInstallTitle")}
+            description={t("preferences.updates.autoInstallDescription")}
+            checked={autoInstallUpdates}
+            onCheckedChange={setAutoInstallUpdates}
           />
-        </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -262,6 +457,8 @@ function PreferencesTab() {
   return (
     <div className="flex flex-col gap-4">
       <TextureOptimizeCard />
+      <BuildProjectsCard />
+      <EditorPreferencesCard />
       <UpdatePreferencesCard />
     </div>
   );

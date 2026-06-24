@@ -1,4 +1,6 @@
-/** Small German display formatters shared by the workbench UI. */
+/** Small display formatters shared by the workbench UI. */
+
+import i18n from "@/lib/i18n";
 
 /** "gerade eben", "vor 42 s", "vor 5 min", "vor 2 h", else date. */
 export function formatRelativeTime(iso: string | null): string {
@@ -18,7 +20,7 @@ export function formatRelativeTime(iso: string | null): string {
   });
 }
 
-/** 1536 → "1,5 KB" (German decimal comma, 1 fraction digit). */
+/** 1536 → "1.5 KB" (number format follows the app language, 1 fraction digit). */
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return "";
   if (bytes < 1024) return `${bytes} B`;
@@ -30,7 +32,7 @@ export function formatBytes(bytes: number): string {
     value /= 1024;
     unit = next;
   }
-  return `${value.toLocaleString("de-DE", { maximumFractionDigits: 1 })} ${unit}`;
+  return `${value.toLocaleString(i18n.language, { maximumFractionDigits: 1 })} ${unit}`;
 }
 
 /** Last path segment ("C:\a\b\jbib_000_u.ydd" → "jbib_000_u.ydd"). */

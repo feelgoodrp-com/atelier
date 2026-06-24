@@ -7,11 +7,35 @@
     "admin": "Admin"
   },
   "preferences": {
+    "projects": {
+      "title": "Build & projects",
+      "description": "Defaults for building and creating projects.",
+      "exportTargetLabel": "Default export target",
+      "folderLabel": "Default project folder",
+      "folderPlaceholder": "System default",
+      "pickFolder": "Choose the default project folder",
+      "clear": "Clear"
+    },
+    "editor": {
+      "title": "Editor",
+      "description": "Behavior while working on a project.",
+      "confirmDeleteTitle": "Confirm before deleting",
+      "confirmDeleteDescription": "Ask for confirmation before removing drawables.",
+      "autoPreviewTitle": "Auto-open the 3D preview",
+      "autoPreviewDescription": "Open the preview panel when a drawable is selected.",
+      "pedBodyTitle": "Render the ped body by default",
+      "pedBodyDescription": "Show the freemode ped under the clothing in the preview.",
+      "autosaveTitle": "Recovery autosave",
+      "autosaveDescription": "Periodically save a recovery snapshot of the open project.",
+      "autosaveIntervalLabel": "Autosave at most every"
+    },
     "updates": {
       "title": "Updates",
       "description": "How atelier checks for new versions.",
       "autoCheckTitle": "Check for updates on startup",
-      "autoCheckDescription": "When a newer version is available, show a notification on launch."
+      "autoCheckDescription": "When a newer version is available, show a notification on launch.",
+      "autoInstallTitle": "Install updates automatically",
+      "autoInstallDescription": "Download and install a found update on startup without asking, then restart."
     }
   },
   "general": {

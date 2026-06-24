@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { load, type Store } from "@tauri-apps/plugin-store";
 import type { FormatChoice } from "@/lib/project/texture-optimize";
+import type { BuildTarget } from "@/lib/sidecar/types";
 
 export const DEFAULT_API_URL = "http://127.0.0.1:3095";
 
@@ -223,4 +224,90 @@ export async function getAutoCheckUpdates(): Promise<boolean> {
 export async function setAutoCheckUpdates(enabled: boolean): Promise<void> {
   const store = await getStore();
   await store.set("autoCheckUpdates", enabled);
+}
+
+/** Install a found startup update automatically instead of only notifying. */
+export async function getAutoInstallUpdates(): Promise<boolean> {
+  const store = await getStore();
+  return (await store.get<boolean>("autoInstallUpdates")) ?? false;
+}
+
+export async function setAutoInstallUpdates(enabled: boolean): Promise<void> {
+  const store = await getStore();
+  await store.set("autoInstallUpdates", enabled);
+}
+
+/** Default export target pre-selected in the build dialog. */
+const BUILD_TARGETS: readonly BuildTarget[] = ["fivem", "singleplayer", "ragemp", "altv"];
+
+export async function getDefaultExportTarget(): Promise<BuildTarget> {
+  const store = await getStore();
+  const value = await store.get<string>("defaultExportTarget");
+  return BUILD_TARGETS.includes(value as BuildTarget) ? (value as BuildTarget) : "fivem";
+}
+
+export async function setDefaultExportTarget(target: BuildTarget): Promise<void> {
+  const store = await getStore();
+  await store.set("defaultExportTarget", target);
+}
+
+/** Folder the new-project pickers open in by default (null = OS default). */
+export async function getDefaultProjectFolder(): Promise<string | null> {
+  const store = await getStore();
+  return (await store.get<string>("defaultProjectFolder")) ?? null;
+}
+
+export async function setDefaultProjectFolder(path: string | null): Promise<void> {
+  const store = await getStore();
+  if (path === null) await store.delete("defaultProjectFolder");
+  else await store.set("defaultProjectFolder", path);
+}
+
+/** Ask for confirmation before deleting drawables (default on). */
+export async function getConfirmBeforeDelete(): Promise<boolean> {
+  const store = await getStore();
+  return (await store.get<boolean>("confirmBeforeDelete")) ?? true;
+}
+
+export async function setConfirmBeforeDelete(enabled: boolean): Promise<void> {
+  const store = await getStore();
+  await store.set("confirmBeforeDelete", enabled);
+}
+
+/** Open the 3D preview automatically when a drawable is selected. */
+export async function getAutoOpenPreview(): Promise<boolean> {
+  const store = await getStore();
+  return (await store.get<boolean>("autoOpenPreview")) ?? false;
+}
+
+export async function setAutoOpenPreview(enabled: boolean): Promise<void> {
+  const store = await getStore();
+  await store.set("autoOpenPreview", enabled);
+}
+
+/** Recovery autosave on/off + how often it force-saves at most. */
+export const AUTOSAVE_INTERVALS = [30, 60, 120, 300] as const;
+export type AutosaveInterval = (typeof AUTOSAVE_INTERVALS)[number];
+
+export async function getAutosaveEnabled(): Promise<boolean> {
+  const store = await getStore();
+  return (await store.get<boolean>("autosaveEnabled")) ?? true;
+}
+
+export async function setAutosaveEnabled(enabled: boolean): Promise<void> {
+  const store = await getStore();
+  await store.set("autosaveEnabled", enabled);
+}
+
+export async function getAutosaveInterval(): Promise<AutosaveInterval> {
+  const store = await getStore();
+  const value = await store.get<number>("autosaveIntervalSec");
+  return AUTOSAVE_INTERVALS.includes(value as AutosaveInterval)
+    ? (value as AutosaveInterval)
+    : 60;
+}
+
+export async function setAutosaveInterval(value: AutosaveInterval): Promise<void> {
+  const store = await getStore();
+  await store.set("autosaveIntervalSec", value);
 }

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import i18n from "@/lib/i18n";
 import { log } from "@/lib/log";
 import { useUiStore } from "@/lib/stores/ui-store";
+import { usePreferencesStore } from "@/lib/stores/preferences-store";
 
 /**
  * Auto-updater state machine (Tauri `plugin-updater`).
@@ -91,16 +92,22 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
         current: update.currentVersion,
       });
       if (notify) {
-        // Lead to Settings → Updates so the user can read the release notes
-        // before installing (rather than installing straight from the toast).
-        toast.info(i18n.t("settings:updates.toastTitle", { version: update.version }), {
-          description: i18n.t("settings:updates.toastBody"),
-          duration: 10000,
-          action: {
-            label: i18n.t("settings:updates.viewNotes"),
-            onClick: () => useUiStore.getState().setScreen("settings"),
-          },
-        });
+        if (usePreferencesStore.getState().autoInstallUpdates) {
+          // Auto-install: download, verify, install and relaunch without
+          // prompting (the user opted in via Settings → Preferences).
+          void get().install();
+        } else {
+          // Otherwise lead to Settings → Updates so the user can read the
+          // release notes before installing.
+          toast.info(i18n.t("settings:updates.toastTitle", { version: update.version }), {
+            description: i18n.t("settings:updates.toastBody"),
+            duration: 10000,
+            action: {
+              label: i18n.t("settings:updates.viewNotes"),
+              onClick: () => useUiStore.getState().setScreen("settings"),
+            },
+          });
+        }
       }
     } catch (e) {
       log.error("update check failed", { error: errMsg(e) });

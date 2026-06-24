@@ -157,7 +157,9 @@ function sanitizeFolderName(name: string): string {
 function ProjectStep({ onReady }: { onReady: () => void }) {
   const { t } = useTranslation("workbench");
   const [name, setName] = useState("");
-  const [location, setLocation] = useState<string | null>(null);
+  const [location, setLocation] = useState<string | null>(
+    () => usePreferencesStore.getState().defaultProjectFolder,
+  );
   const [busy, setBusy] = useState(false);
 
   const projectDir = useMemo(
@@ -169,6 +171,8 @@ function ProjectStep({ onReady }: { onReady: () => void }) {
     const selected = await openDialog({
       directory: true,
       title: t("importWizard.pickLocationTitle"),
+      defaultPath:
+        location ?? usePreferencesStore.getState().defaultProjectFolder ?? undefined,
     }).catch(() => null);
     if (typeof selected === "string") setLocation(selected);
   };
@@ -192,6 +196,7 @@ function ProjectStep({ onReady }: { onReady: () => void }) {
     const selected = await openDialog({
       directory: true,
       title: t("importWizard.pickProjectTitle"),
+      defaultPath: usePreferencesStore.getState().defaultProjectFolder ?? undefined,
     }).catch(() => null);
     if (typeof selected !== "string") return;
     setBusy(true);

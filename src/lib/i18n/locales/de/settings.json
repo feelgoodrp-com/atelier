@@ -7,11 +7,35 @@
     "admin": "Admin"
   },
   "preferences": {
+    "projects": {
+      "title": "Build & Projekte",
+      "description": "Standardwerte fürs Bauen und Anlegen von Projekten.",
+      "exportTargetLabel": "Standard-Export-Ziel",
+      "folderLabel": "Standard-Projektordner",
+      "folderPlaceholder": "Systemstandard",
+      "pickFolder": "Standard-Projektordner wählen",
+      "clear": "Löschen"
+    },
+    "editor": {
+      "title": "Editor",
+      "description": "Verhalten beim Arbeiten an einem Projekt.",
+      "confirmDeleteTitle": "Vor dem Löschen bestätigen",
+      "confirmDeleteDescription": "Vor dem Entfernen von Drawables nachfragen.",
+      "autoPreviewTitle": "3D-Vorschau automatisch öffnen",
+      "autoPreviewDescription": "Das Vorschau-Panel öffnen, wenn ein Drawable ausgewählt wird.",
+      "pedBodyTitle": "Ped-Körper standardmäßig rendern",
+      "pedBodyDescription": "Den Freemode-Ped unter der Kleidung in der Vorschau zeigen.",
+      "autosaveTitle": "Recovery-Autosave",
+      "autosaveDescription": "Regelmäßig einen Wiederherstellungs-Snapshot des Projekts speichern.",
+      "autosaveIntervalLabel": "Autosave höchstens alle"
+    },
     "updates": {
       "title": "Updates",
       "description": "Wie atelier nach neuen Versionen sucht.",
       "autoCheckTitle": "Beim Start nach Updates suchen",
-      "autoCheckDescription": "Wenn eine neuere Version verfügbar ist, beim Start eine Benachrichtigung zeigen."
+      "autoCheckDescription": "Wenn eine neuere Version verfügbar ist, beim Start eine Benachrichtigung zeigen.",
+      "autoInstallTitle": "Updates automatisch installieren",
+      "autoInstallDescription": "Ein beim Start gefundenes Update ohne Nachfrage laden + installieren, dann neu starten."
     }
   },
   "general": {
