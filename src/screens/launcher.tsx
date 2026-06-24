@@ -42,6 +42,7 @@ import {
 } from "@/lib/recents";
 import { useWorkbenchStore } from "@/lib/stores/workbench-store";
 import { useAuthStore, useCloudEnabled } from "@/lib/stores/auth-store";
+import { usePreferencesStore } from "@/lib/stores/preferences-store";
 import { listMyPacks, type Pack } from "@/lib/sync/api-client";
 import { clonePackToLocal } from "@/lib/sync/clone";
 import { formatRelativeTime } from "@/lib/format";
@@ -122,6 +123,8 @@ export function LauncherScreen() {
       const selected = await openDialog({
         directory: true,
         title: t("projectPickerTitle"),
+        defaultPath:
+          usePreferencesStore.getState().defaultProjectFolder ?? undefined,
       });
       if (typeof selected === "string") await openFromDir(selected);
     } catch (e) {

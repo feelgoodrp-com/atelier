@@ -53,6 +53,13 @@ import {
 } from "@/lib/gta/components";
 import { joinPath } from "@/lib/project/io";
 import {
+  applyOptimizedTextures,
+  optimizeProjectTexture,
+  resolveFormatChoice,
+  type OptimizedTexture,
+} from "@/lib/project/texture-optimize";
+import { usePreferencesStore } from "@/lib/stores/preferences-store";
+import {
   importPlannedEntries,
   type PlannedImportEntry,
 } from "@/lib/project/import-assets";
@@ -150,7 +157,9 @@ function sanitizeFolderName(name: string): string {
 function ProjectStep({ onReady }: { onReady: () => void }) {
   const { t } = useTranslation("workbench");
   const [name, setName] = useState("");
-  const [location, setLocation] = useState<string | null>(null);
+  const [location, setLocation] = useState<string | null>(
+    () => usePreferencesStore.getState().defaultProjectFolder,
+  );
   const [busy, setBusy] = useState(false);
 
   const projectDir = useMemo(
@@ -162,6 +171,8 @@ function ProjectStep({ onReady }: { onReady: () => void }) {
     const selected = await openDialog({
       directory: true,
       title: t("importWizard.pickLocationTitle"),
+      defaultPath:
+        location ?? usePreferencesStore.getState().defaultProjectFolder ?? undefined,
     }).catch(() => null);
     if (typeof selected === "string") setLocation(selected);
   };
@@ -185,6 +196,7 @@ function ProjectStep({ onReady }: { onReady: () => void }) {
     const selected = await openDialog({
       directory: true,
       title: t("importWizard.pickProjectTitle"),
+      defaultPath: usePreferencesStore.getState().defaultProjectFolder ?? undefined,
     }).catch(() => null);
     if (typeof selected !== "string") return;
     setBusy(true);
@@ -378,9 +390,45 @@ export function ImportWizard() {
       );
       for (const drawable of result.drawables) addDrawable(drawable);
 
+      // Optionally optimize every imported texture with the configured default
+      // format (Settings → Texture optimization). The step stays "importing" so
+      // the dialog cannot be closed mid-optimize.
+      let optimizedCount = 0;
+      const { optimizeOnImport, defaultTextureFormat, importMaxDimension } =
+        usePreferencesStore.getState();
+      if (optimizeOnImport) {
+        const seen = new Set<string>();
+        const importedTextures = result.drawables
+          .flatMap((d) => d.textures)
+          .filter((tex) => (seen.has(tex.path) ? false : seen.add(tex.path)));
+        if (importedTextures.length > 0) {
+          setProgress({ done: 0, total: importedTextures.length });
+          const optimized: OptimizedTexture[] = [];
+          for (const [index, texture] of importedTextures.entries()) {
+            setProgress({ done: index, total: importedTextures.length });
+            try {
+              optimized.push(
+                await optimizeProjectTexture(projectDir, texture, {
+                  maxDimension: importMaxDimension,
+                  format: resolveFormatChoice(defaultTextureFormat),
+                  regenerateMips: true,
+                }),
+              );
+            } catch {
+              // A texture that fails to optimize keeps its imported original.
+            }
+          }
+          applyOptimizedTextures(optimized);
+          optimizedCount = optimized.length;
+        }
+      }
+
       const parts = [
         t("importWizard.importedToast", { count: result.drawables.length }),
       ];
+      if (optimizedCount > 0) {
+        parts.push(t("importWizard.optimized", { count: optimizedCount }));
+      }
       if (result.skipped.length > 0) {
         parts.push(t("importWizard.skipped", { count: result.skipped.length }));
       }

@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { joinPath } from "@/lib/project/io";
+import i18n from "@/lib/i18n";
 import {
   fetchPreviewAnimations,
   fetchPreviewPoses,
@@ -67,7 +68,8 @@ import { useWorkbenchStore } from "@/lib/stores/workbench-store";
 import type { ProjectDrawable } from "@/lib/project/schema";
 import { Viewer3D, type ViewerModel } from "./viewer-3d";
 
-const NUMBER_FORMAT = new Intl.NumberFormat("de-DE");
+/** Counts use the app language's grouping (e.g. EN "1,234" vs DE "1.234"). */
+const formatCount = (n: number): string => n.toLocaleString(i18n.language);
 
 interface PreviewRequest {
   drawable: ProjectDrawable;
@@ -808,8 +810,8 @@ export function PreviewPane() {
                   title={t("pane.statsTitle", { count: rendered.length })}
                 >
                   {t("pane.stats", {
-                    polys: NUMBER_FORMAT.format(stats.polys),
-                    verts: NUMBER_FORMAT.format(stats.verts),
+                    polys: formatCount(stats.polys),
+                    verts: formatCount(stats.verts),
                   })}
                 </OverlayChip>
               )}

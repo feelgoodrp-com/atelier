@@ -64,6 +64,7 @@ import {
   useProjectStore,
 } from "@/lib/stores/project-store";
 import { useWorkbenchStore } from "@/lib/stores/workbench-store";
+import { usePreferencesStore } from "@/lib/stores/preferences-store";
 import type { Gender, ProjectDrawable } from "@/lib/project/schema";
 import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
 import { GroupDialog } from "./group-dialog";
@@ -353,6 +354,16 @@ export function DrawableList() {
   const scrollTarget = useWorkbenchStore((s) => s.scrollTarget);
   const requestScrollTo = useWorkbenchStore((s) => s.requestScrollTo);
   const previewOpen = useWorkbenchStore((s) => s.previewOpen);
+  const setPreviewOpen = useWorkbenchStore((s) => s.setPreviewOpen);
+
+  // Auto-open the 3D preview when a drawable gets selected (opt-in, Settings →
+  // Preferences). Triggers only on a selection change, so manually closing the
+  // preview while a drawable stays selected does not immediately re-open it.
+  useEffect(() => {
+    if (selection.length === 0) return;
+    if (useWorkbenchStore.getState().previewOpen) return;
+    if (usePreferencesStore.getState().autoOpenPreview) setPreviewOpen(true);
+  }, [selection, setPreviewOpen]);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [anchorIndex, setAnchorIndex] = useState<number | null>(null);
@@ -711,7 +722,11 @@ export function DrawableList() {
             <ContextMenuItem
               variant="destructive"
               disabled={selection.length === 0}
-              onClick={() => setConfirmDelete(true)}
+              onClick={() => {
+                if (usePreferencesStore.getState().confirmBeforeDelete)
+                  setConfirmDelete(true);
+                else removeDrawables(selection);
+              }}
             >
               <Trash2 className="h-4 w-4" />
               {t("drawableList.delete")}

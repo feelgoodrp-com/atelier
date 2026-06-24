@@ -9,10 +9,10 @@
  */
 
 import { useProjectStore } from "@/lib/stores/project-store";
+import { usePreferencesStore } from "@/lib/stores/preferences-store";
 import { writeAutosave } from "./io";
 
 const DEBOUNCE_MS = 5_000;
-const FORCE_INTERVAL_MS = 60_000;
 
 /**
  * Starts the autosave subscription. Returns a cleanup function — call once
@@ -54,8 +54,10 @@ export function startAutosave(): () => void {
   const schedule = () => {
     if (!pending) {
       pending = true;
-      // Hard ceiling: even under constant mutations, write every 60s.
-      forceTimer = setTimeout(() => void flush(), FORCE_INTERVAL_MS);
+      // Hard ceiling: even under constant mutations, write at most every
+      // <autosaveInterval> seconds (Settings → Preferences).
+      const forceMs = usePreferencesStore.getState().autosaveInterval * 1000;
+      forceTimer = setTimeout(() => void flush(), forceMs);
     }
     if (debounceTimer !== null) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => void flush(), DEBOUNCE_MS);
@@ -80,6 +82,8 @@ export function startAutosave(): () => void {
 
     // Undo/redo bypasses the actions — make sure the dirty flag follows.
     if (!state.dirty) state.markDirty();
+    // Recovery autosave can be turned off in Settings → Preferences.
+    if (!usePreferencesStore.getState().autosaveEnabled) return;
     schedule();
   });
 

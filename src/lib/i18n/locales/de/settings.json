@@ -2,8 +2,41 @@
   "title": "Einstellungen",
   "tabs": {
     "general": "Allgemein",
+    "preferences": "Präferenzen",
     "account": "Konto",
     "admin": "Admin"
+  },
+  "preferences": {
+    "projects": {
+      "title": "Build & Projekte",
+      "description": "Standardwerte fürs Bauen und Anlegen von Projekten.",
+      "exportTargetLabel": "Standard-Export-Ziel",
+      "folderLabel": "Standard-Projektordner",
+      "folderPlaceholder": "Systemstandard",
+      "pickFolder": "Standard-Projektordner wählen",
+      "clear": "Löschen"
+    },
+    "editor": {
+      "title": "Editor",
+      "description": "Verhalten beim Arbeiten an einem Projekt.",
+      "confirmDeleteTitle": "Vor dem Löschen bestätigen",
+      "confirmDeleteDescription": "Vor dem Entfernen von Drawables nachfragen.",
+      "autoPreviewTitle": "3D-Vorschau automatisch öffnen",
+      "autoPreviewDescription": "Das Vorschau-Panel öffnen, wenn ein Drawable ausgewählt wird.",
+      "pedBodyTitle": "Ped-Körper standardmäßig rendern",
+      "pedBodyDescription": "Den Freemode-Ped unter der Kleidung in der Vorschau zeigen.",
+      "autosaveTitle": "Recovery-Autosave",
+      "autosaveDescription": "Regelmäßig einen Wiederherstellungs-Snapshot des Projekts speichern.",
+      "autosaveIntervalLabel": "Autosave höchstens alle"
+    },
+    "updates": {
+      "title": "Updates",
+      "description": "Wie atelier nach neuen Versionen sucht.",
+      "autoCheckTitle": "Beim Start nach Updates suchen",
+      "autoCheckDescription": "Wenn eine neuere Version verfügbar ist, beim Start eine Benachrichtigung zeigen.",
+      "autoInstallTitle": "Updates automatisch installieren",
+      "autoInstallDescription": "Ein beim Start gefundenes Update ohne Nachfrage laden + installieren, dann neu starten."
+    }
   },
   "general": {
     "language": {
@@ -21,6 +54,22 @@
       "pathSavedReady": "Ped-Vorschau ist jetzt verfügbar.",
       "pathSavedUnverified": "Der Sidecar konnte den Pfad nicht verifizieren — stimmt der Installationsordner (enthält GTA5.exe und .rpf-Archive)?",
       "pickFailed": "Pfad konnte nicht gewählt werden"
+    },
+    "textureOptimize": {
+      "title": "Textur-Optimierung",
+      "description": "Standardwerte für die Textur-Optimierung.",
+      "formatLabel": "Standard-Format",
+      "format": {
+        "keep": "Beibehalten (gleiche Familie neu kodieren)",
+        "bc1": "BC1 (DXT1)",
+        "bc3": "BC3 (DXT5)",
+        "bc7": "BC7 (hohe Qualität)",
+        "rgba8888": "RGBA8888 (verlustfrei, größer)"
+      },
+      "onImportTitle": "Texturen beim Import optimieren",
+      "onImportDescription": "Nach jedem Import die neuen Texturen mit dem Standard-Format optimieren.",
+      "maxSizeLabel": "Max. Größe beim Import",
+      "maxSize": "{{size}} px"
     },
     "backend": {
       "title": "Backend",

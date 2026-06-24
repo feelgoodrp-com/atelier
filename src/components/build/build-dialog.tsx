@@ -61,6 +61,7 @@ import type {
 } from "@/lib/sidecar/types";
 import { useProjectStore } from "@/lib/stores/project-store";
 import { useWorkbenchStore } from "@/lib/stores/workbench-store";
+import { usePreferencesStore } from "@/lib/stores/preferences-store";
 
 type BuildStep = "setup" | "validating" | "findings" | "building" | "done" | "failed";
 
@@ -183,7 +184,9 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
   const setSelection = useProjectStore((s) => s.setSelection);
 
   const [step, setStep] = useState<BuildStep>("setup");
-  const [target, setTarget] = useState<BuildTarget>("fivem");
+  const [target, setTarget] = useState<BuildTarget>(
+    () => usePreferencesStore.getState().defaultExportTarget,
+  );
   const [dlcName, setDlcName] = useState("");
   const [resourceName, setResourceName] = useState("");
   const [outDir, setOutDir] = useState<string | null>(null);
@@ -202,7 +205,7 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
   useEffect(() => {
     if (!open) return;
     setStep("setup");
-    setTarget("fivem");
+    setTarget(usePreferencesStore.getState().defaultExportTarget);
     setDlcName(useProjectStore.getState().project?.settings.dlcName ?? "");
     setResourceName("");
     setGenerateShopMeta(true);

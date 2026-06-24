@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { load, type Store } from "@tauri-apps/plugin-store";
+import type { FormatChoice } from "@/lib/project/texture-optimize";
+import type { BuildTarget } from "@/lib/sidecar/types";
 
 export const DEFAULT_API_URL = "http://127.0.0.1:3095";
 
@@ -165,4 +167,147 @@ export async function setRefreshToken(token: string | null): Promise<void> {
       await store.set(REFRESH_TOKEN_KEY, token);
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Texture-optimize preferences (Settings → General). The default format is the
+// one the optimize dialogs pre-select; optimizeOnImport runs an optimize over
+// every imported texture with that format right after an import wizard run.
+// ---------------------------------------------------------------------------
+
+const TEXTURE_FORMATS: readonly FormatChoice[] = ["keep", "BC1", "BC3", "BC7", "RGBA8888"];
+
+export async function getDefaultTextureFormat(): Promise<FormatChoice> {
+  const store = await getStore();
+  const value = await store.get<string>("defaultTextureFormat");
+  return TEXTURE_FORMATS.includes(value as FormatChoice) ? (value as FormatChoice) : "keep";
+}
+
+export async function setDefaultTextureFormat(format: FormatChoice): Promise<void> {
+  const store = await getStore();
+  await store.set("defaultTextureFormat", format);
+}
+
+export async function getOptimizeOnImport(): Promise<boolean> {
+  const store = await getStore();
+  return (await store.get<boolean>("optimizeOnImport")) ?? false;
+}
+
+export async function setOptimizeOnImport(enabled: boolean): Promise<void> {
+  const store = await getStore();
+  await store.set("optimizeOnImport", enabled);
+}
+
+/** Longest-edge cap applied by optimize-on-import (one of {@link IMPORT_MAX_DIMENSIONS}). */
+export const IMPORT_MAX_DIMENSIONS = [512, 1024, 2048, 4096] as const;
+export type ImportMaxDimension = (typeof IMPORT_MAX_DIMENSIONS)[number];
+
+export async function getImportMaxDimension(): Promise<ImportMaxDimension> {
+  const store = await getStore();
+  const value = await store.get<number>("importMaxDimension");
+  return IMPORT_MAX_DIMENSIONS.includes(value as ImportMaxDimension)
+    ? (value as ImportMaxDimension)
+    : 2048;
+}
+
+export async function setImportMaxDimension(value: ImportMaxDimension): Promise<void> {
+  const store = await getStore();
+  await store.set("importMaxDimension", value);
+}
+
+/** Whether the app checks for updates on startup (Settings → Preferences). */
+export async function getAutoCheckUpdates(): Promise<boolean> {
+  const store = await getStore();
+  return (await store.get<boolean>("autoCheckUpdates")) ?? true;
+}
+
+export async function setAutoCheckUpdates(enabled: boolean): Promise<void> {
+  const store = await getStore();
+  await store.set("autoCheckUpdates", enabled);
+}
+
+/** Install a found startup update automatically instead of only notifying. */
+export async function getAutoInstallUpdates(): Promise<boolean> {
+  const store = await getStore();
+  return (await store.get<boolean>("autoInstallUpdates")) ?? false;
+}
+
+export async function setAutoInstallUpdates(enabled: boolean): Promise<void> {
+  const store = await getStore();
+  await store.set("autoInstallUpdates", enabled);
+}
+
+/** Default export target pre-selected in the build dialog. */
+const BUILD_TARGETS: readonly BuildTarget[] = ["fivem", "singleplayer", "ragemp", "altv"];
+
+export async function getDefaultExportTarget(): Promise<BuildTarget> {
+  const store = await getStore();
+  const value = await store.get<string>("defaultExportTarget");
+  return BUILD_TARGETS.includes(value as BuildTarget) ? (value as BuildTarget) : "fivem";
+}
+
+export async function setDefaultExportTarget(target: BuildTarget): Promise<void> {
+  const store = await getStore();
+  await store.set("defaultExportTarget", target);
+}
+
+/** Folder the new-project pickers open in by default (null = OS default). */
+export async function getDefaultProjectFolder(): Promise<string | null> {
+  const store = await getStore();
+  return (await store.get<string>("defaultProjectFolder")) ?? null;
+}
+
+export async function setDefaultProjectFolder(path: string | null): Promise<void> {
+  const store = await getStore();
+  if (path === null) await store.delete("defaultProjectFolder");
+  else await store.set("defaultProjectFolder", path);
+}
+
+/** Ask for confirmation before deleting drawables (default on). */
+export async function getConfirmBeforeDelete(): Promise<boolean> {
+  const store = await getStore();
+  return (await store.get<boolean>("confirmBeforeDelete")) ?? true;
+}
+
+export async function setConfirmBeforeDelete(enabled: boolean): Promise<void> {
+  const store = await getStore();
+  await store.set("confirmBeforeDelete", enabled);
+}
+
+/** Open the 3D preview automatically when a drawable is selected. */
+export async function getAutoOpenPreview(): Promise<boolean> {
+  const store = await getStore();
+  return (await store.get<boolean>("autoOpenPreview")) ?? false;
+}
+
+export async function setAutoOpenPreview(enabled: boolean): Promise<void> {
+  const store = await getStore();
+  await store.set("autoOpenPreview", enabled);
+}
+
+/** Recovery autosave on/off + how often it force-saves at most. */
+export const AUTOSAVE_INTERVALS = [30, 60, 120, 300] as const;
+export type AutosaveInterval = (typeof AUTOSAVE_INTERVALS)[number];
+
+export async function getAutosaveEnabled(): Promise<boolean> {
+  const store = await getStore();
+  return (await store.get<boolean>("autosaveEnabled")) ?? true;
+}
+
+export async function setAutosaveEnabled(enabled: boolean): Promise<void> {
+  const store = await getStore();
+  await store.set("autosaveEnabled", enabled);
+}
+
+export async function getAutosaveInterval(): Promise<AutosaveInterval> {
+  const store = await getStore();
+  const value = await store.get<number>("autosaveIntervalSec");
+  return AUTOSAVE_INTERVALS.includes(value as AutosaveInterval)
+    ? (value as AutosaveInterval)
+    : 60;
+}
+
+export async function setAutosaveInterval(value: AutosaveInterval): Promise<void> {
+  const store = await getStore();
+  await store.set("autosaveIntervalSec", value);
 }

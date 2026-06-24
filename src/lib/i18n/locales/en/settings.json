@@ -2,8 +2,41 @@
   "title": "Settings",
   "tabs": {
     "general": "General",
+    "preferences": "Preferences",
     "account": "Account",
     "admin": "Admin"
+  },
+  "preferences": {
+    "projects": {
+      "title": "Build & projects",
+      "description": "Defaults for building and creating projects.",
+      "exportTargetLabel": "Default export target",
+      "folderLabel": "Default project folder",
+      "folderPlaceholder": "System default",
+      "pickFolder": "Choose the default project folder",
+      "clear": "Clear"
+    },
+    "editor": {
+      "title": "Editor",
+      "description": "Behavior while working on a project.",
+      "confirmDeleteTitle": "Confirm before deleting",
+      "confirmDeleteDescription": "Ask for confirmation before removing drawables.",
+      "autoPreviewTitle": "Auto-open the 3D preview",
+      "autoPreviewDescription": "Open the preview panel when a drawable is selected.",
+      "pedBodyTitle": "Render the ped body by default",
+      "pedBodyDescription": "Show the freemode ped under the clothing in the preview.",
+      "autosaveTitle": "Recovery autosave",
+      "autosaveDescription": "Periodically save a recovery snapshot of the open project.",
+      "autosaveIntervalLabel": "Autosave at most every"
+    },
+    "updates": {
+      "title": "Updates",
+      "description": "How atelier checks for new versions.",
+      "autoCheckTitle": "Check for updates on startup",
+      "autoCheckDescription": "When a newer version is available, show a notification on launch.",
+      "autoInstallTitle": "Install updates automatically",
+      "autoInstallDescription": "Download and install a found update on startup without asking, then restart."
+    }
   },
   "general": {
     "language": {
@@ -21,6 +54,22 @@
       "pathSavedReady": "Ped preview is now available.",
       "pathSavedUnverified": "The sidecar could not verify the path — is the installation folder correct (contains GTA5.exe and .rpf archives)?",
       "pickFailed": "Could not select path"
+    },
+    "textureOptimize": {
+      "title": "Texture optimization",
+      "description": "Defaults for the texture-optimize tools.",
+      "formatLabel": "Default format",
+      "format": {
+        "keep": "Keep (re-encode same family)",
+        "bc1": "BC1 (DXT1)",
+        "bc3": "BC3 (DXT5)",
+        "bc7": "BC7 (high quality)",
+        "rgba8888": "RGBA8888 (lossless, larger)"
+      },
+      "onImportTitle": "Optimize textures on import",
+      "onImportDescription": "After every import, optimize the new textures with the default format.",
+      "maxSizeLabel": "Max size on import",
+      "maxSize": "{{size}} px"
     },
     "backend": {
       "title": "Backend",

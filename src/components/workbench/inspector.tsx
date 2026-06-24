@@ -45,6 +45,7 @@ import {
 } from "@/lib/gta/components";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useCollabStore } from "@/lib/stores/collab-store";
+import { usePreferencesStore } from "@/lib/stores/preferences-store";
 import { selectDerivedDrawableIds, useProjectStore } from "@/lib/stores/project-store";
 import { canonicalYddName } from "@/lib/gta/stream-names";
 import type { Gender, ProjectDrawable } from "@/lib/project/schema";
@@ -234,7 +235,11 @@ function BulkPanel({ ids }: { ids: string[] }) {
         size="sm"
         variant="outline"
         className="h-8 border-red-500/30 text-red-300 hover:bg-red-500/10"
-        onClick={() => setConfirmDelete(true)}
+        onClick={() => {
+          if (usePreferencesStore.getState().confirmBeforeDelete)
+            setConfirmDelete(true);
+          else removeDrawables(ids);
+        }}
       >
         <Trash2 className="h-3.5 w-3.5" />
         {t("inspector.deleteSelection")}

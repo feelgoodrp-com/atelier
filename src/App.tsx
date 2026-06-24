@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { TopBar } from "@/components/shell/top-bar";
@@ -21,6 +21,7 @@ import { usePresenceHeartbeat } from "@/lib/sync/presence";
 import { useCollab } from "@/lib/sync/collab";
 import { startAutosave } from "@/lib/project/autosave";
 import { useUpdateStore } from "@/lib/stores/update-store";
+import { loadPreferences, usePreferencesStore } from "@/lib/stores/preferences-store";
 
 function App() {
   const screen = useUiStore((s) => s.screen);
@@ -62,11 +63,17 @@ function App() {
   useEffect(() => startAutosave(), []);
 
   // Silent auto-update check on startup — pops a toast (with a one-click
-  // install action) only when a newer release is available. No-ops outside the
-  // Tauri runtime, so dev/browser builds are unaffected.
+  // install action) only when a newer release is available. Gated on the
+  // "check on startup" preference (default on) and fired once, after the
+  // preferences have loaded. No-ops outside the Tauri runtime.
+  const prefsLoaded = usePreferencesStore((s) => s.loaded);
+  const autoCheckUpdates = usePreferencesStore((s) => s.autoCheckUpdates);
+  const updateChecked = useRef(false);
   useEffect(() => {
-    void useUpdateStore.getState().check({ notify: true });
-  }, []);
+    if (updateChecked.current || !prefsLoaded) return;
+    updateChecked.current = true;
+    if (autoCheckUpdates) void useUpdateStore.getState().check({ notify: true });
+  }, [prefsLoaded, autoCheckUpdates]);
 
   // Restore the live-log-console feature switch (Settings → Logs).
   useEffect(() => {
@@ -74,6 +81,9 @@ function App() {
       .then((enabled) => useLogConsoleStore.getState().setEnabled(enabled))
       .catch(() => {});
   }, []);
+
+  // Restore the texture-optimize preferences (default format + optimize-on-import).
+  useEffect(() => loadPreferences(), []);
 
   // Strg+Shift+L opens the dedicated log window (when the feature is on).
   useEffect(() => {
