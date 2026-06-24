@@ -57,7 +57,13 @@ import type { FormatChoice } from "@/lib/project/texture-optimize";
 import { useSidecarStore } from "@/lib/stores/sidecar-store";
 import { restartSidecar } from "@/lib/sidecar/client";
 import { pushGtaPathToSidecar } from "@/lib/sidecar/gta-path";
-import { getGtaPath, setGtaPath, setLogConsoleEnabled } from "@/lib/settings";
+import {
+  getGtaPath,
+  setGtaPath,
+  setLogConsoleEnabled,
+  IMPORT_MAX_DIMENSIONS,
+  type ImportMaxDimension,
+} from "@/lib/settings";
 import { openLogWindow, useLogConsoleStore } from "@/lib/stores/log-console-store";
 import {
   adminApproveUser,
@@ -137,8 +143,10 @@ function TextureOptimizeCard() {
   const { t } = useTranslation("settings");
   const defaultTextureFormat = usePreferencesStore((s) => s.defaultTextureFormat);
   const optimizeOnImport = usePreferencesStore((s) => s.optimizeOnImport);
+  const importMaxDimension = usePreferencesStore((s) => s.importMaxDimension);
   const setDefaultTextureFormat = usePreferencesStore((s) => s.setDefaultTextureFormat);
   const setOptimizeOnImport = usePreferencesStore((s) => s.setOptimizeOnImport);
+  const setImportMaxDimension = usePreferencesStore((s) => s.setImportMaxDimension);
 
   return (
     <Card className="glass-border-subtle border-white/10 bg-transparent">
@@ -183,8 +191,79 @@ function TextureOptimizeCard() {
           </div>
           <Switch checked={optimizeOnImport} onCheckedChange={setOptimizeOnImport} />
         </div>
+
+        {optimizeOnImport && (
+          <div className="flex flex-col gap-2">
+            <Label className="text-white/70">
+              {t("general.textureOptimize.maxSizeLabel")}
+            </Label>
+            <Select
+              value={String(importMaxDimension)}
+              onValueChange={(v) =>
+                setImportMaxDimension(Number(v) as ImportMaxDimension)
+              }
+            >
+              <SelectTrigger className="w-full border-white/15 bg-white/5 text-white sm:w-72">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {IMPORT_MAX_DIMENSIONS.map((d) => (
+                  <SelectItem key={d} value={String(d)}>
+                    {t("general.textureOptimize.maxSize", { size: d })}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+/** Update behavior preferences. */
+function UpdatePreferencesCard() {
+  const { t } = useTranslation("settings");
+  const autoCheckUpdates = usePreferencesStore((s) => s.autoCheckUpdates);
+  const setAutoCheckUpdates = usePreferencesStore((s) => s.setAutoCheckUpdates);
+
+  return (
+    <Card className="glass-border-subtle border-white/10 bg-transparent">
+      <CardHeader>
+        <CardTitle className="text-white">
+          {t("preferences.updates.title")}
+        </CardTitle>
+        <CardDescription className="text-white/50">
+          {t("preferences.updates.description")}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-between gap-4 rounded-[10px] bg-white/5 px-3 py-2.5">
+          <div className="min-w-0">
+            <p className="text-sm text-white/85">
+              {t("preferences.updates.autoCheckTitle")}
+            </p>
+            <p className="text-xs text-white/45">
+              {t("preferences.updates.autoCheckDescription")}
+            </p>
+          </div>
+          <Switch
+            checked={autoCheckUpdates}
+            onCheckedChange={setAutoCheckUpdates}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Settings → Preferences: cross-cutting behavior toggles + defaults. */
+function PreferencesTab() {
+  return (
+    <div className="flex flex-col gap-4">
+      <TextureOptimizeCard />
+      <UpdatePreferencesCard />
+    </div>
   );
 }
 
@@ -288,8 +367,6 @@ function GeneralTab() {
           </div>
         </CardContent>
       </Card>
-
-      <TextureOptimizeCard />
 
       {cloudEnabled && (
         <Card className="glass-border-subtle border-white/10 bg-transparent">
@@ -885,11 +962,15 @@ export function SettingsScreen() {
           <Tabs defaultValue="general" className="mt-6">
             <TabsList className="liquid-glass bg-transparent">
               <TabsTrigger value="general">{t("tabs.general")}</TabsTrigger>
+              <TabsTrigger value="preferences">{t("tabs.preferences")}</TabsTrigger>
               <TabsTrigger value="account">{t("tabs.account")}</TabsTrigger>
               {isAdmin && <TabsTrigger value="admin">{t("tabs.admin")}</TabsTrigger>}
             </TabsList>
             <TabsContent value="general" className="mt-4">
               <GeneralTab />
+            </TabsContent>
+            <TabsContent value="preferences" className="mt-4">
+              <PreferencesTab />
             </TabsContent>
             <TabsContent value="account" className="mt-4">
               <AccountTab />

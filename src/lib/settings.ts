@@ -196,3 +196,31 @@ export async function setOptimizeOnImport(enabled: boolean): Promise<void> {
   const store = await getStore();
   await store.set("optimizeOnImport", enabled);
 }
+
+/** Longest-edge cap applied by optimize-on-import (one of {@link IMPORT_MAX_DIMENSIONS}). */
+export const IMPORT_MAX_DIMENSIONS = [512, 1024, 2048, 4096] as const;
+export type ImportMaxDimension = (typeof IMPORT_MAX_DIMENSIONS)[number];
+
+export async function getImportMaxDimension(): Promise<ImportMaxDimension> {
+  const store = await getStore();
+  const value = await store.get<number>("importMaxDimension");
+  return IMPORT_MAX_DIMENSIONS.includes(value as ImportMaxDimension)
+    ? (value as ImportMaxDimension)
+    : 2048;
+}
+
+export async function setImportMaxDimension(value: ImportMaxDimension): Promise<void> {
+  const store = await getStore();
+  await store.set("importMaxDimension", value);
+}
+
+/** Whether the app checks for updates on startup (Settings → Preferences). */
+export async function getAutoCheckUpdates(): Promise<boolean> {
+  const store = await getStore();
+  return (await store.get<boolean>("autoCheckUpdates")) ?? true;
+}
+
+export async function setAutoCheckUpdates(enabled: boolean): Promise<void> {
+  const store = await getStore();
+  await store.set("autoCheckUpdates", enabled);
+}

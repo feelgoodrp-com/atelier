@@ -2,8 +2,17 @@
   "title": "Einstellungen",
   "tabs": {
     "general": "Allgemein",
+    "preferences": "Präferenzen",
     "account": "Konto",
     "admin": "Admin"
+  },
+  "preferences": {
+    "updates": {
+      "title": "Updates",
+      "description": "Wie atelier nach neuen Versionen sucht.",
+      "autoCheckTitle": "Beim Start nach Updates suchen",
+      "autoCheckDescription": "Wenn eine neuere Version verfügbar ist, beim Start eine Benachrichtigung zeigen."
+    }
   },
   "general": {
     "language": {
@@ -34,7 +43,9 @@
         "rgba8888": "RGBA8888 (verlustfrei, größer)"
       },
       "onImportTitle": "Texturen beim Import optimieren",
-      "onImportDescription": "Nach jedem Import die neuen Texturen mit dem Standard-Format optimieren."
+      "onImportDescription": "Nach jedem Import die neuen Texturen mit dem Standard-Format optimieren.",
+      "maxSizeLabel": "Max. Größe beim Import",
+      "maxSize": "{{size}} px"
     },
     "backend": {
       "title": "Backend",

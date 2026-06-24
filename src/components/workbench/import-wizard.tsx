@@ -389,7 +389,7 @@ export function ImportWizard() {
       // format (Settings → Texture optimization). The step stays "importing" so
       // the dialog cannot be closed mid-optimize.
       let optimizedCount = 0;
-      const { optimizeOnImport, defaultTextureFormat } =
+      const { optimizeOnImport, defaultTextureFormat, importMaxDimension } =
         usePreferencesStore.getState();
       if (optimizeOnImport) {
         const seen = new Set<string>();
@@ -404,7 +404,7 @@ export function ImportWizard() {
             try {
               optimized.push(
                 await optimizeProjectTexture(projectDir, texture, {
-                  maxDimension: 2048,
+                  maxDimension: importMaxDimension,
                   format: resolveFormatChoice(defaultTextureFormat),
                   regenerateMips: true,
                 }),
