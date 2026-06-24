@@ -4,6 +4,21 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] — 2026-06-24
+
+### Added
+
+- **Animated 3D preview** — the preview can now play looping skeletal animations
+  (idle / walk / run) on the ped instead of a single frozen pose. A new
+  **Animation** picker with play/pause in the preview header drives a real
+  skinned, animated model; the ped body and every garment stay in sync. Needs a
+  configured GTA path, like the static poses.
+- **RGBA8888 texture-optimize format** — uncompressed, lossless RGBA is now an
+  explicit choice in both the single-texture and bulk optimize dialogs, next to
+  Keep / BC1 / BC3 / BC7, for maximum quality at the cost of larger files. The
+  bulk default stays on **Keep**. Thanks to @gitBitsystem ([#6]).
+- The launcher and login footer now show the running **app version**.
+
 ## [1.2.7] — 2026-06-23
 
 ### Added
@@ -108,6 +123,8 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
+[1.3.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.3.0
+[#6]: https://github.com/feelgoodrp-com/atelier/pull/6
 [1.2.7]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.7
 [1.2.6]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.6
 [1.2.5]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.5
