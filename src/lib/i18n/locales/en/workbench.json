@@ -222,6 +222,8 @@
     "importedToast_one": "{{count}} drawable imported",
     "importedToast_other": "{{count}} drawables imported",
     "skipped": "{{count}} skipped",
+    "optimized_one": "{{count}} texture optimized",
+    "optimized_other": "{{count}} textures optimized",
     "importFailed": "Import failed"
   },
   "assignType": {

@@ -6,6 +6,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { usePreferencesStore } from "@/lib/stores/preferences-store";
 import { useTranslation } from "react-i18next";
 import { Loader2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
@@ -66,11 +67,13 @@ export function TextureOptimizeDialog({
   const [regenerateMips, setRegenerateMips] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  // Reset per texture so a previous run's settings don't stick surprisingly.
+  // Reset per texture so a previous run's settings don't stick surprisingly —
+  // the format starts from the configured default (Settings → Texture
+  // optimization).
   useEffect(() => {
     if (texture) {
       setMaxDimension(1024);
-      setFormat(KEEP_FORMAT);
+      setFormat(usePreferencesStore.getState().defaultTextureFormat);
       setRegenerateMips(true);
       setBusy(false);
     }

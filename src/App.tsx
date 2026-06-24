@@ -21,6 +21,7 @@ import { usePresenceHeartbeat } from "@/lib/sync/presence";
 import { useCollab } from "@/lib/sync/collab";
 import { startAutosave } from "@/lib/project/autosave";
 import { useUpdateStore } from "@/lib/stores/update-store";
+import { loadPreferences } from "@/lib/stores/preferences-store";
 
 function App() {
   const screen = useUiStore((s) => s.screen);
@@ -74,6 +75,9 @@ function App() {
       .then((enabled) => useLogConsoleStore.getState().setEnabled(enabled))
       .catch(() => {});
   }, []);
+
+  // Restore the texture-optimize preferences (default format + optimize-on-import).
+  useEffect(() => loadPreferences(), []);
 
   // Strg+Shift+L opens the dedicated log window (when the feature is on).
   useEffect(() => {

@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { usePreferencesStore } from "@/lib/stores/preferences-store";
 import { useTranslation } from "react-i18next";
 import { CircleCheck, Images, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -85,11 +86,12 @@ export function BulkOptimizeDialog({ open, onOpenChange }: BulkOptimizeDialogPro
     }
   }, [open, projectDir, textures, ensurePreview]);
 
-  // Reset the controls each time the dialog opens so a previous run's format
-  // (especially the file-enlarging RGBA8888) never silently carries over.
+  // Reset the controls each time the dialog opens so a previous run's settings
+  // never silently carry over — the format starts from the user's configured
+  // default (Settings → Texture optimization), not the last ad-hoc choice.
   useEffect(() => {
     if (open) {
-      setFormat(KEEP_FORMAT);
+      setFormat(usePreferencesStore.getState().defaultTextureFormat);
       setMaxDimension(2048);
     }
   }, [open]);

@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { load, type Store } from "@tauri-apps/plugin-store";
+import type { FormatChoice } from "@/lib/project/texture-optimize";
 
 export const DEFAULT_API_URL = "http://127.0.0.1:3095";
 
@@ -165,4 +166,33 @@ export async function setRefreshToken(token: string | null): Promise<void> {
       await store.set(REFRESH_TOKEN_KEY, token);
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Texture-optimize preferences (Settings → General). The default format is the
+// one the optimize dialogs pre-select; optimizeOnImport runs an optimize over
+// every imported texture with that format right after an import wizard run.
+// ---------------------------------------------------------------------------
+
+const TEXTURE_FORMATS: readonly FormatChoice[] = ["keep", "BC1", "BC3", "BC7", "RGBA8888"];
+
+export async function getDefaultTextureFormat(): Promise<FormatChoice> {
+  const store = await getStore();
+  const value = await store.get<string>("defaultTextureFormat");
+  return TEXTURE_FORMATS.includes(value as FormatChoice) ? (value as FormatChoice) : "keep";
+}
+
+export async function setDefaultTextureFormat(format: FormatChoice): Promise<void> {
+  const store = await getStore();
+  await store.set("defaultTextureFormat", format);
+}
+
+export async function getOptimizeOnImport(): Promise<boolean> {
+  const store = await getStore();
+  return (await store.get<boolean>("optimizeOnImport")) ?? false;
+}
+
+export async function setOptimizeOnImport(enabled: boolean): Promise<void> {
+  const store = await getStore();
+  await store.set("optimizeOnImport", enabled);
 }

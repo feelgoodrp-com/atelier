@@ -52,6 +52,8 @@ import i18n, { SUPPORTED_LANGUAGES } from "@/lib/i18n";
 import { changeLanguage } from "@/lib/i18n/language";
 import { useAuthStore, useCloudEnabled } from "@/lib/stores/auth-store";
 import { useUiStore } from "@/lib/stores/ui-store";
+import { usePreferencesStore } from "@/lib/stores/preferences-store";
+import type { FormatChoice } from "@/lib/project/texture-optimize";
 import { useSidecarStore } from "@/lib/stores/sidecar-store";
 import { restartSidecar } from "@/lib/sidecar/client";
 import { pushGtaPathToSidecar } from "@/lib/sidecar/gta-path";
@@ -112,6 +114,74 @@ function LanguageCard() {
               </Button>
             );
           })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+const TEXTURE_FORMAT_OPTIONS: ReadonlyArray<{ value: FormatChoice; labelKey: string }> = [
+  { value: "keep", labelKey: "general.textureOptimize.format.keep" },
+  { value: "BC1", labelKey: "general.textureOptimize.format.bc1" },
+  { value: "BC3", labelKey: "general.textureOptimize.format.bc3" },
+  { value: "BC7", labelKey: "general.textureOptimize.format.bc7" },
+  { value: "RGBA8888", labelKey: "general.textureOptimize.format.rgba8888" },
+];
+
+/**
+ * Texture-optimize defaults: the format pre-selected in the optimize dialogs and
+ * an "optimize on import" toggle that runs that format over every imported
+ * texture right after an import.
+ */
+function TextureOptimizeCard() {
+  const { t } = useTranslation("settings");
+  const defaultTextureFormat = usePreferencesStore((s) => s.defaultTextureFormat);
+  const optimizeOnImport = usePreferencesStore((s) => s.optimizeOnImport);
+  const setDefaultTextureFormat = usePreferencesStore((s) => s.setDefaultTextureFormat);
+  const setOptimizeOnImport = usePreferencesStore((s) => s.setOptimizeOnImport);
+
+  return (
+    <Card className="glass-border-subtle border-white/10 bg-transparent">
+      <CardHeader>
+        <CardTitle className="text-white">
+          {t("general.textureOptimize.title")}
+        </CardTitle>
+        <CardDescription className="text-white/50">
+          {t("general.textureOptimize.description")}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <Label className="text-white/70">
+            {t("general.textureOptimize.formatLabel")}
+          </Label>
+          <Select
+            value={defaultTextureFormat}
+            onValueChange={(v) => setDefaultTextureFormat(v as FormatChoice)}
+          >
+            <SelectTrigger className="w-full border-white/15 bg-white/5 text-white sm:w-72">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TEXTURE_FORMAT_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {t(o.labelKey)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center justify-between gap-4 rounded-[10px] bg-white/5 px-3 py-2.5">
+          <div className="min-w-0">
+            <p className="text-sm text-white/85">
+              {t("general.textureOptimize.onImportTitle")}
+            </p>
+            <p className="text-xs text-white/45">
+              {t("general.textureOptimize.onImportDescription")}
+            </p>
+          </div>
+          <Switch checked={optimizeOnImport} onCheckedChange={setOptimizeOnImport} />
         </div>
       </CardContent>
     </Card>
@@ -218,6 +288,8 @@ function GeneralTab() {
           </div>
         </CardContent>
       </Card>
+
+      <TextureOptimizeCard />
 
       {cloudEnabled && (
         <Card className="glass-border-subtle border-white/10 bg-transparent">

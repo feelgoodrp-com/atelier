@@ -53,6 +53,13 @@ import {
 } from "@/lib/gta/components";
 import { joinPath } from "@/lib/project/io";
 import {
+  applyOptimizedTextures,
+  optimizeProjectTexture,
+  resolveFormatChoice,
+  type OptimizedTexture,
+} from "@/lib/project/texture-optimize";
+import { usePreferencesStore } from "@/lib/stores/preferences-store";
+import {
   importPlannedEntries,
   type PlannedImportEntry,
 } from "@/lib/project/import-assets";
@@ -378,9 +385,45 @@ export function ImportWizard() {
       );
       for (const drawable of result.drawables) addDrawable(drawable);
 
+      // Optionally optimize every imported texture with the configured default
+      // format (Settings → Texture optimization). The step stays "importing" so
+      // the dialog cannot be closed mid-optimize.
+      let optimizedCount = 0;
+      const { optimizeOnImport, defaultTextureFormat } =
+        usePreferencesStore.getState();
+      if (optimizeOnImport) {
+        const seen = new Set<string>();
+        const importedTextures = result.drawables
+          .flatMap((d) => d.textures)
+          .filter((tex) => (seen.has(tex.path) ? false : seen.add(tex.path)));
+        if (importedTextures.length > 0) {
+          setProgress({ done: 0, total: importedTextures.length });
+          const optimized: OptimizedTexture[] = [];
+          for (const [index, texture] of importedTextures.entries()) {
+            setProgress({ done: index, total: importedTextures.length });
+            try {
+              optimized.push(
+                await optimizeProjectTexture(projectDir, texture, {
+                  maxDimension: 2048,
+                  format: resolveFormatChoice(defaultTextureFormat),
+                  regenerateMips: true,
+                }),
+              );
+            } catch {
+              // A texture that fails to optimize keeps its imported original.
+            }
+          }
+          applyOptimizedTextures(optimized);
+          optimizedCount = optimized.length;
+        }
+      }
+
       const parts = [
         t("importWizard.importedToast", { count: result.drawables.length }),
       ];
+      if (optimizedCount > 0) {
+        parts.push(t("importWizard.optimized", { count: optimizedCount }));
+      }
       if (result.skipped.length > 0) {
         parts.push(t("importWizard.skipped", { count: result.skipped.length }));
       }

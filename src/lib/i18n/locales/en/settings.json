@@ -22,6 +22,20 @@
       "pathSavedUnverified": "The sidecar could not verify the path — is the installation folder correct (contains GTA5.exe and .rpf archives)?",
       "pickFailed": "Could not select path"
     },
+    "textureOptimize": {
+      "title": "Texture optimization",
+      "description": "Defaults for the texture-optimize tools.",
+      "formatLabel": "Default format",
+      "format": {
+        "keep": "Keep (re-encode same family)",
+        "bc1": "BC1 (DXT1)",
+        "bc3": "BC3 (DXT5)",
+        "bc7": "BC7 (high quality)",
+        "rgba8888": "RGBA8888 (lossless, larger)"
+      },
+      "onImportTitle": "Optimize textures on import",
+      "onImportDescription": "After every import, optimize the new textures with the default format."
+    },
     "backend": {
       "title": "Backend",
       "description": "Address of the atelier sync server.",
