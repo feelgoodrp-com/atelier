@@ -4,6 +4,8 @@ import { listen } from "@tauri-apps/api/event";
 import i18n from "@/lib/i18n";
 import { useSidecarStore } from "@/lib/stores/sidecar-store";
 import type {
+  AnimInfo,
+  AnimationsResponse,
   BuildDoneEvent,
   BuildProgressEvent,
   ImportScanResult,
@@ -196,6 +198,12 @@ export async function fetchPreviewPoses(): Promise<PoseInfo[]> {
   return res.poses;
 }
 
+/** GET /preview/animations — catalog of looping preview animations. */
+export async function fetchPreviewAnimations(): Promise<AnimInfo[]> {
+  const res = await sidecarFetch<AnimationsResponse>("/preview/animations");
+  return res.animations;
+}
+
 /**
  * POST /preview/glb — renders a drawable (+ optional ped body) to GLB bytes.
  * Binary response, so this bypasses the JSON-typed {@link sidecarFetch}.
@@ -223,6 +231,8 @@ export async function fetchPreviewGlb(
       // the missing fields as null -> Identity path -> same GLB bytes).
       ...(request.hairScale != null ? { hairScale: request.hairScale } : {}),
       ...(request.heelLift ? { heelLift: request.heelLift } : {}),
+      // Animated mode (skinned GLB the viewer plays); overrides pose server-side.
+      ...(request.animation ? { animation: request.animation } : {}),
     }),
   });
   if (!res.ok) {
@@ -271,6 +281,8 @@ export async function fetchPreviewOutfitGlb(
       // Global scene lift (derived from the feet item) — written only when
       // active so a heel-free outfit request stays byte-identical to before.
       ...(request.heelLift ? { heelLift: request.heelLift } : {}),
+      // Animated mode (skinned GLB the viewer plays); overrides pose server-side.
+      ...(request.animation ? { animation: request.animation } : {}),
     }),
   });
   if (!res.ok) {

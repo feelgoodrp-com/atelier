@@ -25,6 +25,14 @@
       "tooltipActive": "Pose der Vorschau (statisch ins Mesh gebacken)",
       "tooltipDisabled": "GTA-Pfad in den Einstellungen setzen"
     },
+    "anim": {
+      "ariaLabel": "Animation",
+      "none": "Keine Animation",
+      "play": "Abspielen",
+      "pause": "Pause",
+      "tooltipActive": "Loop-Animation in der Vorschau abgespielt",
+      "tooltipDisabled": "GTA-Pfad in den Einstellungen setzen"
+    },
     "centerCamera": "Kamera zentrieren",
     "centerCameraTooltip": "Kamera auf Auswahl zentrieren",
     "autoRotate": "Autorotation",
@@ -153,6 +161,11 @@
     "hands_up": "Hände hoch",
     "aim": "Zielen",
     "arms_crossed": "Arme verschränkt"
+  },
+  "anim": {
+    "idle": "Idle",
+    "walk": "Gehen",
+    "run": "Laufen"
   },
   "presets": {
     "standardMale": "Standard (männlich)",

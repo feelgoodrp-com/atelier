@@ -29,7 +29,8 @@ public static class GlbBuilder
         ILogger log,
         PoseData? pose = null,
         double? hairScale = null,
-        float yLift = 0f)
+        float yLift = 0f,
+        AnimationData? animation = null)
     {
         var ydd = LoadYdd(yddBytes);
         if (ydd?.Drawables == null || ydd.Drawables.Length == 0)
@@ -38,14 +39,19 @@ public static class GlbBuilder
         var mesh = new MeshAccumulator();
         // Single mode: hairScale (if any) applies to the WHOLE ydd; yLift lifts
         // the whole scene. Both default to the byte-identical Identity path.
-        var hairScaleVec = HairScaleVec(hairScale);
+        // In animated mode the hair/heel preview tweaks are dropped (they don't
+        // compose with GPU skinning) — animation wins over a static pose.
+        var hairScaleVec = animation != null ? null : HairScaleVec(hairScale);
 
         // 1) Garment drawables (all of them - multi-drawable YDDs land in one scene).
         var garmentPrimitives = new List<Primitive>();
         foreach (var drawable in ydd.Drawables)
         {
             if (drawable == null) continue;
-            AppendDrawable(drawable, mesh, garmentPrimitives, pose, hairScaleVec, yLift: yLift);
+            if (animation != null)
+                AppendDrawableSkinned(drawable, mesh, garmentPrimitives, animation);
+            else
+                AppendDrawable(drawable, mesh, garmentPrimitives, pose, hairScaleVec, yLift: yLift);
         }
 
         if (mesh.Positions.Count < 9 || garmentPrimitives.Count == 0)
@@ -69,7 +75,10 @@ public static class GlbBuilder
                 var componentPrimitives = new List<Primitive>();
                 // Ped body never gets hairScale (that is garment-local), but it
                 // DOES get the global heel lift so the whole ped rises together.
-                AppendDrawable(component.Drawable, mesh, componentPrimitives, pose, yLift: yLift);
+                if (animation != null)
+                    AppendDrawableSkinned(component.Drawable, mesh, componentPrimitives, animation);
+                else
+                    AppendDrawable(component.Drawable, mesh, componentPrimitives, pose, yLift: yLift);
                 if (componentPrimitives.Count == 0) continue;
 
                 var materialIndex = ResolveComponentMaterial(component, textures, log);
@@ -82,12 +91,14 @@ public static class GlbBuilder
         var primitiveSpecs = garmentPrimitives
             .Select(p => new GlbWriter.PrimitiveSpec(p.Indices, p.MaterialIndex))
             .ToList();
-        var glb = GlbWriter.Write(
-            mesh.Positions,
-            primitiveSpecs,
-            mesh.HasNormals ? mesh.Normals : null,
-            mesh.HasUv0 ? mesh.Uvs0 : null,
-            textures);
+        var glb = animation != null
+            ? BuildSkinnedGlb(mesh, primitiveSpecs, textures, animation)
+            : GlbWriter.Write(
+                mesh.Positions,
+                primitiveSpecs,
+                mesh.HasNormals ? mesh.Normals : null,
+                mesh.HasUv0 ? mesh.Uvs0 : null,
+                textures);
 
         var vertexCount = mesh.Positions.Count / 3;
         var polyCount = garmentPrimitives.Sum(p => p.Indices.Count) / 3;
@@ -111,7 +122,8 @@ public static class GlbBuilder
         IReadOnlyList<PedBodyService.PedComponent>? pedComponents,
         ILogger log,
         PoseData? pose = null,
-        float yLift = 0f)
+        float yLift = 0f,
+        AnimationData? animation = null)
     {
         var mesh = new MeshAccumulator();
         var allPrimitives = new List<Primitive>();
@@ -124,13 +136,17 @@ public static class GlbBuilder
                 throw new InvalidDataException("Keine Drawables in einer der YDD-Dateien gefunden.");
 
             // hairScale is PER ITEM (only the hair/p_head item != null); yLift
-            // is GLOBAL and applies to every item + the ped body below.
-            var itemHairScaleVec = HairScaleVec(item.HairScale);
+            // is GLOBAL and applies to every item + the ped body below. Both are
+            // dropped in animated mode (they don't compose with GPU skinning).
+            var itemHairScaleVec = animation != null ? null : HairScaleVec(item.HairScale);
             var itemPrimitives = new List<Primitive>();
             foreach (var drawable in ydd.Drawables)
             {
                 if (drawable == null) continue;
-                AppendDrawable(drawable, mesh, itemPrimitives, pose, itemHairScaleVec, yLift: yLift);
+                if (animation != null)
+                    AppendDrawableSkinned(drawable, mesh, itemPrimitives, animation);
+                else
+                    AppendDrawable(drawable, mesh, itemPrimitives, pose, itemHairScaleVec, yLift: yLift);
             }
             if (itemPrimitives.Count == 0) continue;
 
@@ -157,7 +173,10 @@ public static class GlbBuilder
 
                 var componentPrimitives = new List<Primitive>();
                 // Global heel lift only — never the garment-local hairScale.
-                AppendDrawable(component.Drawable, mesh, componentPrimitives, pose, yLift: yLift);
+                if (animation != null)
+                    AppendDrawableSkinned(component.Drawable, mesh, componentPrimitives, animation);
+                else
+                    AppendDrawable(component.Drawable, mesh, componentPrimitives, pose, yLift: yLift);
                 if (componentPrimitives.Count == 0) continue;
 
                 var materialIndex = ResolveComponentMaterial(component, textures, log);
@@ -170,12 +189,14 @@ public static class GlbBuilder
         var primitiveSpecs = allPrimitives
             .Select(p => new GlbWriter.PrimitiveSpec(p.Indices, p.MaterialIndex))
             .ToList();
-        var glb = GlbWriter.Write(
-            mesh.Positions,
-            primitiveSpecs,
-            mesh.HasNormals ? mesh.Normals : null,
-            mesh.HasUv0 ? mesh.Uvs0 : null,
-            textures);
+        var glb = animation != null
+            ? BuildSkinnedGlb(mesh, primitiveSpecs, textures, animation)
+            : GlbWriter.Write(
+                mesh.Positions,
+                primitiveSpecs,
+                mesh.HasNormals ? mesh.Normals : null,
+                mesh.HasUv0 ? mesh.Uvs0 : null,
+                textures);
 
         var vertexCount = mesh.Positions.Count / 3;
         var polyCount = allPrimitives.Sum(p => p.Indices.Count) / 3;
@@ -331,9 +352,201 @@ public static class GlbBuilder
         public List<float> Positions { get; } = new(8192);
         public List<float> Normals { get; } = new(8192);
         public List<float> Uvs0 { get; } = new(8192);
+        // Skin attributes (animated path only): 4 joints + 4 weights per vertex.
+        public List<ushort> Joints { get; } = new(8192);
+        public List<float> Weights { get; } = new(8192);
         public bool HasNormals { get; set; }
         public bool HasUv0 { get; set; }
         public uint VertexBase { get; set; }
+    }
+
+    /// <summary>
+    /// Appends a drawable for the ANIMATED path: bind-pose geometry in native
+    /// GTA (Z-up) space (NOT CPU-skinned, NOT axis-swapped — the GLB's root node
+    /// does the swap, the GPU does the skinning) plus per-vertex JOINTS_0/
+    /// WEIGHTS_0 against the ped skeleton. Weightless geometry binds rigidly to
+    /// its model bone (or the root joint as a last resort).
+    /// </summary>
+    private static void AppendDrawableSkinned(
+        Drawable drawable,
+        MeshAccumulator mesh,
+        List<Primitive> primitives,
+        AnimationData anim)
+    {
+        var blocks = drawable.DrawableModels;
+        var models = FirstWithGeometry(blocks?.High, blocks?.Med, blocks?.Low, blocks?.VLow);
+        if (models == null) return;
+        var jointCount = anim.Joints.Length;
+
+        foreach (var model in models)
+        {
+            if (model?.Geometries == null) continue;
+            var modelBone = model.BoneIndex;
+            var fallbackJoint = (ushort)(modelBone >= 0 && modelBone < jointCount ? modelBone : anim.RootJointIndex);
+
+            foreach (var geom in model.Geometries)
+            {
+                var vd = geom?.VertexData;
+                if (vd == null || vd.VertexCount <= 0) continue;
+
+                var primitive = new Primitive { TextureHash = ExtractPreferredTextureHash(geom!.Shader) };
+                var hasNormals = HasSemantic(vd, VertexSemantics.Normal);
+                var hasUv0 = HasSemantic(vd, VertexSemantics.TexCoord0);
+                if (hasNormals) mesh.HasNormals = true;
+                if (hasUv0) mesh.HasUv0 = true;
+
+                var hasBlend = HasSemantic(vd, VertexSemantics.BlendWeights)
+                    && HasSemantic(vd, VertexSemantics.BlendIndices);
+                var geomBoneIds = geom.BoneIds;
+                var remapBoneIds = geomBoneIds != null && geomBoneIds.Length != jointCount;
+
+                for (var v = 0; v < vd.VertexCount; v++)
+                {
+                    var p = vd.GetVector3(v, (int)VertexSemantics.Position);
+                    mesh.Positions.Add(p.X);
+                    mesh.Positions.Add(p.Y);
+                    mesh.Positions.Add(p.Z);
+
+                    if (hasNormals)
+                    {
+                        var raw = GetSemanticVec3(vd, v, VertexSemantics.Normal);
+                        mesh.Normals.Add(raw.x);
+                        mesh.Normals.Add(raw.y);
+                        mesh.Normals.Add(raw.z);
+                    }
+                    else { mesh.Normals.Add(0f); mesh.Normals.Add(0f); mesh.Normals.Add(1f); }
+
+                    if (hasUv0)
+                    {
+                        var uv = GetSemanticVec2(vd, v, VertexSemantics.TexCoord0);
+                        mesh.Uvs0.Add(uv.x); mesh.Uvs0.Add(uv.y);
+                    }
+                    else { mesh.Uvs0.Add(0f); mesh.Uvs0.Add(0f); }
+
+                    AppendVertexSkin(mesh, vd, v, hasBlend, remapBoneIds ? geomBoneIds : null, jointCount, fallbackJoint);
+                }
+
+                var indices = geom.IndexBuffer?.Indices;
+                if (indices is { Length: >= 3 })
+                {
+                    for (var i = 0; i + 2 < indices.Length; i += 3)
+                    {
+                        primitive.Indices.Add(mesh.VertexBase + indices[i]);
+                        primitive.Indices.Add(mesh.VertexBase + indices[i + 1]);
+                        primitive.Indices.Add(mesh.VertexBase + indices[i + 2]);
+                    }
+                }
+                else
+                {
+                    for (var i = 0u; i + 2 < vd.VertexCount; i += 3)
+                    {
+                        primitive.Indices.Add(mesh.VertexBase + i);
+                        primitive.Indices.Add(mesh.VertexBase + i + 1);
+                        primitive.Indices.Add(mesh.VertexBase + i + 2);
+                    }
+                }
+
+                if (primitive.Indices.Count >= 3) primitives.Add(primitive);
+                mesh.VertexBase += (uint)vd.VertexCount;
+            }
+        }
+    }
+
+    /// <summary>Writes one vertex's 4 joints + 4 normalized weights.</summary>
+    private static void AppendVertexSkin(
+        MeshAccumulator mesh, VertexData vd, int vertexIndex,
+        bool hasBlend, ushort[]? geomBoneIds, int jointCount, ushort fallbackJoint)
+    {
+        if (hasBlend)
+        {
+            var (w0, w1, w2, w3) = ReadUByte4(vd, vertexIndex, VertexSemantics.BlendWeights);
+            var sum = w0 + w1 + w2 + w3;
+            if (sum > 0)
+            {
+                var (i0, i1, i2, i3) = ReadUByte4(vd, vertexIndex, VertexSemantics.BlendIndices);
+                var inv = 1f / sum;
+                mesh.Joints.Add(MapJoint(i0, geomBoneIds, jointCount, fallbackJoint));
+                mesh.Joints.Add(MapJoint(i1, geomBoneIds, jointCount, fallbackJoint));
+                mesh.Joints.Add(MapJoint(i2, geomBoneIds, jointCount, fallbackJoint));
+                mesh.Joints.Add(MapJoint(i3, geomBoneIds, jointCount, fallbackJoint));
+                mesh.Weights.Add(w0 * inv);
+                mesh.Weights.Add(w1 * inv);
+                mesh.Weights.Add(w2 * inv);
+                mesh.Weights.Add(w3 * inv);
+                return;
+            }
+        }
+        // Weightless: rigid to the model bone.
+        mesh.Joints.Add(fallbackJoint); mesh.Joints.Add(0); mesh.Joints.Add(0); mesh.Joints.Add(0);
+        mesh.Weights.Add(1f); mesh.Weights.Add(0f); mesh.Weights.Add(0f); mesh.Weights.Add(0f);
+    }
+
+    private static ushort MapJoint(byte rawIndex, ushort[]? geomBoneIds, int jointCount, ushort fallbackJoint)
+    {
+        int bone = geomBoneIds != null
+            ? (rawIndex < geomBoneIds.Length ? geomBoneIds[rawIndex] : -1)
+            : rawIndex;
+        return bone >= 0 && bone < jointCount ? (ushort)bone : fallbackJoint;
+    }
+
+    /// <summary>Converts the sampled skeleton + tracks and writes a skinned GLB.</summary>
+    private static byte[] BuildSkinnedGlb(
+        MeshAccumulator mesh,
+        List<GlbWriter.PrimitiveSpec> primitiveSpecs,
+        List<GlbWriter.TextureSpec> textures,
+        AnimationData anim)
+    {
+        var joints = new GlbWriter.SkinJoint[anim.Joints.Length];
+        var roots = new List<int>();
+        for (var i = 0; i < anim.Joints.Length; i++)
+        {
+            var j = anim.Joints[i];
+            if (j.ParentIndex < 0) roots.Add(i);
+            joints[i] = new GlbWriter.SkinJoint(
+                j.ParentIndex,
+                new[] { j.BindTranslation.X, j.BindTranslation.Y, j.BindTranslation.Z },
+                new[] { j.BindRotation.X, j.BindRotation.Y, j.BindRotation.Z, j.BindRotation.W },
+                new[] { j.BindScale.X, j.BindScale.Y, j.BindScale.Z },
+                j.InverseBind.ToArray());
+        }
+
+        var tracks = new GlbWriter.SkinTrack[anim.Tracks.Length];
+        for (var k = 0; k < anim.Tracks.Length; k++)
+        {
+            var tr = anim.Tracks[k];
+            tracks[k] = new GlbWriter.SkinTrack(tr.JointIndex,
+                FlattenVec3(tr.Translations), FlattenQuat(tr.Rotations), FlattenVec3(tr.Scales));
+        }
+
+        var skinned = new GlbWriter.SkinnedMesh
+        {
+            Positions = mesh.Positions,
+            Primitives = primitiveSpecs,
+            Normals = mesh.HasNormals ? mesh.Normals : null,
+            Texcoords0 = mesh.HasUv0 ? mesh.Uvs0 : null,
+            Joints0 = mesh.Joints,
+            Weights0 = mesh.Weights,
+            Textures = textures,
+            Joints = joints,
+            Roots = roots.ToArray(),
+            Times = anim.Times,
+            Tracks = tracks,
+        };
+        return GlbWriter.WriteSkinned(skinned);
+    }
+
+    private static float[] FlattenVec3(Vector3[] vs)
+    {
+        var f = new float[vs.Length * 3];
+        for (var i = 0; i < vs.Length; i++) { f[i * 3] = vs[i].X; f[i * 3 + 1] = vs[i].Y; f[i * 3 + 2] = vs[i].Z; }
+        return f;
+    }
+
+    private static float[] FlattenQuat(Quaternion[] qs)
+    {
+        var f = new float[qs.Length * 4];
+        for (var i = 0; i < qs.Length; i++) { f[i * 4] = qs[i].X; f[i * 4 + 1] = qs[i].Y; f[i * 4 + 2] = qs[i].Z; f[i * 4 + 3] = qs[i].W; }
+        return f;
     }
 
     /// <summary>

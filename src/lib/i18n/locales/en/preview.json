@@ -25,6 +25,14 @@
       "tooltipActive": "Preview pose (statically baked into the mesh)",
       "tooltipDisabled": "Set the GTA path in the settings"
     },
+    "anim": {
+      "ariaLabel": "Animation",
+      "none": "No animation",
+      "play": "Play",
+      "pause": "Pause",
+      "tooltipActive": "Looping animation played in the preview",
+      "tooltipDisabled": "Set the GTA path in the settings"
+    },
     "centerCamera": "Center camera",
     "centerCameraTooltip": "Center camera on selection",
     "autoRotate": "Auto-rotate",
@@ -153,6 +161,11 @@
     "hands_up": "Hands up",
     "aim": "Aim",
     "arms_crossed": "Arms crossed"
+  },
+  "anim": {
+    "idle": "Idle",
+    "walk": "Walk",
+    "run": "Run"
   },
   "presets": {
     "standardMale": "Standard (male)",

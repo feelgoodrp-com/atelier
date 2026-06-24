@@ -65,6 +65,9 @@ public static class PreviewEndpoints
             var poseCheck = ValidatePose(request?.Pose, state, out var pose);
             if (poseCheck != null) return poseCheck;
 
+            var animCheck = ValidateAnimation(request?.Animation, state, out var anim);
+            if (animCheck != null) return animCheck;
+
             var appearanceCheck = ValidateAppearance(request?.Appearance, out var appearance);
             if (appearanceCheck != null) return appearanceCheck;
             // Appearance only changes the bytes when the ped body is rendered —
@@ -86,8 +89,8 @@ public static class PreviewEndpoints
                 Sha256Hex(yddBytes),
                 ytdBytes != null ? Sha256Hex(ytdBytes) : "none",
                 includePedBody,
-                includePedBody || pose != null ? pedModel : string.Empty,
-                pose ?? "none",
+                includePedBody || pose != null || anim != null ? pedModel : string.Empty,
+                anim != null ? "anim:" + anim : pose ?? "none",
                 appearanceKey,
                 extra);
             if (PreviewGlbCache.TryGet(cacheKey, out var cached, out var cachedFallbacks))
@@ -95,6 +98,9 @@ public static class PreviewEndpoints
 
             var poseLoad = TryLoadPose(poseEngine, state, pedModel, pose, log, out var poseData);
             if (poseLoad != null) return poseLoad;
+
+            var animLoad = TryLoadAnimation(poseEngine, state, pedModel, anim, log, out var animData);
+            if (animLoad != null) return animLoad;
 
             IReadOnlyList<PedBodyService.PedComponent>? pedComponents = null;
             string? appearanceFallbacks = null;
@@ -124,7 +130,7 @@ public static class PreviewEndpoints
             GlbBuilder.Result result;
             try
             {
-                result = GlbBuilder.Build(yddBytes, ytdBytes, pedComponents, log, poseData, hairScale, (float)heelLift);
+                result = GlbBuilder.Build(yddBytes, ytdBytes, pedComponents, log, poseData, hairScale, (float)heelLift, animation: animData);
             }
             catch (Exception ex)
             {
@@ -147,6 +153,10 @@ public static class PreviewEndpoints
         // the frontend stays in sync with the sidecar catalog.
         app.MapGet("/preview/poses", () => Results.Ok(new PosesResponse(
             PoseCatalog.Poses.Select(p => new PoseInfo(p.Id, p.Label)).ToList())));
+
+        // GET /preview/animations -> the looping animation list (id + label).
+        app.MapGet("/preview/animations", () => Results.Ok(new AnimationsResponse(
+            AnimationCatalog.All.Select(a => new AnimInfo(a.Id, a.Label)).ToList())));
 
         MapOutfitEndpoint(app);
     }
@@ -194,6 +204,48 @@ public static class PreviewEndpoints
             // Broken/missing game data (skeleton, ycd index) - same contract
             // answer as the ped body.
             log.LogError(ex, "Pose load failed for {Pose} on {PedModel}", pose, pedModel);
+            return PedBodyUnavailable();
+        }
+    }
+
+    /// <summary>
+    /// Normalizes + validates the requested animation id. 422 IResult on failure
+    /// (unknown anim / no game data), null on success; anim is the normalized id
+    /// or null for "no animation".
+    /// </summary>
+    private static IResult? ValidateAnimation(string? rawAnim, AppState state, out string? anim)
+    {
+        anim = string.IsNullOrWhiteSpace(rawAnim) ? null : rawAnim.Trim().ToLowerInvariant();
+        if (anim == null) return null;
+        if (AnimationCatalog.Find(anim) == null) return PoseUnavailable(anim);
+        if (!state.GtaPathReady) return PedBodyUnavailable();
+        return null;
+    }
+
+    /// <summary>Samples the animation; 422 IResult on failure, null on success.</summary>
+    private static IResult? TryLoadAnimation(
+        PoseEngine poseEngine,
+        AppState state,
+        string pedModel,
+        string? anim,
+        ILogger log,
+        out AnimationData? animationData)
+    {
+        animationData = null;
+        if (anim == null) return null;
+        try
+        {
+            animationData = poseEngine.GetAnimation(state.GtaPath!, pedModel, anim);
+            return null;
+        }
+        catch (PoseUnavailableException ex)
+        {
+            log.LogWarning("Animation unavailable: {Anim} ({Message})", ex.PoseId, ex.Message);
+            return PoseUnavailable(ex.PoseId);
+        }
+        catch (Exception ex)
+        {
+            log.LogError(ex, "Animation load failed for {Anim} on {PedModel}", anim, pedModel);
             return PedBodyUnavailable();
         }
     }
@@ -393,6 +445,9 @@ public static class PreviewEndpoints
             var poseCheck = ValidatePose(request?.Pose, state, out var pose);
             if (poseCheck != null) return poseCheck;
 
+            var animCheck = ValidateAnimation(request?.Animation, state, out var anim);
+            if (animCheck != null) return animCheck;
+
             var appearanceCheck = ValidateAppearance(request?.Appearance, out var appearance);
             if (appearanceCheck != null) return appearanceCheck;
             // Appearance only changes the bytes when the ped body is rendered.
@@ -440,8 +495,8 @@ public static class PreviewEndpoints
                 Sha256Hex(System.Text.Encoding.UTF8.GetBytes(string.Join("|", keyParts))),
                 "outfit",
                 includePedBody,
-                includePedBody || pose != null ? pedModel : string.Empty,
-                pose ?? "none",
+                includePedBody || pose != null || anim != null ? pedModel : string.Empty,
+                anim != null ? "anim:" + anim : pose ?? "none",
                 appearanceKey,
                 extra);
             if (PreviewGlbCache.TryGet(cacheKey, out var cached, out var cachedFallbacks))
@@ -449,6 +504,9 @@ public static class PreviewEndpoints
 
             var poseLoad = TryLoadPose(poseEngine, state, pedModel, pose, log, out var poseData);
             if (poseLoad != null) return poseLoad;
+
+            var animLoad = TryLoadAnimation(poseEngine, state, pedModel, anim, log, out var animData);
+            if (animLoad != null) return animLoad;
 
             IReadOnlyList<PedBodyService.PedComponent>? pedComponents = null;
             string? appearanceFallbacks = null;
@@ -475,7 +533,7 @@ public static class PreviewEndpoints
             GlbBuilder.Result result;
             try
             {
-                result = GlbBuilder.BuildOutfit(builderItems, pedComponents, log, poseData, (float)heelLift);
+                result = GlbBuilder.BuildOutfit(builderItems, pedComponents, log, poseData, (float)heelLift, animation: animData);
             }
             catch (Exception ex)
             {

@@ -14,7 +14,9 @@ import {
   Focus,
   Loader2,
   Orbit,
+  Pause,
   PersonStanding,
+  Play,
   Rotate3d,
   RotateCcw,
   TriangleAlert,
@@ -37,6 +39,7 @@ import {
 import { cn } from "@/lib/utils";
 import { joinPath } from "@/lib/project/io";
 import {
+  fetchPreviewAnimations,
   fetchPreviewPoses,
   fetchSidecarServerInfo,
   restartSidecar,
@@ -181,6 +184,11 @@ export function PreviewPane() {
   const pose = usePreview3dStore((s) => s.pose);
   const poses = usePreview3dStore((s) => s.poses);
   const posesLoaded = usePreview3dStore((s) => s.posesLoaded);
+  const animation = usePreview3dStore((s) => s.animation);
+  const animations = usePreview3dStore((s) => s.animations);
+  const animationsLoaded = usePreview3dStore((s) => s.animationsLoaded);
+  const playing = usePreview3dStore((s) => s.playing);
+  const playbackSpeed = usePreview3dStore((s) => s.playbackSpeed);
   const appearance = usePreview3dStore((s) => s.appearance);
   const frameNonce = usePreview3dStore((s) => s.frameNonce);
   const ensureGlb = usePreview3dStore((s) => s.ensureGlb);
@@ -192,6 +200,9 @@ export function PreviewPane() {
   const setGtaPathReady = usePreview3dStore((s) => s.setGtaPathReady);
   const setPose = usePreview3dStore((s) => s.setPose);
   const setPoses = usePreview3dStore((s) => s.setPoses);
+  const setAnimation = usePreview3dStore((s) => s.setAnimation);
+  const setAnimations = usePreview3dStore((s) => s.setAnimations);
+  const setPlaying = usePreview3dStore((s) => s.setPlaying);
   const requestFrame = usePreview3dStore((s) => s.requestFrame);
 
   const sidecarReady = sidecarInfo.status === "ready";
@@ -232,6 +243,22 @@ export function PreviewPane() {
     };
   }, [sidecarReady, posesLoaded, setPoses]);
 
+  // GET /preview/animations — fetched once when the sidecar is ready.
+  useEffect(() => {
+    if (!sidecarReady || animationsLoaded) return;
+    let disposed = false;
+    fetchPreviewAnimations()
+      .then((live) => {
+        if (!disposed) setAnimations(live);
+      })
+      .catch(() => {
+        /* no animations available — the select stays empty/disabled */
+      });
+    return () => {
+      disposed = true;
+    };
+  }, [sidecarReady, animationsLoaded, setAnimations]);
+
   const { rendered, overCap, withoutYdd } = useMemo(
     () => selectPreviewedDrawables(project, selection),
     [project, selection],
@@ -252,6 +279,9 @@ export function PreviewPane() {
   // Poses are baked from game clips — only effective with a ready gtaPath
   // (the toolbar select is disabled otherwise, this guards stale state).
   const poseActive = gtaPathReady === true ? pose : null;
+  // The active looping animation (skinned GLB the viewer plays); same gating as
+  // poses, and mutually exclusive with pose (the store enforces it).
+  const animActive = gtaPathReady === true ? animation : null;
 
   /**
    * Request descriptors. Without ped body: one GLB per rendered drawable
@@ -308,6 +338,7 @@ export function PreviewPane() {
             poseActive,
             appearanceKey(appearance),
             heelLift,
+            animActive,
           ),
           request: {
             items,
@@ -320,6 +351,8 @@ export function PreviewPane() {
             // Global scene lift — numeric meters, only when a feet heel item is
             // in the scene (client.ts drops the field otherwise).
             ...(heelLift ? { heelLift: HEEL_LIFT_M } : {}),
+            // Animated mode: skinned GLB the viewer plays (overrides pose).
+            ...(animActive ? { animation: animActive } : {}),
           },
         },
       ];
@@ -333,9 +366,9 @@ export function PreviewPane() {
         textureIndexByDrawable[drawable.id],
       );
       const textureHash = drawable.textures[textureIndex]?.hash ?? null;
-      // A pose bakes against a GENDER-specific skeleton + clip — without the
-      // pedModel a female garment would silently get the male skeleton.
-      const poseSkeleton = poseActive ? pedModelFor(drawable) : null;
+      // A pose/animation binds against a GENDER-specific skeleton + clip —
+      // without the pedModel a female garment would silently get the male one.
+      const poseSkeleton = poseActive || animActive ? pedModelFor(drawable) : null;
       // Single garment: hairScale applies to this whole ydd; heelLift lifts
       // this (single) scene — both derived from THIS drawable's type+flags.
       const hairScale = drawableHairScale(drawable);
@@ -352,6 +385,7 @@ export function PreviewPane() {
             "default",
             hairScale,
             heelLift,
+            animActive,
           ),
           request: {
             yddPath: joinPath(projectDir, ydd.path),
@@ -364,6 +398,8 @@ export function PreviewPane() {
             // when inactive, so heel-/hair-free garments stay byte-identical.
             ...(hairScale != null ? { hairScale } : {}),
             ...(heelLift ? { heelLift: HEEL_LIFT_M } : {}),
+            // Animated mode: skinned GLB the viewer plays (overrides pose).
+            ...(animActive ? { animation: animActive } : {}),
           },
         },
       ];
@@ -378,6 +414,7 @@ export function PreviewPane() {
     textureIndexByDrawable,
     pedBodyActive,
     poseActive,
+    animActive,
     appearance,
   ]);
 
@@ -599,6 +636,63 @@ export function PreviewPane() {
             </TooltipContent>
           </Tooltip>
 
+          {/* Animation: looping clips the viewer plays (skinned GLB). */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Select
+                  value={animation ?? "none"}
+                  disabled={gtaPathReady !== true || animations.length === 0}
+                  onValueChange={(v) => setAnimation(v === "none" ? null : v)}
+                >
+                  <SelectTrigger
+                    aria-label={t("pane.anim.ariaLabel")}
+                    className="h-7 w-36 border-white/15 bg-white/5 text-xs text-white"
+                  >
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <Play className="h-3.5 w-3.5 shrink-0 text-white/45" />
+                      <span className="truncate">
+                        <SelectValue />
+                      </span>
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t("pane.anim.none")}</SelectItem>
+                    {animations.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {t(`anim.${a.id}`, { defaultValue: a.label })}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              {gtaPathReady === true
+                ? t("pane.anim.tooltipActive")
+                : t("pane.anim.tooltipDisabled")}
+            </TooltipContent>
+          </Tooltip>
+
+          {animActive && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(iconButton, !playing && "text-[#7289DA]")}
+                  onClick={() => setPlaying(!playing)}
+                  aria-label={playing ? t("pane.anim.pause") : t("pane.anim.play")}
+                >
+                  {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {playing ? t("pane.anim.pause") : t("pane.anim.play")}
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -702,6 +796,8 @@ export function PreviewPane() {
               preset={cameraPreset}
               frameNonce={frameNonce}
               autoRotate={autoRotate}
+              playing={playing}
+              playbackSpeed={playbackSpeed}
               onModelError={handleModelError}
             />
 

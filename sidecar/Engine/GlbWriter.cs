@@ -196,6 +196,253 @@ public static class GlbWriter
         return ms.ToArray();
     }
 
+    // ----------------------------------------------------------------- skinned
+
+    /// <summary>One joint: parent (−1 = root), bind-pose local TRS and the
+    /// inverse-bind matrix as 16 floats (row-major SharpDX order, which IS the
+    /// column-major glTF layout of its transpose — the correct conversion).</summary>
+    public readonly record struct SkinJoint(
+        int ParentIndex, float[] Translation, float[] Rotation, float[] Scale, float[] InverseBind16);
+
+    /// <summary>Per-frame local TRS for one animated joint (shared time array).</summary>
+    public readonly record struct SkinTrack(
+        int JointIndex, float[] Translations, float[] Rotations, float[] Scales);
+
+    /// <summary>Everything needed to write a skinned + animated GLB.</summary>
+    public sealed class SkinnedMesh
+    {
+        public required IReadOnlyList<float> Positions { get; init; }     // bind pose, GTA (Z-up) space
+        public required IReadOnlyList<PrimitiveSpec> Primitives { get; init; }
+        public IReadOnlyList<float>? Normals { get; init; }
+        public IReadOnlyList<float>? Texcoords0 { get; init; }
+        public required IReadOnlyList<ushort> Joints0 { get; init; }       // 4 per vertex
+        public required IReadOnlyList<float> Weights0 { get; init; }        // 4 per vertex
+        public required IReadOnlyList<TextureSpec> Textures { get; init; }
+        public required SkinJoint[] Joints { get; init; }
+        public required int[] Roots { get; init; }                          // joint indices with no parent
+        public required float[] Times { get; init; }                        // seconds, ascending from 0
+        public required SkinTrack[] Tracks { get; init; }
+    }
+
+    /// <summary>
+    /// Writes a skinned, animated GLB: one mesh + skin (JOINTS_0/WEIGHTS_0), a
+    /// joint-node hierarchy with bind TRS, an inverse-bind accessor and one
+    /// animation. The GTA Z-up→Y-up swap lives on a ROOT node above the joints
+    /// (skinned-mesh node transforms are ignored per spec), so geometry, joints,
+    /// inverse-bind and keyframes all stay in native GTA space.
+    /// </summary>
+    public static byte[] WriteSkinned(SkinnedMesh m)
+    {
+        var vertexCount = m.Positions.Count / 3;
+        if (m.Positions.Count % 3 != 0) throw new ArgumentException("positions must be xyz triplets");
+        if (m.Primitives.Count == 0) throw new ArgumentException("at least one primitive required");
+        if (m.Joints0.Count != vertexCount * 4) throw new ArgumentException("joints0 must be 4 per vertex");
+        if (m.Weights0.Count != vertexCount * 4) throw new ArgumentException("weights0 must be 4 per vertex");
+
+        var bin = new List<byte>(1 << 16);
+        var bufferViews = new List<string>();
+        var accessors = new List<string>();
+
+        int AddView(byte[] data, int? target)
+        {
+            while (bin.Count % 4 != 0) bin.Add(0);
+            var offset = bin.Count;
+            bin.AddRange(data);
+            bufferViews.Add("{\"buffer\":0,\"byteOffset\":" + offset + ",\"byteLength\":" + data.Length +
+                            (target != null ? ",\"target\":" + target : "") + "}");
+            return bufferViews.Count - 1;
+        }
+        int AddAccessor(string json) { accessors.Add(json); return accessors.Count - 1; }
+
+        // --- vertex attributes ---
+        var (minX, minY, minZ, maxX, maxY, maxZ) = MinMax(m.Positions);
+        var posView = AddView(FloatBytes(m.Positions), 34962);
+        var posAcc = AddAccessor("{\"bufferView\":" + posView + ",\"componentType\":5126,\"count\":" + vertexCount +
+            ",\"type\":\"VEC3\",\"min\":[" + F(minX) + "," + F(minY) + "," + F(minZ) + "],\"max\":[" + F(maxX) + "," + F(maxY) + "," + F(maxZ) + "]}");
+        var attribs = "\"POSITION\":" + posAcc;
+
+        if (m.Normals != null && m.Normals.Count == m.Positions.Count)
+        {
+            var v = AddView(FloatBytes(m.Normals), 34962);
+            var a = AddAccessor("{\"bufferView\":" + v + ",\"componentType\":5126,\"count\":" + vertexCount + ",\"type\":\"VEC3\"}");
+            attribs += ",\"NORMAL\":" + a;
+        }
+        if (m.Texcoords0 != null && m.Texcoords0.Count == vertexCount * 2)
+        {
+            var v = AddView(FloatBytes(m.Texcoords0), 34962);
+            var a = AddAccessor("{\"bufferView\":" + v + ",\"componentType\":5126,\"count\":" + vertexCount + ",\"type\":\"VEC2\"}");
+            attribs += ",\"TEXCOORD_0\":" + a;
+        }
+        {
+            var v = AddView(UShortBytes(m.Joints0), 34962);
+            var a = AddAccessor("{\"bufferView\":" + v + ",\"componentType\":5123,\"count\":" + vertexCount + ",\"type\":\"VEC4\"}");
+            attribs += ",\"JOINTS_0\":" + a;
+        }
+        {
+            var v = AddView(FloatBytes(m.Weights0), 34962);
+            var a = AddAccessor("{\"bufferView\":" + v + ",\"componentType\":5126,\"count\":" + vertexCount + ",\"type\":\"VEC4\"}");
+            attribs += ",\"WEIGHTS_0\":" + a;
+        }
+
+        // --- index buffers (one accessor per primitive) ---
+        var indexAccessorByPrim = new List<int>(m.Primitives.Count);
+        foreach (var prim in m.Primitives)
+        {
+            if (prim.Indices.Count % 3 != 0) throw new ArgumentException("indices must be triangles");
+            var v = AddView(UIntBytes(prim.Indices), 34963);
+            indexAccessorByPrim.Add(AddAccessor("{\"bufferView\":" + v + ",\"componentType\":5125,\"count\":" + prim.Indices.Count + ",\"type\":\"SCALAR\"}"));
+        }
+
+        // --- textures / materials (same scheme as Write) ---
+        var emitMaterials = m.Textures.Count > 0 && m.Texcoords0 != null;
+        var textureBlocks = string.Empty;
+        if (emitMaterials)
+        {
+            var imageJson = new List<string>(m.Textures.Count);
+            var materialJson = new List<string>(m.Textures.Count);
+            for (var i = 0; i < m.Textures.Count; i++)
+            {
+                var v = AddView(m.Textures[i].PngBytes, null);
+                imageJson.Add("{\"bufferView\":" + v + ",\"mimeType\":\"image/png\"}");
+                materialJson.Add("{\"pbrMetallicRoughness\":{\"baseColorTexture\":{\"index\":" + i + "},\"metallicFactor\":0,\"roughnessFactor\":0.9},\"doubleSided\":true}");
+            }
+            var texturesJson = Enumerable.Range(0, m.Textures.Count).Select(i => "{\"sampler\":0,\"source\":" + i + "}");
+            textureBlocks =
+                ",\"images\":[" + string.Join(",", imageJson) + "]" +
+                ",\"samplers\":[{\"magFilter\":9729,\"minFilter\":9987,\"wrapS\":10497,\"wrapT\":10497}]" +
+                ",\"textures\":[" + string.Join(",", texturesJson) + "]" +
+                ",\"materials\":[" + string.Join(",", materialJson) + "]";
+        }
+
+        var primitiveJson = new List<string>(m.Primitives.Count);
+        for (var i = 0; i < m.Primitives.Count; i++)
+        {
+            var materialIndex = emitMaterials ? m.Primitives[i].MaterialIndex : -1;
+            var materialPart = materialIndex >= 0 ? ",\"material\":" + materialIndex : string.Empty;
+            primitiveJson.Add("{\"attributes\":{" + attribs + "},\"indices\":" + indexAccessorByPrim[i] + ",\"mode\":4" + materialPart + "}");
+        }
+
+        // --- skin: inverse-bind accessor + joint node list ---
+        var ibm = new List<float>(m.Joints.Length * 16);
+        foreach (var j in m.Joints) ibm.AddRange(j.InverseBind16);
+        var ibmView = AddView(FloatBytes(ibm), null);
+        var ibmAcc = AddAccessor("{\"bufferView\":" + ibmView + ",\"componentType\":5126,\"count\":" + m.Joints.Length + ",\"type\":\"MAT4\"}");
+
+        // Node indices: 0 = mesh, 1 = axis-swap root, 2+jointIndex = joint nodes.
+        const int meshNodeIdx = 0;
+        const int swapNodeIdx = 1;
+        const int jointBase = 2;
+        var jointNode = new Func<int, int>(j => jointBase + j);
+
+        var childrenByJoint = new List<int>[m.Joints.Length];
+        for (var i = 0; i < m.Joints.Length; i++) childrenByJoint[i] = new List<int>();
+        for (var i = 0; i < m.Joints.Length; i++)
+        {
+            var parent = m.Joints[i].ParentIndex;
+            if (parent >= 0 && parent < m.Joints.Length) childrenByJoint[parent].Add(i);
+        }
+
+        var jointNodesJson = new List<string>(m.Joints.Length);
+        for (var i = 0; i < m.Joints.Length; i++)
+        {
+            var j = m.Joints[i];
+            var children = childrenByJoint[i].Count > 0
+                ? ",\"children\":[" + string.Join(",", childrenByJoint[i].Select(c => jointNode(c))) + "]"
+                : string.Empty;
+            jointNodesJson.Add(
+                "{\"translation\":[" + F(j.Translation[0]) + "," + F(j.Translation[1]) + "," + F(j.Translation[2]) + "]" +
+                ",\"rotation\":[" + F(j.Rotation[0]) + "," + F(j.Rotation[1]) + "," + F(j.Rotation[2]) + "," + F(j.Rotation[3]) + "]" +
+                ",\"scale\":[" + F(j.Scale[0]) + "," + F(j.Scale[1]) + "," + F(j.Scale[2]) + "]" + children + "}");
+        }
+
+        var jointList = string.Join(",", Enumerable.Range(0, m.Joints.Length).Select(jointNode));
+        var skinJson = "{\"inverseBindMatrices\":" + ibmAcc + ",\"skeleton\":" + swapNodeIdx + ",\"joints\":[" + jointList + "]}";
+
+        // --- animation: shared time input + per-track T/R/S samplers ---
+        var timeMin = m.Times.Length > 0 ? m.Times[0] : 0f;
+        var timeMax = m.Times.Length > 0 ? m.Times[^1] : 0f;
+        var timeView = AddView(FloatBytes(m.Times), null);
+        var timeAcc = AddAccessor("{\"bufferView\":" + timeView + ",\"componentType\":5126,\"count\":" + m.Times.Length +
+            ",\"type\":\"SCALAR\",\"min\":[" + F(timeMin) + "],\"max\":[" + F(timeMax) + "]}");
+
+        var samplers = new List<string>();
+        var channels = new List<string>();
+        void AddChannel(int targetJoint, string path, float[] values, string type, int components)
+        {
+            var count = values.Length / components;
+            var v = AddView(FloatBytes(values), null);
+            var outAcc = AddAccessor("{\"bufferView\":" + v + ",\"componentType\":5126,\"count\":" + count + ",\"type\":\"" + type + "\"}");
+            var sampler = samplers.Count;
+            samplers.Add("{\"input\":" + timeAcc + ",\"interpolation\":\"LINEAR\",\"output\":" + outAcc + "}");
+            channels.Add("{\"sampler\":" + sampler + ",\"target\":{\"node\":" + jointNode(targetJoint) + ",\"path\":\"" + path + "\"}}");
+        }
+        foreach (var tr in m.Tracks)
+        {
+            if (tr.Translations.Length > 0) AddChannel(tr.JointIndex, "translation", tr.Translations, "VEC3", 3);
+            if (tr.Rotations.Length > 0) AddChannel(tr.JointIndex, "rotation", tr.Rotations, "VEC4", 4);
+            if (tr.Scales.Length > 0) AddChannel(tr.JointIndex, "scale", tr.Scales, "VEC3", 3);
+        }
+        var animationBlock = channels.Count > 0
+            ? ",\"animations\":[{\"name\":\"clip\",\"channels\":[" + string.Join(",", channels) + "],\"samplers\":[" + string.Join(",", samplers) + "]}]"
+            : string.Empty;
+
+        // --- nodes / scene ---
+        // -90° about X (Z-up→Y-up): quaternion (-sin45,0,0,cos45).
+        var roots = m.Roots.Length > 0 ? m.Roots : new[] { 0 };
+        var swapChildren = string.Join(",", roots.Select(jointNode));
+        var nodesJson =
+            "{\"mesh\":0,\"skin\":0}," +
+            "{\"rotation\":[-0.70710677,0,0,0.70710677],\"children\":[" + swapChildren + "]}," +
+            string.Join(",", jointNodesJson);
+
+        var binArr = bin.ToArray();
+        if (binArr.Length % 4 != 0) Array.Resize(ref binArr, Align4(binArr.Length));
+
+        var json = "{" +
+            "\"asset\":{\"version\":\"2.0\",\"generator\":\"fg-atelier-sidecar\"}," +
+            "\"scene\":0,\"scenes\":[{\"nodes\":[" + meshNodeIdx + "," + swapNodeIdx + "]}]," +
+            "\"nodes\":[" + nodesJson + "]," +
+            "\"meshes\":[{\"primitives\":[" + string.Join(",", primitiveJson) + "]}]," +
+            "\"skins\":[" + skinJson + "]," +
+            "\"buffers\":[{\"byteLength\":" + binArr.Length + "}]," +
+            "\"bufferViews\":[" + string.Join(",", bufferViews) + "]," +
+            "\"accessors\":[" + string.Join(",", accessors) + "]" +
+            textureBlocks + animationBlock + "}";
+
+        var jsonPadded = PadWithSpaces(Encoding.UTF8.GetBytes(json));
+        var totalLength = 12 + 8 + jsonPadded.Length + 8 + binArr.Length;
+        using var ms = new MemoryStream(totalLength);
+        using var bw = new BinaryWriter(ms);
+        bw.Write(0x46546C67); bw.Write(2); bw.Write(totalLength);
+        bw.Write(jsonPadded.Length); bw.Write(0x4E4F534A); bw.Write(jsonPadded);
+        bw.Write(binArr.Length); bw.Write(0x004E4942); bw.Write(binArr);
+        return ms.ToArray();
+    }
+
+    private static byte[] FloatBytes(IReadOnlyList<float> values)
+    {
+        var arr = values as float[] ?? values.ToArray();
+        var bytes = new byte[arr.Length * sizeof(float)];
+        Buffer.BlockCopy(arr, 0, bytes, 0, bytes.Length);
+        return bytes;
+    }
+
+    private static byte[] UIntBytes(IReadOnlyList<uint> values)
+    {
+        var arr = values as uint[] ?? values.ToArray();
+        var bytes = new byte[arr.Length * sizeof(uint)];
+        Buffer.BlockCopy(arr, 0, bytes, 0, bytes.Length);
+        return bytes;
+    }
+
+    private static byte[] UShortBytes(IReadOnlyList<ushort> values)
+    {
+        var arr = values as ushort[] ?? values.ToArray();
+        var bytes = new byte[arr.Length * sizeof(ushort)];
+        Buffer.BlockCopy(arr, 0, bytes, 0, bytes.Length);
+        return bytes;
+    }
+
     private static string F(float f) => f.ToString("0.######", CultureInfo.InvariantCulture);
 
     private static (float minX, float minY, float minZ, float maxX, float maxY, float maxZ) MinMax(IReadOnlyList<float> p)
