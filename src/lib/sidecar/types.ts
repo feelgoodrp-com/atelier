@@ -214,6 +214,17 @@ export interface PosesResponse {
   poses: PoseInfo[];
 }
 
+/** One selectable looping animation (GET /preview/animations). */
+export interface AnimInfo {
+  id: string;
+  label: string;
+}
+
+/** Response of GET /preview/animations (looping animation catalog). */
+export interface AnimationsResponse {
+  animations: AnimInfo[];
+}
+
 /** Request body of POST /preview/glb. */
 export interface PreviewGlbRequest {
   /** Absolute path of the drawable dictionary (.ydd). */
@@ -245,6 +256,12 @@ export interface PreviewGlbRequest {
    * drawable with highHeels (value = {@link HEEL_LIFT_M}). Absent/null = 0.
    */
   heelLift?: number | null;
+  /**
+   * Looping animation id (GET /preview/animations). When set the mesh is
+   * emitted SKINNED + ANIMATED (played by the viewer's mixer); takes precedence
+   * over `pose` and ignores hairScale/heelLift. Needs a configured gtaPath.
+   */
+  animation?: string | null;
 }
 
 /** One garment of an outfit preview (mirrors sidecar OutfitItemRequest). */
@@ -278,6 +295,8 @@ export interface PreviewOutfitRequest {
    * request level (not per item) because the whole ped "stands on heels".
    */
   heelLift?: number | null;
+  /** Looping animation id (see {@link PreviewGlbRequest.animation}). */
+  animation?: string | null;
 }
 
 /**

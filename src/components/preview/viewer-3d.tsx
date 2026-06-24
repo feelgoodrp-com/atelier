@@ -15,11 +15,12 @@ import {
   useRef,
   useState,
   type ComponentRef,
+  type MutableRefObject,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Grid, OrbitControls } from "@react-three/drei";
-import { Box3, Texture, Vector3 } from "three";
+import { AnimationMixer, Box3, Texture, Vector3 } from "three";
 import type { Group, Mesh, Object3D } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type { CameraPreset } from "@/lib/stores/preview-3d-store";
@@ -37,11 +38,36 @@ interface Viewer3DProps {
   /** Bumped externally to force a re-frame (Fokus button). */
   frameNonce: number;
   autoRotate: boolean;
+  /** Whether animated GLBs play (false = freeze on the current frame). */
+  playing?: boolean;
+  /** Animation playback rate (1 = real time). */
+  playbackSpeed?: number;
   /**
    * GLB parse failure of a single model (the others keep rendering). Keyed by
    * blob URL so stale errors die with their cache entry.
    */
   onModelError: (url: string, message: string) => void;
+}
+
+/**
+ * Advances every live mixer by the SAME delta each frame so all GLBs in the
+ * scene (ped body + garments) stay frame-locked. Must live inside <Canvas>.
+ */
+function MixerTicker({
+  mixers,
+  playing,
+  speed,
+}: {
+  mixers: MutableRefObject<Set<AnimationMixer>>;
+  playing: boolean;
+  speed: number;
+}) {
+  useFrame((_, delta) => {
+    if (!playing || mixers.current.size === 0) return;
+    const step = delta * speed;
+    for (const mixer of mixers.current) mixer.update(step);
+  });
+  return null;
 }
 
 /** Frees GPU resources of a loaded GLTF scene graph. */
@@ -64,10 +90,13 @@ function disposeObject(root: Object3D): void {
 
 function GlbModel({
   url,
+  mixers,
   onBounds,
   onError,
 }: {
   url: string;
+  /** Shared registry of live mixers — one per loaded GLB that carries clips. */
+  mixers: MutableRefObject<Set<AnimationMixer>>;
   /** Reports the model bounds after load; null on unmount. */
   onBounds: (box: Box3 | null) => void;
   onError: (message: string) => void;
@@ -89,6 +118,7 @@ function GlbModel({
   useEffect(() => {
     let disposed = false;
     let loaded: Group | null = null;
+    let mixer: AnimationMixer | null = null;
     new GLTFLoader().load(
       url,
       (gltf) => {
@@ -99,6 +129,13 @@ function GlbModel({
         loaded = gltf.scene;
         setScene(gltf.scene);
         onBoundsRef.current(new Box3().setFromObject(gltf.scene));
+        // A skinned+animated GLB carries clips — drive them with a mixer that
+        // the shared ticker advances in lockstep with every other model.
+        if (gltf.animations.length > 0) {
+          mixer = new AnimationMixer(gltf.scene);
+          for (const clip of gltf.animations) mixer.clipAction(clip).play();
+          mixers.current.add(mixer);
+        }
       },
       undefined,
       (err) => {
@@ -113,11 +150,15 @@ function GlbModel({
     );
     return () => {
       disposed = true;
+      if (mixer) {
+        mixer.stopAllAction();
+        mixers.current.delete(mixer);
+      }
       if (loaded) disposeObject(loaded);
       setScene(null);
       onBoundsRef.current(null);
     };
-  }, [url]);
+  }, [url, mixers]);
 
   return scene ? <primitive object={scene} /> : null;
 }
@@ -227,9 +268,14 @@ export function Viewer3D({
   preset,
   frameNonce,
   autoRotate,
+  playing = true,
+  playbackSpeed = 1,
   onModelError,
 }: Viewer3DProps) {
   const [boundsById, setBoundsById] = useState<Record<string, Box3>>({});
+  // Live animation mixers (only populated by skinned+animated GLBs). Shared so
+  // the ticker can advance them together.
+  const mixers = useRef<Set<AnimationMixer>>(new Set());
 
   const handleBounds = useCallback((id: string, box: Box3 | null) => {
     setBoundsById((prev) => {
@@ -274,10 +320,13 @@ export function Viewer3D({
         <GlbModel
           key={`${model.id}:${model.url}`}
           url={model.url}
+          mixers={mixers}
           onBounds={(box) => handleBounds(model.id, box)}
           onError={(message) => onModelError(model.url, message)}
         />
       ))}
+
+      <MixerTicker mixers={mixers} playing={playing} speed={playbackSpeed} />
 
       <Grid
         position={[0, floorY - 0.001, 0]}

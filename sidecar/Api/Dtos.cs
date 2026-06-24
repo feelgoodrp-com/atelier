@@ -31,7 +31,7 @@ public sealed record OutfitItemRequest(string? YddPath, List<string>? YtdPaths, 
 /// a single item (hairScale is the garment-local one). See the contract on
 /// <see cref="PreviewGlbRequest.HeelLift"/>.
 /// </summary>
-public sealed record PreviewOutfitRequest(List<OutfitItemRequest>? Items, string? PedModel, bool? IncludePedBody, string? Pose, PedAppearanceDto? Appearance, double? HeelLift);
+public sealed record PreviewOutfitRequest(List<OutfitItemRequest>? Items, string? PedModel, bool? IncludePedBody, string? Pose, PedAppearanceDto? Appearance, double? HeelLift, string? Animation = null);
 
 /// <summary>
 /// One ped component variation override. Dictionary keys follow
@@ -214,6 +214,11 @@ public sealed record PoseInfo(string Id, string Label);
 
 public sealed record PosesResponse(IReadOnlyList<PoseInfo> Poses);
 
+/// <summary>One selectable looping animation (GET /preview/animations).</summary>
+public sealed record AnimInfo(string Id, string Label);
+
+public sealed record AnimationsResponse(IReadOnlyList<AnimInfo> Animations);
+
 /// <summary>Optional thumbnail rendering for /parse/ytd (longest edge &lt;= MaxSize).</summary>
 public sealed record ThumbnailsOptions(int? MaxSize);
 
@@ -283,7 +288,12 @@ public sealed record PreviewGlbRequest(
     string? Pose,
     PedAppearanceDto? Appearance,
     double? HairScale,
-    double? HeelLift);
+    double? HeelLift,
+    // Optional looping animation id (see GET /preview/animations). When set the
+    // mesh is emitted SKINNED + ANIMATED (played by the viewer) and HairScale/
+    // HeelLift are ignored; requires a configured gtaPath. Takes precedence over
+    // Pose. null = no animation.
+    string? Animation = null);
 
 public sealed record ImportScanRequest(string? FolderPath);
 

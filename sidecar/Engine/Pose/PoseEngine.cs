@@ -55,9 +55,13 @@ public sealed class PoseEngine
         (6442, 51826),  // RB_R_ThighRoll <- SKEL_R_Thigh
     };
 
+    /// <summary>Keyframe count is capped so a long clip can't bloat the GLB.</summary>
+    private const int MaxAnimationFrames = 256;
+
     private readonly ILogger<PoseEngine> _log;
     private readonly PedBodyService _pedBody;
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, PoseData> _poseCache = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, AnimationData> _animCache = new();
 
     public PoseEngine(ILogger<PoseEngine> log, PedBodyService pedBody)
     {
@@ -107,6 +111,181 @@ public sealed class PoseEngine
         }
 
         throw new PoseUnavailableException(poseId, $"No clip candidate for pose '{poseId}' loaded from this install.");
+    }
+
+    /// <summary>
+    /// Samples a looping animation over its whole clip window into keyframe
+    /// tracks (skeleton + per-joint local TRS), for the glTF skin + animation
+    /// the preview plays. Same clip-loading and bone math as <see cref="GetPose"/>,
+    /// but evaluated at many times instead of one. Throws
+    /// <see cref="PoseUnavailableException"/> when no candidate loads.
+    /// </summary>
+    public AnimationData GetAnimation(string gtaPath, string pedModel, string animId)
+    {
+        var definition = AnimationCatalog.Find(animId)
+            ?? throw new PoseUnavailableException(animId, $"Unknown animation id '{animId}'.");
+
+        var cacheKey = $"{gtaPath.ToLowerInvariant()}|{pedModel}|{animId}";
+        if (_animCache.TryGetValue(cacheKey, out var cached))
+            return cached;
+
+        var bindSkeleton = _pedBody.LoadPed(gtaPath, pedModel).Skeleton
+            ?? throw new InvalidOperationException($"Ped '{pedModel}' has no skeleton in the game data.");
+        var cache = _pedBody.GetCache(gtaPath);
+
+        var isFemale = pedModel.Contains("_f_", StringComparison.OrdinalIgnoreCase);
+        var candidates = isFemale ? definition.FemaleClips : definition.MaleClips;
+
+        foreach (var candidate in candidates)
+        {
+            var clipEntry = TryLoadClip(cache, new PoseClip(candidate.ClipDict, candidate.ClipName));
+            if (clipEntry == null)
+            {
+                _log.LogInformation("Animation {Anim}: clip {Dict}/{Clip} not available, trying next",
+                    animId, candidate.ClipDict, candidate.ClipName);
+                continue;
+            }
+
+            var data = TrySample(bindSkeleton, clipEntry, candidate, animId);
+            if (data == null) continue;
+
+            _log.LogInformation("Animation {Anim} resolved via {Dict}/{Clip} ({Frames} frames, {Joints} animated)",
+                animId, candidate.ClipDict, candidate.ClipName, data.Times.Length, data.Tracks.Length);
+            _animCache[cacheKey] = data;
+            return data;
+        }
+
+        throw new PoseUnavailableException(animId, $"No clip candidate for animation '{animId}' loaded from this install.");
+    }
+
+    /// <summary>Samples one clip into <see cref="AnimationData"/>; null on broken clip data.</summary>
+    private AnimationData? TrySample(Skeleton bindSkeleton, ClipMapEntry clipEntry, AnimClip candidate, string animId)
+    {
+        try
+        {
+            var skeleton = bindSkeleton.Clone();
+            var bones = skeleton.Bones?.Items;
+            if (bones == null || bones.Length == 0) return null;
+
+            // The animation(s) in this clip, with their per-clip time windows.
+            var anims = new List<(Animation Anim, float StartTime, float EndTime)>();
+            if (clipEntry.Clip is ClipAnimation ca && ca.Animation != null)
+                anims.Add((ca.Animation, ca.StartTime, ca.EndTime));
+            else if (clipEntry.Clip is ClipAnimationList cl && cl.Animations?.Data != null)
+                foreach (var e in cl.Animations.Data)
+                    if (e?.Animation != null) anims.Add((e.Animation, e.StartTime, e.EndTime));
+            if (anims.Count == 0) return null;
+
+            var windowDuration = anims.Max(a => Math.Max(0f, a.EndTime - a.StartTime));
+            if (windowDuration <= 1e-4f) windowDuration = anims.Max(a => a.Anim.Duration);
+            if (windowDuration <= 1e-4f) return null;
+            var frameCount = Math.Clamp(anims.Max(a => (int)a.Anim.Frames), 2, MaxAnimationFrames);
+
+            // Bones the clip actually drives (others keep their bind local TRS).
+            var animatedTags = new HashSet<ushort>();
+            foreach (var (anim, _, _) in anims)
+            {
+                var bids = anim.BoneIds?.data_items;
+                if (bids != null) foreach (var b in bids) animatedTags.Add(b.BoneId);
+            }
+
+            // Joint list in bone-array order: index == BlendIndices bone index.
+            var boneToIndex = new Dictionary<Bone, int>(bones.Length);
+            for (var i = 0; i < bones.Length; i++) boneToIndex[bones[i]] = i;
+            var joints = new AnimJoint[bones.Length];
+            var rootJoint = 0;
+            for (var i = 0; i < bones.Length; i++)
+            {
+                var b = bones[i];
+                var parent = b.Parent != null && boneToIndex.TryGetValue(b.Parent, out var pi) ? pi : -1;
+                if (parent < 0) rootJoint = i;
+                var inv = b.BindTransformInv;
+                inv.M14 = 0f; inv.M24 = 0f; inv.M34 = 0f; inv.M44 = 1f; // affine sanitize (see GetPose)
+                joints[i] = new AnimJoint
+                {
+                    ParentIndex = parent,
+                    BindTranslation = b.Translation,
+                    BindRotation = b.Rotation,
+                    BindScale = b.Scale,
+                    InverseBind = inv,
+                };
+            }
+
+            var animatedJointIdx = new List<int>();
+            for (var i = 0; i < bones.Length; i++)
+                if (animatedTags.Contains(bones[i].Tag)) animatedJointIdx.Add(i);
+            if (animatedJointIdx.Count == 0) return null;
+
+            var times = new float[frameCount];
+            var trans = new Vector3[animatedJointIdx.Count][];
+            var rots = new Quaternion[animatedJointIdx.Count][];
+            var scales = new Vector3[animatedJointIdx.Count][];
+            for (var k = 0; k < animatedJointIdx.Count; k++)
+            {
+                trans[k] = new Vector3[frameCount];
+                rots[k] = new Quaternion[frameCount];
+                scales[k] = new Vector3[frameCount];
+            }
+
+            for (var f = 0; f < frameCount; f++)
+            {
+                var fraction = frameCount == 1 ? 0f : (float)f / (frameCount - 1);
+                times[f] = fraction * windowDuration;
+
+                foreach (var bone in bones)
+                {
+                    bone.AnimRotation = bone.Rotation;
+                    bone.AnimTranslation = bone.Translation;
+                    bone.AnimScale = bone.Scale;
+                }
+                foreach (var (anim, startTime, endTime) in anims)
+                    ApplyAnimation(skeleton, anim, ClipTime(startTime, endTime, anim, fraction));
+
+                foreach (var (rollTag, sourceTag) in RollBoneFixups)
+                {
+                    if (skeleton.BonesMap != null &&
+                        skeleton.BonesMap.TryGetValue(rollTag, out var rollBone) &&
+                        skeleton.BonesMap.TryGetValue(sourceTag, out var sourceBone) &&
+                        sourceTag != rollBone.Parent?.Tag)
+                        rollBone.AnimRotation = sourceBone.AnimRotation;
+                }
+
+                for (var k = 0; k < animatedJointIdx.Count; k++)
+                {
+                    var b = bones[animatedJointIdx[k]];
+                    trans[k][f] = b.AnimTranslation;
+                    rots[k][f] = b.AnimRotation;
+                    scales[k][f] = b.AnimScale;
+                }
+            }
+
+            var tracks = new AnimTrack[animatedJointIdx.Count];
+            for (var k = 0; k < animatedJointIdx.Count; k++)
+                tracks[k] = new AnimTrack
+                {
+                    JointIndex = animatedJointIdx[k],
+                    Translations = trans[k],
+                    Rotations = rots[k],
+                    Scales = scales[k],
+                };
+
+            return new AnimationData
+            {
+                AnimId = animId,
+                ClipDict = candidate.ClipDict,
+                ClipName = candidate.ClipName,
+                Joints = joints,
+                RootJointIndex = rootJoint,
+                Times = times,
+                Tracks = tracks,
+            };
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Animation sampling failed for {Anim} via {Dict}/{Clip}",
+                animId, candidate.ClipDict, candidate.ClipName);
+            return null;
+        }
     }
 
     /// <summary>

@@ -26,6 +26,7 @@ import {
   parseYdd,
 } from "@/lib/sidecar/client";
 import type {
+  AnimInfo,
   DrawableInfo,
   PedAppearance,
   PedModel,
@@ -134,6 +135,16 @@ interface Preview3dState {
   poses: PoseInfo[];
   /** True once GET /preview/poses succeeded (the list is fetched once). */
   posesLoaded: boolean;
+  /** Active looping animation id (null = none) — mutually exclusive with pose. */
+  animation: string | null;
+  /** Selectable animations — empty until GET /preview/animations loads. */
+  animations: AnimInfo[];
+  /** True once GET /preview/animations succeeded. */
+  animationsLoaded: boolean;
+  /** Animation playback on/off (freeze on the current frame when false). */
+  playing: boolean;
+  /** Animation playback rate (1 = real time). */
+  playbackSpeed: number;
   /** Bumped by the "Fokus" button — the viewer re-frames on change. */
   frameNonce: number;
   /** Active ped-body appearance (null = game default) — sent with outfit GLBs. */
@@ -170,6 +181,12 @@ interface Preview3dState {
   setPose: (pose: string | null) => void;
   /** Replaces the pose list with the live GET /preview/poses result. */
   setPoses: (poses: PoseInfo[]) => void;
+  /** Sets the active animation (clears the static pose — they're exclusive). */
+  setAnimation: (animation: string | null) => void;
+  /** Replaces the animation list with the live GET /preview/animations result. */
+  setAnimations: (animations: AnimInfo[]) => void;
+  setPlaying: (playing: boolean) => void;
+  setPlaybackSpeed: (playbackSpeed: number) => void;
   requestFrame: () => void;
   /** Sets the active appearance (stepper edits) — keeps extras/warnings. */
   setAppearance: (appearance: PedAppearance | null) => void;
@@ -225,9 +242,13 @@ export function glbCacheKey(
   appearance: string = "default",
   hairScale: number | null = null,
   heelLift: boolean = false,
+  animation: string | null = null,
 ): string {
   const body = pedModel ?? (poseSkeleton ? `skel-${poseSkeleton}` : "off");
-  const base = `${yddHash}|${textureHash ?? "none"}|${body}|${pose ?? "none"}`;
+  // The "mode" segment is the animation (skinned GLB) when set, else the static
+  // pose — the two are mutually exclusive and produce different bytes.
+  const mode = animation != null ? `anim:${animation}` : pose ?? "none";
+  const base = `${yddHash}|${textureHash ?? "none"}|${body}|${mode}`;
   // Appearance changes the bytes ONLY when the ped body is merged — garment-
   // only and "skel-" keys stay untouched (appending there would invalidate
   // every cached GLB for nothing).
@@ -236,9 +257,12 @@ export function glbCacheKey(
   // variants (garment-only AND body-merged), unlike appearance. Appended last
   // and ONLY when active, so a request without them stays byte-identical to a
   // pre-feature key — exactly mirroring the conditional request body. f2 is
-  // the SHARED quantizer with the sidecar (byte-identical to F2).
-  if (hairScale != null) key += `|hs:${f2(hairScale)}`;
-  if (heelLift) key += `|hl1`;
+  // the SHARED quantizer with the sidecar (byte-identical to F2). Animated mode
+  // ignores them (the sidecar drops them), so they leave the key out too.
+  if (animation == null) {
+    if (hairScale != null) key += `|hs:${f2(hairScale)}`;
+    if (heelLift) key += `|hl1`;
+  }
   return key;
 }
 
@@ -260,6 +284,7 @@ export function outfitCacheKey(
   appearance: string = "default",
   /** GLOBAL heel lift (any feet item has highHeels) — appended once at the end. */
   heelLift: boolean = false,
+  animation: string | null = null,
 ): string {
   const sorted = parts
     // hairScale is PER ITEM, so it must travel INSIDE the sorted part string
@@ -273,13 +298,14 @@ export function outfitCacheKey(
     )
     .sort()
     .join("+");
-  const base = `outfit|${sorted}|${pedModel ?? "off"}|${pose ?? "none"}`;
+  const mode = animation != null ? `anim:${animation}` : pose ?? "none";
+  const base = `outfit|${sorted}|${pedModel ?? "off"}|${mode}`;
   // Same rule as glbCacheKey: the appearance segment exists only when the
   // ped body is part of the request.
   let key = pedModel ? `${base}|app:${appearance}` : base;
   // heelLift lifts the WHOLE scene -> global, appended once and only when
-  // active (an outfit without heels keeps its pre-feature key).
-  if (heelLift) key += `|hl1`;
+  // active (animated mode drops it, like glbCacheKey).
+  if (animation == null && heelLift) key += `|hl1`;
   return key;
 }
 
@@ -359,6 +385,9 @@ type Preview3dPersisted = Pick<
   | "autoRotate"
   | "includePedBody"
   | "pose"
+  | "animation"
+  | "playing"
+  | "playbackSpeed"
   | "appearance"
   | "appearanceExtras"
   | "appearancePresets"
@@ -439,10 +468,28 @@ const createPreview3dState: StateCreator<
       }));
       evictOverCap();
     } catch (e) {
-      // Per contract, a pose answers 422 pose_unavailable when its clip
-      // cannot be served — hide the pose and fall back to the bind pose
-      // (the pane re-requests with pose=null automatically).
-      if (e instanceof PoseUnavailableError) {
+      // Per contract, a pose/animation answers 422 pose_unavailable when its
+      // clip cannot be served — hide it and fall back (the pane re-requests
+      // without it automatically). Animation requests are handled first since
+      // they carry no `pose`.
+      const reqAnimation = (request as { animation?: string | null }).animation ?? null;
+      if (e instanceof PoseUnavailableError && reqAnimation !== null) {
+        const { animations, animation } = get();
+        const animKey = `preview:anim.${reqAnimation}`;
+        const localized = i18n.t(animKey);
+        const label =
+          localized !== animKey
+            ? localized
+            : (animations.find((a) => a.id === reqAnimation)?.label ?? reqAnimation);
+        set({
+          animations: animations.filter((a) => a.id !== reqAnimation),
+          ...(animation === reqAnimation ? { animation: null } : {}),
+        });
+        toast.error(i18n.t("sync:pose.unavailable"), {
+          id: `anim-unavailable-${reqAnimation}`,
+          description: i18n.t("sync:pose.unavailableDescription", { label }),
+        });
+      } else if (e instanceof PoseUnavailableError) {
         const poseId = e.pose ?? request.pose ?? null;
         if (poseId !== null) {
           const { poses, pose } = get();
@@ -548,6 +595,11 @@ const createPreview3dState: StateCreator<
     pose: null,
     poses: [...POSES_FALLBACK],
     posesLoaded: false,
+    animation: null,
+    animations: [],
+    animationsLoaded: false,
+    playing: true,
+    playbackSpeed: 1,
     frameNonce: 0,
     appearance: null,
     appearanceExtras: null,
@@ -617,7 +669,9 @@ const createPreview3dState: StateCreator<
     setAutoRotate: (autoRotate) => set({ autoRotate }),
     setIncludePedBody: (includePedBody) => set({ includePedBody }),
     setGtaPathReady: (gtaPathReady) => set({ gtaPathReady }),
-    setPose: (pose) => set({ pose }),
+    // Pose and animation are mutually exclusive: picking a static pose stops
+    // the animation, and vice-versa (setAnimation below).
+    setPose: (pose) => set({ pose, ...(pose != null ? { animation: null } : {}) }),
 
     setPoses: (poses) =>
       set((state) => ({
@@ -628,6 +682,22 @@ const createPreview3dState: StateCreator<
           ? { pose: null }
           : {}),
       })),
+
+    setAnimation: (animation) =>
+      set({ animation, ...(animation != null ? { pose: null } : {}) }),
+
+    setAnimations: (animations) =>
+      set((state) => ({
+        animations,
+        animationsLoaded: true,
+        ...(state.animation !== null &&
+        !animations.some((a) => a.id === state.animation)
+          ? { animation: null }
+          : {}),
+      })),
+
+    setPlaying: (playing) => set({ playing }),
+    setPlaybackSpeed: (playbackSpeed) => set({ playbackSpeed }),
 
     requestFrame: () => set((state) => ({ frameNonce: state.frameNonce + 1 })),
 
@@ -723,6 +793,9 @@ export const usePreview3dStore = create<Preview3dState>()(
       autoRotate: s.autoRotate,
       includePedBody: s.includePedBody,
       pose: s.pose,
+      animation: s.animation,
+      playing: s.playing,
+      playbackSpeed: s.playbackSpeed,
       appearance: s.appearance,
       appearanceExtras: s.appearanceExtras,
       appearancePresets: s.appearancePresets,
@@ -756,6 +829,12 @@ export const usePreview3dStore = create<Preview3dState>()(
             ? p.includePedBody
             : current.includePedBody,
         pose: typeof p.pose === "string" ? p.pose : null,
+        animation: typeof p.animation === "string" ? p.animation : null,
+        playing: typeof p.playing === "boolean" ? p.playing : true,
+        playbackSpeed:
+          typeof p.playbackSpeed === "number" && p.playbackSpeed > 0
+            ? p.playbackSpeed
+            : 1,
         appearance: sanitizeAppearance(p.appearance),
         appearanceExtras: sanitizeAppearanceExtras(p.appearanceExtras),
         appearancePresets: sanitizeAppearancePresets(p.appearancePresets),
