@@ -30,15 +30,14 @@ import { Switch } from "@/components/ui/switch";
 import { baseName, formatBytes } from "@/lib/format";
 import {
   applyOptimizedTextures,
+  KEEP_FORMAT,
   optimizeProjectTexture,
+  resolveFormatChoice,
+  type FormatChoice,
 } from "@/lib/project/texture-optimize";
 import { usePreviewStore } from "@/lib/stores/preview-store";
 import { useProjectStore } from "@/lib/stores/project-store";
 import type { AssetRef } from "@/lib/project/schema";
-
-const KEEP_FORMAT = "keep";
-
-type FormatChoice = typeof KEEP_FORMAT | "BC1" | "BC3" | "BC7";
 
 const MAX_DIMENSIONS = [512, 1024, 2048] as const;
 
@@ -83,7 +82,7 @@ export function TextureOptimizeDialog({
     try {
       const result = await optimizeProjectTexture(projectDir, texture, {
         maxDimension,
-        format: format === KEEP_FORMAT ? null : format,
+        format: resolveFormatChoice(format),
         regenerateMips,
       });
       applyOptimizedTextures([result]);
@@ -174,9 +173,16 @@ export function TextureOptimizeDialog({
                 <SelectItem value="BC1">{t("texture.formatBC1")}</SelectItem>
                 <SelectItem value="BC3">{t("texture.formatBC3")}</SelectItem>
                 <SelectItem value="BC7">{t("texture.formatBC7")}</SelectItem>
+                <SelectItem value="RGBA8888">{t("texture.formatRGBA8888")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {format === "RGBA8888" && (
+            <p className="-mt-1 text-[11px] leading-relaxed text-amber-200/70">
+              {t("texture.rgbaSizeHint")}
+            </p>
+          )}
 
           <div className="flex items-center justify-between gap-3">
             <Label className="text-xs text-white/70">{t("texture.regenerateMips")}</Label>

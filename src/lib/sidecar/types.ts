@@ -394,8 +394,8 @@ export interface TextureOptimizeRequest {
   outPath: string | null;
   /** Longest-edge cap in pixels (16–8192). */
   maxDimension: number;
-  /** Forced BC format; null keeps the source's BC family. */
-  format: "BC1" | "BC3" | "BC7" | null;
+  /** Forced format; null keeps the source's BC family. */
+  format: "BC1" | "BC3" | "BC7" | "RGBA8888" | null;
   regenerateMips: boolean;
 }
 

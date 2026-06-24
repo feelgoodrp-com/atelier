@@ -91,6 +91,8 @@
     "formatBC1": "BC1 (klein)",
     "formatBC3": "BC3 (Alpha)",
     "formatBC7": "BC7 (beste Qualität)",
+    "formatRGBA8888": "RGBA8888 (unkomprimiert)",
+    "rgbaSizeHint": "Verlustfrei, aber deutlich größere Datei (keine Kompression).",
     "regenerateMips": "Mipmaps neu erzeugen",
     "optimize": "Optimieren",
     "toast": {
@@ -100,7 +102,7 @@
   },
   "bulk": {
     "title": "Übergroße Texturen optimieren",
-    "description": "Findet Texturen über {{threshold}} px Kantenlänge und verkleinert sie direkt im Projekt (Format bleibt erhalten).",
+    "description": "Findet Texturen über {{threshold}} px Kantenlänge und verkleinert sie direkt im Projekt.",
     "permanentWarning": "Dauerhafte Änderung (nicht über Rückgängig umkehrbar) — Originale werden unter „.atelier-cache/texture-backups“ im Projektordner gesichert.",
     "optimizing": "Optimiere {{done}}/{{total}}…",
     "analyzing": "Analysiere Texturen… noch {{pending}} von {{total}}",
