@@ -69,9 +69,10 @@ already generic).
   new helper.
 - `import-assets.ts` new `importImageAsTexture(projectDir, imagePath, gender,
   type)`: resolve format/cap from `usePreferencesStore` (with the
-  keep→BC3 fallback), convert into `<OS temp>/<stem>.ytd` via the sidecar
-  client, then run the unchanged `importTextureFile` against the temp YTD and
-  delete it afterwards (best-effort cleanup in `finally`).
+  keep→BC3 fallback), convert into `<projectDir>/.tmp-texture-import/<stem>.ytd`
+  via the sidecar client (inside the project dir so the Tauri fs scope covers
+  the cleanup), then run the unchanged `importTextureFile` against the temp
+  YTD and delete it afterwards (best-effort cleanup in `finally`).
 - `sidecar/client.ts` + `sidecar/types.ts`: thin `textureFromImage()` wrapper
   and DTO types.
 
