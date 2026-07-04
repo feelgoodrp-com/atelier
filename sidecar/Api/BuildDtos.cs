@@ -29,3 +29,12 @@ public sealed record TextureOptimizeRequest(
 
 /// <summary>Debug helper: round-trip inspect a generated .ymt / dlc.rpf.</summary>
 public sealed record DebugPathRequest(string? Path);
+
+/// <summary>POST /texture/from-image — converts a raster image to a single-texture YTD.</summary>
+public sealed record TextureFromImageRequest(
+    string? ImagePath,
+    string? OutPath,
+    int? MaxDimension,
+    string? Format);
+
+public sealed record TextureFromImageResponse(long SizeBytes);

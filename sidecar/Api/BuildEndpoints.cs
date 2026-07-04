@@ -17,6 +17,7 @@ public static class BuildEndpoints
         app.MapPost("/build", HandleBuild);
         app.MapGet("/build/progress", HandleBuildProgress);
         app.MapPost("/texture/optimize", HandleTextureOptimize);
+        app.MapPost("/texture/from-image", HandleTextureFromImage);
 
         // Diagnostics for generated artifacts (round-trip via CodeWalker).
         app.MapPost("/debug/ymt", HandleDebugYmt);
@@ -261,6 +262,50 @@ public static class BuildEndpoints
         {
             log.LogError(ex, "Texture optimize failed for {Path}", ytdPath);
             return Results.BadRequest(new ErrorResponse($"Textur konnte nicht optimiert werden: {ex.Message}"));
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // POST /texture/from-image  →  200 { sizeBytes } | 400 { error }
+    // ------------------------------------------------------------------
+
+    private static IResult HandleTextureFromImage(TextureFromImageRequest request, ILoggerFactory loggerFactory)
+    {
+        var log = loggerFactory.CreateLogger("Atelier.Build.TextureFromImage");
+
+        if (string.IsNullOrWhiteSpace(request?.ImagePath))
+            return Results.BadRequest(new ErrorResponse("Feld 'imagePath' fehlt."));
+        var imagePath = request.ImagePath.Trim();
+        if (!File.Exists(imagePath))
+            return Results.BadRequest(new ErrorResponse($"Datei nicht gefunden: {imagePath}"));
+
+        if (string.IsNullOrWhiteSpace(request.OutPath))
+            return Results.BadRequest(new ErrorResponse("Feld 'outPath' fehlt."));
+        var outPath = request.OutPath.Trim();
+        if (!Path.GetExtension(outPath).Equals(".ytd", StringComparison.OrdinalIgnoreCase))
+            return Results.BadRequest(new ErrorResponse("Feld 'outPath' muss auf .ytd enden."));
+
+        if (request.MaxDimension is not (>= 16 and <= 8192))
+            return Results.BadRequest(new ErrorResponse("Feld 'maxDimension' muss zwischen 16 und 8192 liegen."));
+
+        var format = request.Format?.Trim().ToUpperInvariant();
+        if (format is not ("BC1" or "BC3" or "BC7" or "RGBA8888"))
+            return Results.BadRequest(new ErrorResponse("Feld 'format' muss BC1, BC3, BC7 oder RGBA8888 sein."));
+
+        try
+        {
+            var ytdName = Path.GetFileNameWithoutExtension(outPath);
+            var bytes = TattooTextureBuilder.BuildYtd(imagePath, ytdName, request.MaxDimension!.Value, format);
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outPath))!);
+            File.WriteAllBytes(outPath, bytes);
+            log.LogInformation("Converted {Image} -> {Ytd} ({Format}, max {Max}px, {Size} bytes)",
+                imagePath, outPath, format, request.MaxDimension, bytes.Length);
+            return Results.Ok(new TextureFromImageResponse(bytes.LongLength));
+        }
+        catch (Exception ex)
+        {
+            log.LogError(ex, "Image->YTD conversion failed for {Image}", request.ImagePath);
+            return Results.BadRequest(new ErrorResponse($"Bild konnte nicht konvertiert werden: {ex.Message}"));
         }
     }
 
