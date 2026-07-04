@@ -145,7 +145,7 @@
     "add": "Hinzufügen",
     "noVariants": "Noch keine Texturvarianten — füge YTD-Dateien hinzu.",
     "pickTitle": "Textur-Varianten wählen (YTD)",
-    "pickFilter": "Texturen (YTD)",
+    "pickFilter": "Texturen (YTD, PNG, JPG, WebP)",
     "addedToast_one": "{{count}} Textur hinzugefügt",
     "addedToast_other": "{{count}} Textur(en) hinzugefügt",
     "skippedMax": "{{count}} über dem Limit von 26 Varianten (a–z)",

@@ -145,7 +145,7 @@
     "add": "Add",
     "noVariants": "No texture variants yet — add YTD files.",
     "pickTitle": "Select texture variants (YTD)",
-    "pickFilter": "Textures (YTD)",
+    "pickFilter": "Textures (YTD, PNG, JPG, WebP)",
     "addedToast_one": "{{count}} texture added",
     "addedToast_other": "{{count}} textures added",
     "skippedMax": "{{count}} over the limit of 26 variants (a–z)",
