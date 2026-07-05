@@ -4,6 +4,29 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.5.0] — 2026-07-05
+
+### Added
+
+- **Import images as texture variants** — the texture panel's "add variant" flow
+  now accepts raster images (**PNG / JPG / WebP**) alongside `.ytd`. Each image is
+  converted to a single-texture YTD right at import, so the project keeps
+  containing only YTDs and preview, optimize, duplicate detection and build are
+  all unaffected. The format follows your texture-optimization preference (falling
+  back to BC3) and the longest edge is capped at your import max size. Thanks to
+  @gitBitsystem ([#11]).
+
+### Fixed
+
+- **Dialog text overflow** — long unbroken names (file, project and drawable
+  labels) no longer push badges and buttons out of dialogs. The fix lives in the
+  shared dialog and scroll-area primitives, so every dialog — most visibly the
+  duplicates dialog — now keeps its content inside the panel. Thanks to
+  @gitBitsystem ([#10]).
+- The packaged sidecar now bundles the Magick.NET native library, fixing image
+  decoding — including **tattoo decal import** — in installed builds. Thanks to
+  @gitBitsystem ([#11]).
+
 ## [1.4.0] — 2026-06-24
 
 ### Added
@@ -145,9 +168,12 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
+[1.5.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.5.0
 [1.4.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.4.0
 [1.3.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.3.0
 [#6]: https://github.com/feelgoodrp-com/atelier/pull/6
+[#10]: https://github.com/feelgoodrp-com/atelier/pull/10
+[#11]: https://github.com/feelgoodrp-com/atelier/pull/11
 [1.2.7]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.7
 [1.2.6]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.6
 [1.2.5]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.5
