@@ -101,6 +101,7 @@ public static class TattooTextureBuilder
         "BC1" => CompressionFormat.Bc1,
         "BC3" => CompressionFormat.Bc3,
         "BC7" => CompressionFormat.Bc7,
+        "RGBA8888" => CompressionFormat.Rgba,
         _ => CompressionFormat.Bc3, // tattoos are alpha decals → BC3 default
     };
 }

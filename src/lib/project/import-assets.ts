@@ -9,14 +9,16 @@
  * resolvable slot keeps `type: null` and the caller must ask the user.
  */
 
-import { copyFile, exists, mkdir, readFile } from "@tauri-apps/plugin-fs";
+import { copyFile, exists, mkdir, readFile, remove } from "@tauri-apps/plugin-fs";
 import i18n from "@/lib/i18n";
-import { parseYdd, parseYtd } from "@/lib/sidecar/client";
+import { parseYdd, parseYtd, textureFromImage } from "@/lib/sidecar/client";
 import {
   classifyClothingFilename,
   type ClassifiedClothingFile,
 } from "@/lib/gta/filename-classifier";
 import { getSlotById, type SlotId } from "@/lib/gta/components";
+import { KEEP_FORMAT } from "@/lib/project/texture-optimize";
+import { usePreferencesStore } from "@/lib/stores/preferences-store";
 import { ASSETS_DIR_NAME, joinPath } from "./io";
 import {
   createDrawable,
@@ -360,6 +362,45 @@ export async function importTextureFile(
   const parsed = await parseYtd(filePath);
   const relPath = await copyIntoAssets(projectDir, filePath, gender, type);
   return { path: relPath, hash: parsed.sha256, size: parsed.sizeBytes };
+}
+
+/** Raster formats the texture panel accepts alongside .ytd. */
+export const IMAGE_TEXTURE_RE = /\.(png|jpe?g|webp)$/i;
+
+/**
+ * Imports a raster image as a texture variant: converts it to a temporary
+ * .ytd via the sidecar (format from the preferences, "keep" falls back to
+ * BC3; longest edge capped at importMaxDimension), then runs the normal
+ * importTextureFile path and removes the temp file.
+ */
+export async function importImageAsTexture(
+  projectDir: string,
+  imagePath: string,
+  gender: Gender,
+  type: SlotId,
+): Promise<AssetRef> {
+  const prefs = usePreferencesStore.getState();
+  const format =
+    prefs.defaultTextureFormat === KEEP_FORMAT
+      ? "BC3"
+      : prefs.defaultTextureFormat;
+
+  const tmpDir = joinPath(projectDir, ".tmp-texture-import");
+  await mkdir(tmpDir, { recursive: true });
+  const stem = stripExtension(fileNameOf(imagePath));
+  const tmpYtd = joinPath(tmpDir, `${stem}.ytd`);
+
+  try {
+    await textureFromImage({
+      imagePath,
+      outPath: tmpYtd,
+      maxDimension: prefs.importMaxDimension,
+      format,
+    });
+    return await importTextureFile(projectDir, tmpYtd, gender, type);
+  } finally {
+    await remove(tmpYtd).catch(() => {});
+  }
 }
 
 /**

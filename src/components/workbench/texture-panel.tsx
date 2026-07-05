@@ -35,7 +35,11 @@ import { baseName, formatBytes } from "@/lib/format";
 import { textureIndexToLetter } from "@/lib/gta/filename-classifier";
 import { canonicalYtdName } from "@/lib/gta/stream-names";
 import { joinPath } from "@/lib/project/io";
-import { importTextureFile } from "@/lib/project/import-assets";
+import {
+  IMAGE_TEXTURE_RE,
+  importImageAsTexture,
+  importTextureFile,
+} from "@/lib/project/import-assets";
 import {
   clampTextureIndex,
   usePreview3dStore,
@@ -260,7 +264,12 @@ export function TexturePanel({ drawable }: { drawable: ProjectDrawable }) {
     const selected = await openDialog({
       multiple: true,
       title: t("texturePanel.pickTitle"),
-      filters: [{ name: t("texturePanel.pickFilter"), extensions: ["ytd"] }],
+      filters: [
+        {
+          name: t("texturePanel.pickFilter"),
+          extensions: ["ytd", "png", "jpg", "jpeg", "webp"],
+        },
+      ],
     }).catch(() => null);
     const paths = Array.isArray(selected)
       ? selected
@@ -285,12 +294,19 @@ export function TexturePanel({ drawable }: { drawable: ProjectDrawable }) {
         }
         try {
           next.push(
-            await importTextureFile(
-              projectDir,
-              path,
-              current.gender,
-              current.type,
-            ),
+            IMAGE_TEXTURE_RE.test(path)
+              ? await importImageAsTexture(
+                  projectDir,
+                  path,
+                  current.gender,
+                  current.type,
+                )
+              : await importTextureFile(
+                  projectDir,
+                  path,
+                  current.gender,
+                  current.type,
+                ),
           );
         } catch (e) {
           errors.push(

@@ -9,6 +9,11 @@
     <Version>0.1.0</Version>
     <!-- Single-file publish target is win-x64 only (Tauri desktop app). -->
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <!-- publish.ps1 ships ONLY the single exe (Tauri sidecar naming scheme),
+         so native libs (Magick.Native-Q8-x64.dll) must be bundled into it and
+         self-extracted at runtime — otherwise Magick.NET dies with
+         "type initializer for 'NativeMagickSettings' threw an exception". -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <!-- third_party lives inside the project dir; keep its sources out of the
          default compile glob (it is consumed via ProjectReference only). -->
     <DefaultItemExcludes>$(DefaultItemExcludes);third_party\**</DefaultItemExcludes>

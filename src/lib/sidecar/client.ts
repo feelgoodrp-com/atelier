@@ -19,6 +19,8 @@ import type {
   SidecarInfo,
   SidecarServerInfo,
   StartBuildRequest,
+  TextureFromImageRequest,
+  TextureFromImageResult,
   TextureOptimizeRequest,
   TextureOptimizeResult,
   ValidateResponse,
@@ -425,6 +427,16 @@ export async function optimizeTexture(
   request: TextureOptimizeRequest,
 ): Promise<TextureOptimizeResult> {
   return await sidecarFetch<TextureOptimizeResult>("/texture/optimize", {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}
+
+/** POST /texture/from-image — converts a raster image into a single-texture .ytd. */
+export async function textureFromImage(
+  request: TextureFromImageRequest,
+): Promise<TextureFromImageResult> {
+  return await sidecarFetch<TextureFromImageResult>("/texture/from-image", {
     method: "POST",
     body: JSON.stringify(request),
   });

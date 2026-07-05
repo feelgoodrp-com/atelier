@@ -412,4 +412,20 @@ export interface TextureOptimizeResult {
   after: TextureDimensions;
 }
 
+/** Request body of POST /texture/from-image. */
+export interface TextureFromImageRequest {
+  /** Absolute path of the source image (.png/.jpg/.jpeg/.webp). */
+  imagePath: string;
+  /** Absolute path of the .ytd to write. */
+  outPath: string;
+  /** Longest-edge cap in pixels (16–8192). */
+  maxDimension: number;
+  format: "BC1" | "BC3" | "BC7" | "RGBA8888";
+}
+
+/** Response of POST /texture/from-image. */
+export interface TextureFromImageResult {
+  sizeBytes: number;
+}
+
 export type HealthState = "unknown" | "ok" | "failing";
