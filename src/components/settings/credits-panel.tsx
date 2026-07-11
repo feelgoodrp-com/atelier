@@ -38,6 +38,7 @@ interface Person {
 /**
  * Mirrors grzyClothTool's README: grzybeek (the tool atelier reimplements),
  * dexyfex (CodeWalker — the 3D engine), and his mentions JagodaMods + ook.
+ * Plus atelier's own community contributors (gitBitsystem).
  */
 const PEOPLE: Person[] = [
   {
@@ -67,6 +68,14 @@ const PEOPLE: Person[] = [
     name: "ook",
     roleKey: "credits.roles.ook",
     links: [{ kind: "github", url: "https://github.com/ook3d" }],
+  },
+  {
+    name: "gitBitsystem",
+    roleKey: "credits.roles.gitBitsystem",
+    links: [
+      { kind: "github", url: "https://github.com/gitbitsystem" },
+      { kind: "discord", url: "https://discord.gg/blpd" },
+    ],
   },
 ];
 

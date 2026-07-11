@@ -141,4 +141,7 @@ Keep the copyright line (`Required Notice` in the license) intact.
   the 3D preview and the YMT pipeline. ❤️
 - **[grzybeek](https://github.com/grzybeek/grzyClothTool)** — grzyClothTool, the
   inspiration and blueprint.
+- **[gitBitsystem](https://github.com/gitbitsystem)**
+  ([Discord](https://discord.gg/blpd)) — community contributor: image-to-texture
+  import, the RGBA8888 format and dialog fixes.
 - Built by the **feelgood team** and **Claude Fable 5(RIP)**.
