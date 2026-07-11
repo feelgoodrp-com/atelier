@@ -4,6 +4,17 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.6.0] — 2026-07-11
+
+### Added
+
+- **Skip duplicates on import** — an opt-in option to skip drawables whose mesh
+  (ydd) is already in the project when importing a folder/pack or adding files,
+  using the same "duplicate mesh" definition as the duplicates dialog. It also
+  skips duplicates within the same import. Toggle it in **Settings → Preferences
+  → Editor**, or right in the import wizard's review step; skipped items are
+  listed in the import summary. Off by default.
+
 ## [1.5.0] — 2026-07-05
 
 ### Added
@@ -168,6 +179,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
+[1.6.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.6.0
 [1.5.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.5.0
 [1.4.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.4.0
 [1.3.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.3.0
