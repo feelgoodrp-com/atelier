@@ -4,6 +4,14 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.6.1] — 2026-07-11
+
+### Changed
+
+- Credit **gitBitsystem** in the README and the in-app credits (Settings) for
+  their contributions — image-to-texture import, the RGBA8888 texture format and
+  dialog fixes.
+
 ## [1.6.0] — 2026-07-11
 
 ### Added
@@ -179,6 +187,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
+[1.6.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.6.1
 [1.6.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.6.0
 [1.5.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.5.0
 [1.4.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.4.0
