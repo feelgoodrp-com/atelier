@@ -23,6 +23,7 @@
     "yldUnmatched": "YLD could not be matched to a drawable.",
     "normalSpecularNotVariant": "Normal/Specular maps are not imported as a variant.",
     "maxTextureVariants": "Maximum of 26 texture variants per drawable (a–z).",
+    "duplicateSkipped": "Duplicate — this mesh is already in the project.",
     "noTexturesFound": "No textures found — the drawable has no variant yet.",
     "genderNotDetected": "Gender not detected — using default ({{gender}}).",
     "noMatchingYdd": "No matching YDD file found in the import.",

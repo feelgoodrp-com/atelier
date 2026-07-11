@@ -23,6 +23,7 @@
     "yldUnmatched": "YLD konnte keinem Drawable zugeordnet werden.",
     "normalSpecularNotVariant": "Normal-/Specular-Maps werden nicht als Variante importiert.",
     "maxTextureVariants": "Maximal 26 Textur-Varianten pro Drawable (a–z).",
+    "duplicateSkipped": "Duplikat – dieses Mesh ist bereits im Projekt.",
     "noTexturesFound": "Keine Texturen gefunden — Drawable hat noch keine Variante.",
     "genderNotDetected": "Geschlecht nicht erkannt — Standard ({{gender}}) verwendet.",
     "noMatchingYdd": "Keine zugehörige YDD-Datei im Import gefunden.",

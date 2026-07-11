@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import i18n from "@/lib/i18n";
 import { getSlotById, type SlotId } from "@/lib/gta/components";
 import { useProjectStore } from "@/lib/stores/project-store";
+import { usePreferencesStore } from "@/lib/stores/preferences-store";
 import { useWorkbenchStore } from "@/lib/stores/workbench-store";
 import {
   importAssetFiles,
@@ -70,12 +71,22 @@ export async function runFileImport(filePaths: string[]): Promise<void> {
   );
 
   try {
+    const dedupExistingYddHashes = usePreferencesStore.getState()
+      .skipDuplicatesOnImport
+      ? new Set(
+          project.drawables
+            .map((d) => d.ydd?.hash)
+            .filter((h): h is string => Boolean(h)),
+        )
+      : undefined;
+
     const result = await importAssetFiles({
       projectDir,
       filePaths: clothingFiles,
       defaultGender: workbench.viewGender,
       defaultType:
         workbench.category !== "all" ? workbench.category : undefined,
+      dedupExistingYddHashes,
     });
 
     let added = 0;

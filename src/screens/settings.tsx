@@ -340,10 +340,12 @@ function BuildProjectsCard() {
 function EditorPreferencesCard() {
   const { t } = useTranslation("settings");
   const confirmBeforeDelete = usePreferencesStore((s) => s.confirmBeforeDelete);
+  const skipDuplicatesOnImport = usePreferencesStore((s) => s.skipDuplicatesOnImport);
   const autoOpenPreview = usePreferencesStore((s) => s.autoOpenPreview);
   const autosaveEnabled = usePreferencesStore((s) => s.autosaveEnabled);
   const autosaveInterval = usePreferencesStore((s) => s.autosaveInterval);
   const setConfirmBeforeDelete = usePreferencesStore((s) => s.setConfirmBeforeDelete);
+  const setSkipDuplicatesOnImport = usePreferencesStore((s) => s.setSkipDuplicatesOnImport);
   const setAutoOpenPreview = usePreferencesStore((s) => s.setAutoOpenPreview);
   const setAutosaveEnabled = usePreferencesStore((s) => s.setAutosaveEnabled);
   const setAutosaveInterval = usePreferencesStore((s) => s.setAutosaveInterval);
@@ -366,6 +368,12 @@ function EditorPreferencesCard() {
           description={t("preferences.editor.confirmDeleteDescription")}
           checked={confirmBeforeDelete}
           onCheckedChange={setConfirmBeforeDelete}
+        />
+        <PrefToggleRow
+          title={t("preferences.editor.skipDuplicatesTitle")}
+          description={t("preferences.editor.skipDuplicatesDescription")}
+          checked={skipDuplicatesOnImport}
+          onCheckedChange={setSkipDuplicatesOnImport}
         />
         <PrefToggleRow
           title={t("preferences.editor.autoPreviewTitle")}

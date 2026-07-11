@@ -19,6 +19,7 @@ import {
   getDefaultTextureFormat,
   getImportMaxDimension,
   getOptimizeOnImport,
+  getSkipDuplicatesOnImport,
   setAutoCheckUpdates as persistAutoCheckUpdates,
   setAutoInstallUpdates as persistAutoInstallUpdates,
   setAutoOpenPreview as persistAutoOpenPreview,
@@ -30,6 +31,7 @@ import {
   setDefaultTextureFormat as persistDefaultTextureFormat,
   setImportMaxDimension as persistImportMaxDimension,
   setOptimizeOnImport as persistOptimizeOnImport,
+  setSkipDuplicatesOnImport as persistSkipDuplicatesOnImport,
   type AutosaveInterval,
   type ImportMaxDimension,
 } from "@/lib/settings";
@@ -40,6 +42,7 @@ interface PreferencesState {
   // Texture optimization
   defaultTextureFormat: FormatChoice;
   optimizeOnImport: boolean;
+  skipDuplicatesOnImport: boolean;
   importMaxDimension: ImportMaxDimension;
   // Updates
   autoCheckUpdates: boolean;
@@ -57,6 +60,7 @@ interface PreferencesState {
 
   setDefaultTextureFormat: (format: FormatChoice) => void;
   setOptimizeOnImport: (enabled: boolean) => void;
+  setSkipDuplicatesOnImport: (enabled: boolean) => void;
   setImportMaxDimension: (value: ImportMaxDimension) => void;
   setAutoCheckUpdates: (enabled: boolean) => void;
   setAutoInstallUpdates: (enabled: boolean) => void;
@@ -73,6 +77,7 @@ interface PreferencesState {
 export const usePreferencesStore = create<PreferencesState>((set) => ({
   defaultTextureFormat: "keep",
   optimizeOnImport: false,
+  skipDuplicatesOnImport: false,
   importMaxDimension: 2048,
   autoCheckUpdates: true,
   autoInstallUpdates: false,
@@ -91,6 +96,10 @@ export const usePreferencesStore = create<PreferencesState>((set) => ({
   setOptimizeOnImport: (optimizeOnImport) => {
     set({ optimizeOnImport });
     void persistOptimizeOnImport(optimizeOnImport).catch(() => {});
+  },
+  setSkipDuplicatesOnImport: (skipDuplicatesOnImport) => {
+    set({ skipDuplicatesOnImport });
+    void persistSkipDuplicatesOnImport(skipDuplicatesOnImport).catch(() => {});
   },
   setImportMaxDimension: (importMaxDimension) => {
     set({ importMaxDimension });
@@ -133,6 +142,7 @@ export const usePreferencesStore = create<PreferencesState>((set) => ({
     const [
       defaultTextureFormat,
       optimizeOnImport,
+      skipDuplicatesOnImport,
       importMaxDimension,
       autoCheckUpdates,
       autoInstallUpdates,
@@ -145,6 +155,7 @@ export const usePreferencesStore = create<PreferencesState>((set) => ({
     ] = await Promise.all([
       getDefaultTextureFormat(),
       getOptimizeOnImport(),
+      getSkipDuplicatesOnImport(),
       getImportMaxDimension(),
       getAutoCheckUpdates(),
       getAutoInstallUpdates(),
@@ -158,6 +169,7 @@ export const usePreferencesStore = create<PreferencesState>((set) => ({
     set({
       defaultTextureFormat,
       optimizeOnImport,
+      skipDuplicatesOnImport,
       importMaxDimension,
       autoCheckUpdates,
       autoInstallUpdates,

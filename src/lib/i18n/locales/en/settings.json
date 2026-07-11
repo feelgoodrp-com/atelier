@@ -21,6 +21,8 @@
       "description": "Behavior while working on a project.",
       "confirmDeleteTitle": "Confirm before deleting",
       "confirmDeleteDescription": "Ask for confirmation before removing drawables.",
+      "skipDuplicatesTitle": "Skip duplicates on import",
+      "skipDuplicatesDescription": "When importing a folder or files, skip drawables whose mesh is already in the project.",
       "autoPreviewTitle": "Auto-open the 3D preview",
       "autoPreviewDescription": "Open the preview panel when a drawable is selected.",
       "pedBodyTitle": "Render the ped body by default",

@@ -57,6 +57,13 @@ export interface ImportAssetsOptions {
   defaultGender: Gender;
   /** Optional fallback slot (e.g. when dropping onto a slot category). */
   defaultType?: SlotId;
+  /**
+   * When set, ydds whose mesh hash (sha256) is already in this set — or was
+   * already imported earlier in the same batch — are skipped as duplicates
+   * (Settings → Preferences → "skip duplicates on import"). Pass the project's
+   * existing ydd hashes; `undefined` disables deduplication.
+   */
+  dedupExistingYddHashes?: Set<string>;
 }
 
 /** Folder name for assets whose slot is still unresolved. */
@@ -146,6 +153,11 @@ export async function importAssetFiles(
   options: ImportAssetsOptions,
 ): Promise<ImportAssetsResult> {
   const { projectDir, defaultGender, defaultType } = options;
+  // Non-null only when dedup is enabled; seeds from the project's existing ydd
+  // hashes and grows as this batch imports so intra-batch dupes are caught too.
+  const seenYddHashes = options.dedupExistingYddHashes
+    ? new Set(options.dedupExistingYddHashes)
+    : null;
 
   const ydds: ClassifiedPath[] = [];
   const ytds: ClassifiedPath[] = [];
@@ -212,8 +224,18 @@ export async function importAssetFiles(
     let yddRef: AssetRef;
     try {
       const parsed = await parseYdd(ydd.path);
+      if (seenYddHashes?.has(parsed.sha256)) {
+        // Same mesh already in the project (or earlier in this batch) — skip
+        // before copying anything to disk.
+        skipped.push({
+          path: ydd.path,
+          reason: i18n.t("errors:import.duplicateSkipped"),
+        });
+        continue;
+      }
       const relPath = await copyIntoAssets(projectDir, ydd.path, gender, type);
       yddRef = { path: relPath, hash: parsed.sha256, size: parsed.sizeBytes };
+      seenYddHashes?.add(parsed.sha256);
     } catch (e) {
       skipped.push({
         path: ydd.path,
@@ -432,9 +454,14 @@ export async function importPlannedEntries(
   projectDir: string,
   entries: PlannedImportEntry[],
   onProgress?: (done: number, total: number) => void,
+  dedupExistingYddHashes?: Set<string>,
 ): Promise<PlannedImportResult> {
   const drawables: ProjectDrawable[] = [];
   const skipped: ImportSkipped[] = [];
+  // Non-null only when dedup is enabled (see ImportAssetsOptions.dedupExistingYddHashes).
+  const seenYddHashes = dedupExistingYddHashes
+    ? new Set(dedupExistingYddHashes)
+    : null;
 
   let done = 0;
   onProgress?.(0, entries.length);
@@ -445,6 +472,16 @@ export async function importPlannedEntries(
     let yddRef: AssetRef;
     try {
       const parsed = await parseYdd(entry.yddPath);
+      if (seenYddHashes?.has(parsed.sha256)) {
+        // Same mesh already in the project (or earlier in this batch) — skip
+        // the whole entry (incl. its textures/yld) before copying anything.
+        skipped.push({
+          path: entry.yddPath,
+          reason: i18n.t("errors:import.duplicateSkipped"),
+        });
+        onProgress?.(++done, entries.length);
+        continue;
+      }
       const relPath = await copyIntoAssets(
         projectDir,
         entry.yddPath,
@@ -452,6 +489,7 @@ export async function importPlannedEntries(
         entry.type,
       );
       yddRef = { path: relPath, hash: parsed.sha256, size: parsed.sizeBytes };
+      seenYddHashes?.add(parsed.sha256);
     } catch (e) {
       skipped.push({
         path: entry.yddPath,

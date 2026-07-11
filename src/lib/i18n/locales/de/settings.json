@@ -21,6 +21,8 @@
       "description": "Verhalten beim Arbeiten an einem Projekt.",
       "confirmDeleteTitle": "Vor dem Löschen bestätigen",
       "confirmDeleteDescription": "Vor dem Entfernen von Drawables nachfragen.",
+      "skipDuplicatesTitle": "Duplikate beim Import überspringen",
+      "skipDuplicatesDescription": "Beim Import eines Ordners oder von Dateien Drawables überspringen, deren Mesh bereits im Projekt ist.",
       "autoPreviewTitle": "3D-Vorschau automatisch öffnen",
       "autoPreviewDescription": "Das Vorschau-Panel öffnen, wenn ein Drawable ausgewählt wird.",
       "pedBodyTitle": "Ped-Körper standardmäßig rendern",

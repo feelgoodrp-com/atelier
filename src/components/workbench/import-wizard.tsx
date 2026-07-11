@@ -286,6 +286,8 @@ export function ImportWizard() {
   const setOpen = useWorkbenchStore((s) => s.setImportWizardOpen);
   const hasProject = useProjectStore((s) => s.project !== null);
   const addDrawable = useProjectStore((s) => s.addDrawable);
+  const skipDuplicates = usePreferencesStore((s) => s.skipDuplicatesOnImport);
+  const setSkipDuplicates = usePreferencesStore((s) => s.setSkipDuplicatesOnImport);
 
   const [step, setStep] = useState<WizardStep>("folder");
   const [folder, setFolder] = useState<string | null>(null);
@@ -357,8 +359,19 @@ export function ImportWizard() {
   const missingType = included.some((r) => r.type === null);
 
   const runImport = useCallback(async () => {
-    const projectDir = useProjectStore.getState().projectDir;
+    const { project, projectDir } = useProjectStore.getState();
     if (!projectDir || included.length === 0 || missingType) return;
+
+    // Skip drawables whose mesh already exists in the project (opt-in) — collect
+    // the current ydd hashes up front so the import pipeline can drop them.
+    const dedupExistingYddHashes = usePreferencesStore.getState()
+      .skipDuplicatesOnImport
+      ? new Set(
+          (project?.drawables ?? [])
+            .map((d) => d.ydd?.hash)
+            .filter((h): h is string => Boolean(h)),
+        )
+      : undefined;
 
     // Sort so derived drawableIds follow the original pack numbering.
     const planned: PlannedImportEntry[] = included
@@ -387,6 +400,7 @@ export function ImportWizard() {
         projectDir,
         planned,
         (done, total) => setProgress({ done, total }),
+        dedupExistingYddHashes,
       );
       for (const drawable of result.drawables) addDrawable(drawable);
 
@@ -711,17 +725,26 @@ export function ImportWizard() {
         )}
 
         {effectiveStep === "review" && (
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setStep("folder")}>
-              {t("common:back")}
-            </Button>
-            <Button
-              disabled={included.length === 0 || missingType}
-              onClick={() => void runImport()}
-            >
-              <PackageOpen className="h-4 w-4" />
-              {t("importWizard.importDrawables", { count: included.length })}
-            </Button>
+          <DialogFooter className="sm:justify-between">
+            <label className="mr-auto flex cursor-pointer select-none items-center gap-2 text-xs text-white/60">
+              <IncludeCheckbox
+                checked={skipDuplicates}
+                onChange={setSkipDuplicates}
+              />
+              {t("importWizard.skipDuplicates")}
+            </label>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setStep("folder")}>
+                {t("common:back")}
+              </Button>
+              <Button
+                disabled={included.length === 0 || missingType}
+                onClick={() => void runImport()}
+              >
+                <PackageOpen className="h-4 w-4" />
+                {t("importWizard.importDrawables", { count: included.length })}
+              </Button>
+            </div>
           </DialogFooter>
         )}
       </DialogContent>

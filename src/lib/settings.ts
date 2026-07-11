@@ -198,6 +198,21 @@ export async function setOptimizeOnImport(enabled: boolean): Promise<void> {
   await store.set("optimizeOnImport", enabled);
 }
 
+/**
+ * Skip drawables whose mesh (ydd sha256) already exists in the project when
+ * importing a folder/pack or adding files (default off — opt-in). Matches the
+ * "duplicate meshes" definition used by the duplicates dialog.
+ */
+export async function getSkipDuplicatesOnImport(): Promise<boolean> {
+  const store = await getStore();
+  return (await store.get<boolean>("skipDuplicatesOnImport")) ?? false;
+}
+
+export async function setSkipDuplicatesOnImport(enabled: boolean): Promise<void> {
+  const store = await getStore();
+  await store.set("skipDuplicatesOnImport", enabled);
+}
+
 /** Longest-edge cap applied by optimize-on-import (one of {@link IMPORT_MAX_DIMENSIONS}). */
 export const IMPORT_MAX_DIMENSIONS = [512, 1024, 2048, 4096] as const;
 export type ImportMaxDimension = (typeof IMPORT_MAX_DIMENSIONS)[number];

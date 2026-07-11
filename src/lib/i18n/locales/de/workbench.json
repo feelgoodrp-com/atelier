@@ -219,6 +219,7 @@
     "missingType": "Einige ausgewählte Einträge haben noch keinen Slot — bitte zuweisen oder abwählen.",
     "importing": "Importiere {{done}}/{{total}} Drawables…",
     "importDrawables": "{{count}} Drawable(s) importieren",
+    "skipDuplicates": "Duplikate überspringen, die schon im Projekt sind",
     "importedToast_one": "{{count}} Drawable importiert",
     "importedToast_other": "{{count}} Drawable(s) importiert",
     "skipped": "{{count}} übersprungen",
