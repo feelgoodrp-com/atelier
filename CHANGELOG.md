@@ -4,6 +4,15 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.7.0] — 2026-07-17
+
+### Changed
+
+- **Higher drawable-split limit** — the automatic add-on split now goes up to
+  **256 drawables** per gender/slot (was 128), matching the raised FiveM/CFX
+  `.ymt` component limit. Bigger packs build into fewer parts. Thanks to
+  @Blaccii ([#12]).
+
 ## [1.6.1] — 2026-07-11
 
 ### Changed
@@ -187,6 +196,8 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
+[1.7.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.7.0
+[#12]: https://github.com/feelgoodrp-com/atelier/pull/12
 [1.6.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.6.1
 [1.6.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.6.0
 [1.5.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.5.0

@@ -186,11 +186,11 @@ public static class StreamNames
 /// 1. Per gender, the ADDON drawables are taken in project file order as one
 ///    flat list (components and props interleaved, like
 ///    creative/lib/server/cloth-export.ts) and chunked into groups of
-///    <c>splitAt</c> (default 128).
+///    <c>splitAt</c> (default 256).
 /// 2. Part k contains chunk k of the male list plus chunk k of the female
 ///    list; the number of parts is the maximum chunk count over both genders.
 ///    This guarantees no (gender, slot) bucket inside one part ever exceeds
-///    splitAt — the game-side limit of 128 drawables per (dlc, gender, slot).
+///    splitAt — the game-side limit of 256 drawables per (dlc, gender, slot).
 /// 3. With a single part the folder is <c>resourceName</c> and the dlc name is
 ///    <c>dlcName</c>; with N&gt;1 parts EVERY part is suffixed
 ///    (<c>resourceName_part1..N</c>, <c>dlcName_part1..N</c>) so YMT names and

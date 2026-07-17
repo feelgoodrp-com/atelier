@@ -144,4 +144,6 @@ Keep the copyright line (`Required Notice` in the license) intact.
 - **[gitBitsystem](https://github.com/gitbitsystem)**
   ([Discord](https://discord.gg/blpd)) — community contributor: image-to-texture
   import, the RGBA8888 format and dialog fixes.
+- **[Blaccii](https://github.com/Blaccii)** — community contributor: the
+  256-drawable split limit.
 - Built by the **feelgood team** and **Claude Fable 5(RIP)**.
