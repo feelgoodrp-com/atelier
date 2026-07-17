@@ -37,7 +37,7 @@ public static class BuildEndpoints
 
         try
         {
-            var findings = Validator.Validate(request!.Project!, request.ProjectDir!.Trim(), splitAt: 128);
+            var findings = Validator.Validate(request!.Project!, request.ProjectDir!.Trim(), splitAt: 256);
             log.LogInformation("Validated project {Name}: {Count} findings ({Errors} errors)",
                 request.Project!.Name, findings.Count, findings.Count(f => f.Severity == "error"));
             return Results.Ok(new ValidateResponse(findings));
@@ -82,9 +82,9 @@ public static class BuildEndpoints
             return Results.BadRequest(new ErrorResponse(
                 "Feld 'options.resourceName' muss aus [a-zA-Z0-9_-] bestehen."));
 
-        var splitAt = request.Options?.SplitAt ?? 128;
-        if (splitAt is < 1 or > 128)
-            return Results.BadRequest(new ErrorResponse("Feld 'options.splitAt' muss zwischen 1 und 128 liegen."));
+        var splitAt = request.Options?.SplitAt ?? 256;
+        if (splitAt is < 1 or > 256)
+            return Results.BadRequest(new ErrorResponse("Feld 'options.splitAt' muss zwischen 1 und 256 liegen."));
 
         var hasDrawables = project.Drawables is { Count: > 0 };
         var hasTattoos = project.Tattoos is { Count: > 0 };

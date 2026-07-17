@@ -65,7 +65,7 @@ export function AtelierDoc() {
               Server — voll offline nutzbar.
             </DocLi>
             <DocLi>Ziele: FiveM, Singleplayer, RageMP und alt:V.</DocLi>
-            <DocLi>Echte binäre YMTs, automatischer 128er-Split, Textur-Optimierung.</DocLi>
+            <DocLi>Echte binäre YMTs, automatischer 256er-Split, Textur-Optimierung.</DocLi>
             <DocLi>Optional: Team-Cloud zum gemeinsamen Bauen am selben Pack.</DocLi>
           </DocUl>
           <DocCallout kind="info" title="Plattform">
@@ -284,8 +284,8 @@ export function AtelierDoc() {
               ["alt:V", "Ordner-Struktur als DLC-Ressource", "Experimentell"],
             ]}
           />
-          <DocCallout kind="tip" title="Über 128 Drawables? Kein Problem.">
-            atelier teilt automatisch in mehrere Addons auf (128er-Split pro Geschlecht). Die
+          <DocCallout kind="tip" title="Über 256 Drawables? Kein Problem.">
+            atelier teilt automatisch in mehrere Addons auf (256er-Split pro Geschlecht). Die
             Datei-Nummerierung startet dabei in jedem Teil sauber bei <Code>000</Code> — genau so,
             wie GTA es erwartet.
           </DocCallout>
@@ -380,7 +380,7 @@ export function AtelierDoc() {
             works completely offline.
           </DocLi>
           <DocLi>Targets: FiveM, singleplayer, RageMP and alt:V.</DocLi>
-          <DocLi>Real binary YMTs, automatic 128-drawable splitting, texture optimization.</DocLi>
+          <DocLi>Real binary YMTs, automatic 256-drawable splitting, texture optimization.</DocLi>
           <DocLi>Optional: a team cloud for building the same pack together.</DocLi>
         </DocUl>
         <DocCallout kind="info" title="Platform">
@@ -594,8 +594,8 @@ export function AtelierDoc() {
             ["alt:V", "Folder structure as a DLC resource", "Experimental"],
           ]}
         />
-        <DocCallout kind="tip" title="More than 128 drawables? No problem.">
-          atelier automatically splits across multiple add-ons (128 per gender). The file numbering
+        <DocCallout kind="tip" title="More than 256 drawables? No problem.">
+          atelier automatically splits across multiple add-ons (256 per gender). The file numbering
           cleanly restarts at <Code>000</Code> in each part — exactly the way GTA expects it.
         </DocCallout>
       </DocSection>

@@ -301,7 +301,7 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
           dlcName: normalizedDlc,
           resourceName: trimmedResource || null,
           generateShopMeta,
-          splitAt: 128,
+          splitAt: 256,
         },
       });
       const done = await buildProgress(jobId, setProgress);
