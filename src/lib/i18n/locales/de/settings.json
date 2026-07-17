@@ -78,7 +78,10 @@
       "description": "Adresse des atelier-Sync-Servers.",
       "apiUrlLabel": "API-URL",
       "apiUrlSaved": "API-URL gespeichert",
-      "apiUrlSaveFailed": "API-URL konnte nicht gespeichert werden"
+      "apiUrlSaveFailed": "API-URL konnte nicht gespeichert werden",
+      "serverVersion": "Server v{{version}}",
+      "updateAvailable": "Update verfügbar",
+      "updateHint": "Eine neuere Server-Version ist auf GitHub — den Server neu deployen zum Aktualisieren."
     },
     "sidecar": {
       "title": "Sidecar",

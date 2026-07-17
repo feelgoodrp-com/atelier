@@ -241,6 +241,42 @@ export async function checkApiHealth(apiUrl: string): Promise<{ version: string 
   return { version: typeof data.version === "string" ? data.version : null };
 }
 
+export interface ServerHealth {
+  version: string | null;
+  updateAvailable: boolean;
+  latestVersion: string | null;
+}
+
+/**
+ * Non-throwing full health probe for the Settings "server" row: returns the
+ * connected atelier-api's version + whether it reports an available update
+ * (the server compares itself against GitHub master). Returns null on any
+ * failure so the UI can just hide the row.
+ */
+export async function fetchServerHealth(apiUrl: string): Promise<ServerHealth | null> {
+  const base = apiUrl.trim().replace(/\/+$/u, "");
+  if (!/^https?:\/\//u.test(base)) return null;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 5000);
+  try {
+    const res = await fetch(`${base}/health`, { method: "GET", signal: ctrl.signal });
+    if (!res.ok) return null;
+    const data = (await res.json().catch(() => null)) as
+      | { service?: string; version?: string; updateAvailable?: boolean; latestVersion?: string }
+      | null;
+    if (!data || data.service !== "atelier-api") return null;
+    return {
+      version: typeof data.version === "string" ? data.version : null,
+      updateAvailable: data.updateAvailable === true,
+      latestVersion: typeof data.latestVersion === "string" ? data.latestVersion : null,
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Exchanges the one-time code from the loopback redirect for device tokens. */
 export async function exchangeDeviceCode(args: {
   code: string;

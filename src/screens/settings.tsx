@@ -75,9 +75,11 @@ import {
   adminLockUser,
   listDevices,
   revokeDevice,
+  fetchServerHealth,
   type AdminUser,
   type Device,
   type UserStatus,
+  type ServerHealth,
 } from "@/lib/sync/api-client";
 
 function errorMessage(e: unknown): string {
@@ -481,6 +483,7 @@ function GeneralTab() {
   const [apiUrlDraft, setApiUrlDraft] = useState(apiUrl);
   const sidecarInfo = useSidecarStore((s) => s.info);
   const [restarting, setRestarting] = useState(false);
+  const [serverHealth, setServerHealth] = useState<ServerHealth | null>(null);
 
   useEffect(() => {
     getGtaPath()
@@ -491,6 +494,21 @@ function GeneralTab() {
   useEffect(() => {
     setApiUrlDraft(apiUrl);
   }, [apiUrl]);
+
+  // Probe the connected server for its version + "update available" flag.
+  useEffect(() => {
+    if (!cloudEnabled || !apiUrl) {
+      setServerHealth(null);
+      return;
+    }
+    let alive = true;
+    void fetchServerHealth(apiUrl).then((h) => {
+      if (alive) setServerHealth(h);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [cloudEnabled, apiUrl]);
 
   const pickGtaPath = useCallback(async () => {
     try {
@@ -601,6 +619,31 @@ function GeneralTab() {
                 {t("common:save")}
               </Button>
             </div>
+
+            {serverHealth && (
+              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-sm">
+                <span
+                  className={cn(
+                    "h-2 w-2 rounded-full",
+                    serverHealth.updateAvailable ? "bg-amber-400" : "bg-emerald-400",
+                  )}
+                />
+                <span className="text-white/70">
+                  {t("general.backend.serverVersion", {
+                    version: serverHealth.version ?? "?",
+                  })}
+                </span>
+                {serverHealth.updateAvailable && (
+                  <span
+                    title={t("general.backend.updateHint")}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/35 bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-300"
+                  >
+                    {t("general.backend.updateAvailable")}
+                    {serverHealth.latestVersion ? ` · v${serverHealth.latestVersion}` : ""}
+                  </span>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
