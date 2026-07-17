@@ -4,6 +4,15 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.8.0] — 2026-07-17
+
+### Added
+
+- **Server update indicator** — Settings → Backend now shows the connected
+  atelier-api server's version and an **"Update available"** badge when the
+  server reports a newer version is on GitHub, mirroring the app's own updater
+  card. ("Updating" the server means redeploying it.)
+
 ## [1.7.0] — 2026-07-17
 
 ### Changed
@@ -196,6 +205,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
+[1.8.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.8.0
 [1.7.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.7.0
 [#12]: https://github.com/feelgoodrp-com/atelier/pull/12
 [1.6.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.6.1
