@@ -58,6 +58,14 @@ console.log("\nrules — webview (React)");
     tick.text,
   );
 
+  ok(run("webview", 'checking project context={"drawables":180}').text.includes('"n":180'), "the check phase is logged");
+  const checked = run("webview", 'project checked context={"findings":7,"errors":0,"seconds":3.2}');
+  ok(
+    checked.text.includes("build.checked") && checked.text.includes('"errors":0') && checked.text.includes('"seconds":"3.2"'),
+    "check result carries findings, errors and duration",
+    checked.text,
+  );
+
   const phase = run("webview", "build phase: package");
   ok(phase.text.includes("build.phase"), "phase change matches");
 
@@ -107,6 +115,7 @@ console.log("\nrules — .NET sidecar (stderr)");
     ["Ped-body prewarm complete", "ped.prewarmDone"],
     ["Outfit preview build failed", "preview.outfitFailed"],
     ["Validation failed", "build.validationFailed"],
+    ["Validating drawable 42/300: Neon Jacket", "build.checkingItem"],
     ["Build job 7f3 failed", "build.jobFailed"],
     ["Face diffuse override encode failed (512x512)", "face.encodeFailed"],
   ];

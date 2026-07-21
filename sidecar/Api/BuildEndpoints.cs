@@ -37,7 +37,7 @@ public static class BuildEndpoints
 
         try
         {
-            var findings = Validator.Validate(request!.Project!, request.ProjectDir!.Trim(), splitAt: 256);
+            var findings = Validator.Validate(request!.Project!, request.ProjectDir!.Trim(), splitAt: 256, log);
             log.LogInformation("Validated project {Name}: {Count} findings ({Errors} errors)",
                 request.Project!.Name, findings.Count, findings.Count(f => f.Severity == "error"));
             return Results.Ok(new ValidateResponse(findings));

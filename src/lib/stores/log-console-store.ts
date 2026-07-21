@@ -66,9 +66,17 @@ export function openLogWindow(): void {
 }
 
 let unlisten: UnlistenFn | null = null;
+/**
+ * Consumers in THIS window — the log window's panel and the build dialog's
+ * inline pane both subscribe, and whichever unmounts first must not cut the
+ * other one off. (Rust does the same across windows, see logging.rs.)
+ */
+let consumers = 0;
 
-/** Called by the log WINDOW on mount: seed history + subscribe to the stream. */
+/** Called on mount by a log consumer: seed history + subscribe to the stream. */
 export async function startLogStream(): Promise<void> {
+  consumers += 1;
+  if (consumers > 1) return;
   try {
     const history = await invoke<LogEntry[]>("get_log_buffer");
     useLogConsoleStore.setState({ entries: history.slice(-MAX_ENTRIES) });
@@ -87,8 +95,10 @@ export async function startLogStream(): Promise<void> {
   }
 }
 
-/** Called by the log WINDOW on unmount/close. */
+/** Called by a log consumer on unmount; the last one out closes the stream. */
 export async function stopLogStream(): Promise<void> {
+  consumers = Math.max(0, consumers - 1);
+  if (consumers > 0) return;
   try {
     await invoke("set_log_stream", { enabled: false });
   } catch {

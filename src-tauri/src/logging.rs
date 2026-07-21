@@ -15,7 +15,7 @@
 //! Example: `RUST_LOG=warn,sidecar=debug bun run tauri dev`
 
 use std::cell::Cell;
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -53,7 +53,13 @@ pub struct LogEntry {
 }
 
 pub struct LogStream {
+    /// Fast path for `on_event` (checked on EVERY tracing event, so this must
+    /// not take a lock): true while at least one webview is subscribed.
     streaming: AtomicBool,
+    /// Labels of the subscribed webviews. Both the log window and the build
+    /// dialog's inline pane stream at the same time, so a single flag would
+    /// let whichever unsubscribes first cut the other one off.
+    subscribers: Mutex<HashSet<String>>,
     buffer: Mutex<VecDeque<LogEntry>>,
 }
 
@@ -61,12 +67,27 @@ impl LogStream {
     fn new() -> Self {
         Self {
             streaming: AtomicBool::new(false),
+            subscribers: Mutex::new(HashSet::new()),
             buffer: Mutex::new(VecDeque::with_capacity(LOG_BUFFER_CAP)),
         }
     }
 
-    pub fn set_streaming(&self, enabled: bool) {
-        self.streaming.store(enabled, Ordering::Relaxed);
+    fn refresh(&self, subscribers: &HashSet<String>) {
+        self.streaming
+            .store(!subscribers.is_empty(), Ordering::Relaxed);
+    }
+
+    pub fn subscribe(&self, label: String) {
+        let mut subscribers = self.subscribers.lock().unwrap();
+        subscribers.insert(label);
+        self.refresh(&subscribers);
+    }
+
+    /// Also called when a window is destroyed without unsubscribing cleanly.
+    pub fn unsubscribe(&self, label: &str) {
+        let mut subscribers = self.subscribers.lock().unwrap();
+        subscribers.remove(label);
+        self.refresh(&subscribers);
     }
 }
 
@@ -75,10 +96,19 @@ pub fn get_log_buffer(state: tauri::State<'_, Arc<LogStream>>) -> Vec<LogEntry> 
     state.buffer.lock().unwrap().iter().cloned().collect()
 }
 
-/// Enables/disables forwarding to the webview (the buffer always fills).
+/// Subscribes/unsubscribes the CALLING webview to live forwarding (the ring
+/// buffer always fills, regardless of subscribers).
 #[tauri::command]
-pub fn set_log_stream(state: tauri::State<'_, Arc<LogStream>>, enabled: bool) {
-    state.streaming.store(enabled, Ordering::Relaxed);
+pub fn set_log_stream(
+    window: tauri::WebviewWindow,
+    state: tauri::State<'_, Arc<LogStream>>,
+    enabled: bool,
+) {
+    if enabled {
+        state.subscribe(window.label().to_string());
+    } else {
+        state.unsubscribe(window.label());
+    }
 }
 
 /// Collects the `message` field (+ any extra fields as `key=value`).

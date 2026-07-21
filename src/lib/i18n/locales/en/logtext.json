@@ -133,10 +133,14 @@
     "readFailed": "File could not be opened: {{file}}"
   },
   "build": {
+    "checkingItem": "Checking {{current}}/{{total}}: {{label}}",
+    "checking": "Checking the project ({{n}} items)…",
+    "checked": "Check finished in {{seconds}} s",
+    "checkFailed": "Project could not be checked: {{error}}",
     "started": "Build started (target {{target}}, {{n}} items)",
     "phase": "Build step: {{phase}}",
     "tick": "{{phase}} {{current}}/{{total}} — {{detail}}",
-    "finished": "Build finished: {{n}} resources, {{warnings}} warnings, {{seconds}} s",
+    "finished": "Build finished in {{seconds}} s",
     "failed": "Build failed: {{error}}",
     "busy": "Build not started — another job is still running",
     "validated": "Project checked: {{n}} notices, {{errors}} errors",

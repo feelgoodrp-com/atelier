@@ -59,10 +59,14 @@
     "package": "Paketierung",
     "tattoos": "Tattoos"
   },
+  "validating.hint": "Jedes Kleidungsstück und jede Textur wird gelesen und geprüft — bei großen Projekten dauert das. Rechts im Log siehst du, wo es gerade steht.",
+  "log": {
+    "title": "Live-Log",
+    "waiting": "Warte auf die erste Meldung…",
+    "openWindow": "In eigenem Fenster öffnen"
+  },
   "building": {
-    "starting": "Build wird gestartet…",
-    "openLogs": "Live-Logs",
-    "logsHint": "Öffnet ein eigenes Fenster mit dem laufenden Build-Log."
+    "starting": "Build wird gestartet…"
   },
   "done": {
     "title_one": "Build abgeschlossen — {{count}} Ressource erstellt.",

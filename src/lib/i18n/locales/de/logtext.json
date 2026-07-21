@@ -133,10 +133,14 @@
     "readFailed": "Datei konnte nicht geöffnet werden: {{file}}"
   },
   "build": {
+    "checkingItem": "Prüfe {{current}}/{{total}}: {{label}}",
+    "checking": "Projekt wird geprüft ({{n}} Teile)…",
+    "checked": "Prüfung abgeschlossen in {{seconds}} s",
+    "checkFailed": "Projekt konnte nicht geprüft werden: {{error}}",
     "started": "Build gestartet (Ziel {{target}}, {{n}} Teile)",
     "phase": "Build-Schritt: {{phase}}",
     "tick": "{{phase}} {{current}}/{{total}} — {{detail}}",
-    "finished": "Build fertig: {{n}} Ressourcen, {{warnings}} Warnungen, {{seconds}} s",
+    "finished": "Build fertig in {{seconds}} s",
     "failed": "Build fehlgeschlagen: {{error}}",
     "busy": "Build nicht gestartet — es läuft noch ein anderer Vorgang",
     "validated": "Projekt geprüft: {{n}} Hinweise, {{errors}} Fehler",

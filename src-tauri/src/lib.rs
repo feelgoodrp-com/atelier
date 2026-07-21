@@ -207,9 +207,9 @@ pub fn run() {
             label,
             event: tauri::WindowEvent::Destroyed,
             ..
-        } if label == "logs" => {
+        } => {
             if let Some(stream) = app_handle.try_state::<std::sync::Arc<logging::LogStream>>() {
-                stream.set_streaming(false);
+                stream.unsubscribe(&label);
             }
         }
         _ => {}

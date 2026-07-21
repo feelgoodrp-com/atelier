@@ -162,6 +162,25 @@ const WEBVIEW_RULES: Rule[] = [
     vars: (_m, c) => ({ error: String(c.json?.error ?? "") }),
   },
   {
+    re: /^checking project\b/u,
+    key: "build.checking",
+    vars: (_m, c) => ({ n: c.json?.drawables ?? "?" }),
+  },
+  {
+    re: /^project checked\b/u,
+    key: "build.checked",
+    vars: (_m, c) => ({
+      n: c.json?.findings ?? "?",
+      errors: c.json?.errors ?? "?",
+      seconds: String(c.json?.seconds ?? "?"),
+    }),
+  },
+  {
+    re: /^project check failed\b/u,
+    key: "build.checkFailed",
+    vars: (_m, c) => ({ error: String(c.json?.error ?? "") }),
+  },
+  {
     re: /^update available\b/u,
     key: "update.available",
     vars: (_m, c) => ({ version: String(c.json?.version ?? c.json?.latest ?? "") }),
@@ -301,6 +320,11 @@ const SIDECAR_RULES: Rule[] = [
   { re: /^Failed to read (.*)$/u, key: "io.readFailed", vars: (m) => ({ file: fileName(m[1]!) }) },
 
   // --- validation / build --------------------------------------------------
+  {
+    re: /^Validating drawable (\d+)\/(\d+): (.*)$/u,
+    key: "build.checkingItem",
+    vars: (m) => ({ current: m[1], total: m[2], label: m[3]!.trim() }),
+  },
   {
     re: /^Validated project (.*?): (\d+) findings \((\d+) errors\)/u,
     key: "build.validated",

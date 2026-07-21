@@ -59,10 +59,14 @@
     "package": "Packaging",
     "tattoos": "Tattoos"
   },
+  "validating.hint": "Every garment and texture is read and checked — on big projects this takes a while. The log on the right shows where it is.",
+  "log": {
+    "title": "Live log",
+    "waiting": "Waiting for the first message…",
+    "openWindow": "Open in its own window"
+  },
   "building": {
-    "starting": "Starting build…",
-    "openLogs": "Live logs",
-    "logsHint": "Opens a separate window with the live build log."
+    "starting": "Starting build…"
   },
   "done": {
     "title_one": "Build complete — {{count}} resource created.",

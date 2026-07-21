@@ -11,10 +11,21 @@ public sealed record Finding(string Severity, string Code, string? DrawableId, s
 /// </summary>
 public static class Validator
 {
-    public static List<Finding> Validate(AtelierProjectDto project, string projectDir, int splitAt)
+    /// <param name="log">
+    /// Optional progress sink. Validation reads and parses EVERY ydd and ytd,
+    /// which runs for minutes on a big project — without a per-item line the
+    /// app looks frozen and a hang cannot be attributed to a file.
+    /// </param>
+    public static List<Finding> Validate(
+        AtelierProjectDto project,
+        string projectDir,
+        int splitAt,
+        ILogger? log = null)
     {
         var findings = new List<Finding>();
         var drawables = project.Drawables ?? new List<ProjectDrawableDto>();
+        var total = drawables.Count;
+        var index = 0;
 
         // hash -> first drawable label, for duplicate detection.
         var seenYddHashes = new Dictionary<string, string>();
@@ -25,6 +36,9 @@ public static class Validator
         {
             var id = drawable.Id;
             var label = drawable.DisplayLabel;
+
+            // Emitted BEFORE the expensive work so a stall names its culprit.
+            log?.LogInformation("Validating drawable {Index}/{Total}: {Label}", ++index, total, label);
 
             if (!GtaSlots.IsValidSlot(drawable))
             {

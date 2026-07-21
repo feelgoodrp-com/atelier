@@ -24,7 +24,6 @@ import {
   Hammer,
   Info,
   Loader2,
-  ScrollText,
   TriangleAlert,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -63,8 +62,8 @@ import type {
 import { useProjectStore } from "@/lib/stores/project-store";
 import { useWorkbenchStore } from "@/lib/stores/workbench-store";
 import { usePreferencesStore } from "@/lib/stores/preferences-store";
-import { openLogWindow } from "@/lib/stores/log-console-store";
 import { log } from "@/lib/log";
+import { BuildLogPane } from "@/components/build/build-log-pane";
 
 type BuildStep = "setup" | "validating" | "findings" | "building" | "done" | "failed";
 
@@ -280,10 +279,22 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
       updateSettings({ dlcName: normalizedDlc });
     }
     setStep("validating");
+    const startedAt = Date.now();
+    log.info("checking project", {
+      drawables: project.drawables.length,
+      dlcName: normalizedDlc,
+    });
     try {
-      setFindings(await validateProject(projectDir, project));
+      const result = await validateProject(projectDir, project);
+      setFindings(result);
+      log.info("project checked", {
+        findings: result.length,
+        errors: result.filter((f) => f.severity === "error").length,
+        seconds: Math.round((Date.now() - startedAt) / 100) / 10,
+      });
       setStep("findings");
     } catch (e) {
+      log.error("project check failed", { error: errorMessage(e) });
       toast.error(t("toast.validateFailed"), { description: errorMessage(e) });
       setStep("setup");
     }
@@ -380,10 +391,19 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
       ? Math.round((progress.current / progress.total) * 100)
       : 0;
 
+  // Everything past the setup form runs on the wide two-pane surface.
+  const wide = step !== "setup";
+
   return (
     <Dialog open={open} onOpenChange={close}>
       <DialogContent
-        className="liquid-glass max-h-[85vh] border-white/15 sm:max-w-xl"
+        className={cn(
+          "liquid-glass flex flex-col border-white/15",
+          // The setup step is a compact form; from the check onwards the
+          // dialog becomes a work surface: room for the findings list and the
+          // live log next to it.
+          wide ? "h-[80vh] max-h-[80vh] sm:max-w-5xl" : "max-h-[85vh] sm:max-w-xl",
+        )}
         showCloseButton={!running}
         onInteractOutside={(e) => {
           if (running) e.preventDefault();
@@ -401,6 +421,11 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
             {t("dialog.description")}
           </DialogDescription>
         </DialogHeader>
+
+        {/* Left: the wizard step + its footer. Right (from the check on): the
+            live log, so progress is visible without a second window. */}
+        <div className="flex min-h-0 flex-1 gap-4">
+          <div className="flex min-h-0 flex-1 flex-col gap-4">
 
         {step === "setup" && (
           <div className="flex flex-col gap-4">
@@ -512,11 +537,14 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
           <div className="flex flex-col items-center gap-4 py-12">
             <Loader2 className="h-8 w-8 animate-spin text-[#7289DA]" />
             <p className="text-sm text-white/50">{t("validating")}</p>
+            <p className="max-w-xs text-center text-[11px] text-white/30">
+              {t("validating.hint")}
+            </p>
           </div>
         )}
 
         {step === "findings" && (
-          <div className="flex min-h-0 flex-col gap-3">
+          <div className="flex min-h-0 flex-1 flex-col gap-3">
             {findings.length === 0 ? (
               <div className="flex flex-col items-center gap-3 py-8">
                 <CircleCheck className="h-8 w-8 text-emerald-400" />
@@ -525,7 +553,7 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
                 </p>
               </div>
             ) : (
-              <ScrollArea className="max-h-[45vh] pr-1">
+              <ScrollArea className="min-h-0 flex-1 pr-1">
                 <div className="flex flex-col gap-3">
                   {SEVERITY_ORDER.map((severity) => {
                     const list = grouped[severity];
@@ -573,20 +601,6 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
             <p className="min-h-4 truncate text-[11px] text-white/40">
               {progress?.message ?? ""}
             </p>
-            <div className="flex items-center justify-between gap-3 border-t border-white/10 pt-3">
-              <p className="text-[11px] text-white/35">
-                {t("building.logsHint")}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="shrink-0"
-                onClick={() => openLogWindow()}
-              >
-                <ScrollText className="h-3.5 w-3.5" />
-                {t("building.openLogs")}
-              </Button>
-            </div>
           </div>
         )}
 
@@ -651,7 +665,7 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
         )}
 
         {step === "findings" && (
-          <DialogFooter>
+          <DialogFooter className="mt-auto">
             <Button variant="outline" onClick={() => setStep("setup")}>
               {t("common:back")}
             </Button>
@@ -663,7 +677,7 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
         )}
 
         {step === "done" && (
-          <DialogFooter>
+          <DialogFooter className="mt-auto">
             <Button variant="outline" onClick={() => void openOutputFolder()}>
               <FolderOpen className="h-4 w-4" />
               {t("done.openFolder")}
@@ -673,21 +687,17 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
         )}
 
         {step === "failed" && (
-          <DialogFooter>
-            <Button
-              variant="outline"
-              className="mr-auto"
-              onClick={() => openLogWindow()}
-            >
-              <ScrollText className="h-4 w-4" />
-              {t("building.openLogs")}
-            </Button>
+          <DialogFooter className="mt-auto">
             <Button variant="outline" onClick={() => setStep("setup")}>
               {t("common:back")}
             </Button>
             <Button onClick={() => close(false)}>{t("common:close")}</Button>
           </DialogFooter>
         )}
+          </div>
+
+          {wide && <BuildLogPane className="w-[340px] shrink-0" />}
+        </div>
       </DialogContent>
     </Dialog>
   );
