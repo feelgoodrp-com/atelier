@@ -56,10 +56,13 @@
     "copy": "Copying files",
     "ymt": "Generating YMT",
     "meta": "Writing manifests",
-    "package": "Packaging"
+    "package": "Packaging",
+    "tattoos": "Tattoos"
   },
   "building": {
-    "starting": "Starting build…"
+    "starting": "Starting build…",
+    "openLogs": "Live logs",
+    "logsHint": "Opens a separate window with the live build log."
   },
   "done": {
     "title_one": "Build complete — {{count}} resource created.",

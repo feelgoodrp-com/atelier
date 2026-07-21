@@ -24,6 +24,7 @@ import {
   Hammer,
   Info,
   Loader2,
+  ScrollText,
   TriangleAlert,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -62,6 +63,8 @@ import type {
 import { useProjectStore } from "@/lib/stores/project-store";
 import { useWorkbenchStore } from "@/lib/stores/workbench-store";
 import { usePreferencesStore } from "@/lib/stores/preferences-store";
+import { openLogWindow } from "@/lib/stores/log-console-store";
+import { log } from "@/lib/log";
 
 type BuildStep = "setup" | "validating" | "findings" | "building" | "done" | "failed";
 
@@ -291,6 +294,14 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
     if (!current || !projectDir || !outDir || errorCount > 0) return;
     setStep("building");
     setProgress(null);
+    const startedAt = Date.now();
+    log.info("build started", {
+      target,
+      outDir,
+      dlcName: normalizedDlc,
+      resourceName: trimmedResource || null,
+      drawables: current.drawables.length,
+    });
     try {
       const { jobId } = await startBuild({
         projectDir,
@@ -304,12 +315,33 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
           splitAt: 256,
         },
       });
-      const done = await buildProgress(jobId, setProgress);
+      // Mirror every SSE tick into the log pipeline so the live log window
+      // shows the build is still moving. Phase changes are INFO (readable
+      // overview), individual ticks DEBUG — the window's level filter switches
+      // between the two.
+      let lastPhase = "";
+      const done = await buildProgress(jobId, (event) => {
+        setProgress(event);
+        if (event.phase !== lastPhase) {
+          lastPhase = event.phase;
+          log.info(`build phase: ${event.phase}`, { total: event.total });
+        }
+        log.debug(
+          `build ${event.phase} ${event.current}/${event.total} — ${event.message}`,
+        );
+      });
       if ("error" in done) {
+        log.error("build failed", { error: done.error, jobId });
         setBuildError(done.error);
         setStep("failed");
         return;
       }
+      log.info("build finished", {
+        resources: done.report.resources.length,
+        warnings: done.report.warnings.length,
+        outDir: done.outDir,
+        seconds: Math.round((Date.now() - startedAt) / 100) / 10,
+      });
       setReport(done.report);
       setBuiltOutDir(done.outDir);
       setStep("done");
@@ -321,10 +353,12 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
       });
     } catch (e) {
       if (e instanceof BuildBusyError) {
+        log.warn("build rejected — sidecar busy", { error: errorMessage(e) });
         toast.error(t("toast.sidecarBusy"), { description: errorMessage(e) });
         setStep("findings");
         return;
       }
+      log.error("build failed", { error: errorMessage(e) });
       setBuildError(errorMessage(e));
       setStep("failed");
     }
@@ -539,6 +573,20 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
             <p className="min-h-4 truncate text-[11px] text-white/40">
               {progress?.message ?? ""}
             </p>
+            <div className="flex items-center justify-between gap-3 border-t border-white/10 pt-3">
+              <p className="text-[11px] text-white/35">
+                {t("building.logsHint")}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={() => openLogWindow()}
+              >
+                <ScrollText className="h-3.5 w-3.5" />
+                {t("building.openLogs")}
+              </Button>
+            </div>
           </div>
         )}
 
@@ -626,6 +674,14 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
 
         {step === "failed" && (
           <DialogFooter>
+            <Button
+              variant="outline"
+              className="mr-auto"
+              onClick={() => openLogWindow()}
+            >
+              <ScrollText className="h-4 w-4" />
+              {t("building.openLogs")}
+            </Button>
             <Button variant="outline" onClick={() => setStep("setup")}>
               {t("common:back")}
             </Button>

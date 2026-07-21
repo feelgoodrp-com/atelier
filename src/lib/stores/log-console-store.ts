@@ -30,11 +30,17 @@ interface LogConsoleState {
   minLevel: LogLevel;
   search: string;
   autoScroll: boolean;
+  /**
+   * Rewrite log lines into plain language (see lib/log-humanize.ts) and hide
+   * pure plumbing. On by default — the raw view is the expert mode.
+   */
+  plainLanguage: boolean;
 
   setEnabled: (enabled: boolean) => void;
   setMinLevel: (level: LogLevel) => void;
   setSearch: (search: string) => void;
   setAutoScroll: (autoScroll: boolean) => void;
+  setPlainLanguage: (plain: boolean) => void;
   clear: () => void;
 }
 
@@ -44,11 +50,13 @@ export const useLogConsoleStore = create<LogConsoleState>((set) => ({
   minLevel: "DEBUG",
   search: "",
   autoScroll: true,
+  plainLanguage: true,
 
   setEnabled: (enabled) => set({ enabled }),
   setMinLevel: (minLevel) => set({ minLevel }),
   setSearch: (search) => set({ search }),
   setAutoScroll: (autoScroll) => set({ autoScroll }),
+  setPlainLanguage: (plainLanguage) => set({ plainLanguage }),
   clear: () => set({ entries: [] }),
 }));
 

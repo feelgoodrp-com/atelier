@@ -1,0 +1,161 @@
+{
+  "ui": {
+    "plainOn": "Plain language: on",
+    "plainOff": "Plain language: off",
+    "hiddenLines": "{{n}} technical lines hidden",
+    "rawHint": "Original: {{raw}}"
+  },
+  "source": {
+    "app": "App",
+    "engine": "Engine"
+  },
+  "level": {
+    "TRACE": "Detail",
+    "DEBUG": "Detail",
+    "INFO": "Info",
+    "WARN": "Warning",
+    "ERROR": "Error"
+  },
+  "phase": {
+    "validate": "check",
+    "plan": "planning",
+    "copy": "copying files",
+    "ymt": "generating YMT",
+    "meta": "writing manifests",
+    "package": "packaging",
+    "tattoos": "tattoos"
+  },
+  "slot": {
+    "head": "head",
+    "berd": "masks / beards",
+    "hair": "hair",
+    "uppr": "torso / arms",
+    "lowr": "trousers",
+    "hand": "bags / parachutes",
+    "feet": "shoes",
+    "teef": "chains / scarves",
+    "accs": "undershirts",
+    "task": "vests",
+    "decl": "decals / badges",
+    "jbib": "jackets / tops",
+    "p_head": "hats / helmets",
+    "p_eyes": "glasses",
+    "p_ears": "earrings",
+    "p_lwrist": "watches",
+    "p_rwrist": "bracelets",
+    "p_hip": "hip accessories"
+  },
+  "app": {
+    "starting": "atelier is starting",
+    "loggingReady": "Logging ready (window + file)",
+    "loggingNoFile": "Logging works, but no log file could be created",
+    "effectsOk": "Window appearance applied",
+    "effectsFailed": "Window appearance could not be applied ({{error}})",
+    "exiting": "atelier is closing"
+  },
+  "svc": {
+    "starting": "Background engine is starting…",
+    "ready": "Background engine ready",
+    "listening": "Background engine running (version {{version}})",
+    "manualRestart": "Restarting the background engine",
+    "crashed": "Background engine stopped unexpectedly — restarting ({{attempt}} of {{max}})",
+    "crashedPlain": "Background engine stopped unexpectedly",
+    "gaveUp": "Background engine could not be restarted after {{n}} attempts — please restart atelier",
+    "commandError": "Background engine error: {{error}}",
+    "spawnFailed": "Background engine could not be started: {{error}}",
+    "badDevPort": "Invalid developer port setting — ignored",
+    "noToken": "Background engine refused to start without a security token",
+    "hostGone": "atelier was closed — shutting the background engine down",
+    "devNoAuth": "Developer mode: the background engine runs without a security token",
+    "rejected": "A request was rejected because it lacked permission ({{path}})"
+  },
+  "gta": {
+    "pathSet": "GTA V folder set: {{path}}",
+    "keys": "Reading GTA V keys…",
+    "cacheInit": "Reading GTA V files for the first time — this can take a few minutes…",
+    "cacheReady": "GTA V files ready",
+    "cacheStatus": "Reading GTA V files: {{detail}}",
+    "pumpError": "Problem while reading the GTA V files"
+  },
+  "ped": {
+    "male": "male character",
+    "female": "female character",
+    "prewarmStart": "Preparing character models…",
+    "prewarmDone": "Character models ready",
+    "prewarmCrashed": "Character models could not be prepared",
+    "prewarmed": "Character model ready: {{ped}} ({{n}} parts)",
+    "prewarmFailed": "Character model could not be prepared: {{ped}}",
+    "baseLoaded": "Base model loaded: {{ped}} ({{n}} parts)",
+    "loadFailed": "Character model could not be loaded: {{ped}}"
+  },
+  "preview": {
+    "built": "3D preview created ({{vertices}} points, {{size}})",
+    "outfitBuilt": "Outfit preview created ({{n}} garments, {{size}})",
+    "notCached": "Preview could not be cached — it will be rebuilt next time",
+    "failed": "Preview failed: {{file}}",
+    "outfitFailed": "Outfit preview failed",
+    "textureFailed": "A texture could not be read: {{texture}}",
+    "thumbFailed": "Thumbnail could not be rendered: {{texture}}"
+  },
+  "appearance": {
+    "drawableMissing": "{{slot}}: variant {{drawable}} does not exist in the game — using the default",
+    "textureClamped": "{{slot}}: colour {{texture}} does not exist — using {{used}} instead",
+    "drawableFailed": "{{slot}}: {{name}} could not be loaded ({{reason}}) — using the default",
+    "textureFailed": "{{slot}}: texture {{name}} could not be loaded ({{reason}}) — the item stays untextured"
+  },
+  "face": {
+    "compositeFailed": "Face could not be applied — the default skin stays",
+    "transient": "Face texture was not readable this time: {{file}}",
+    "ytdFailed": "Face texture file could not be loaded: {{file}}",
+    "textureFailed": "Face texture could not be read: {{texture}}",
+    "skinParent": "Part of the face could not be resolved — the default stays",
+    "encodeFailed": "Face texture could not be prepared"
+  },
+  "pose": {
+    "resolved": "Pose loaded: {{pose}}",
+    "candidate": "Pose {{pose}}: one variant is unavailable, trying the next",
+    "unavailable": "Pose unavailable: {{pose}} ({{reason}})",
+    "loadFailed": "Pose could not be loaded: {{pose}}",
+    "evalFailed": "Pose could not be applied: {{pose}}"
+  },
+  "anim": {
+    "resolved": "Animation loaded: {{anim}} ({{frames}} frames)",
+    "candidate": "Animation {{anim}}: one variant is unavailable, trying the next",
+    "unavailable": "Animation unavailable: {{anim}} ({{reason}})",
+    "loadFailed": "Animation could not be loaded: {{anim}}",
+    "sampleFailed": "Animation could not be played: {{anim}}",
+    "dictFailed": "Animation package could not be loaded: {{dict}}"
+  },
+  "io": {
+    "scanned": "Folder scanned: {{folder}} — {{n}} entries, {{warnings}} notices",
+    "scanFailed": "Folder could not be scanned: {{folder}}",
+    "parseFailed": "File could not be read: {{file}}",
+    "readFailed": "File could not be opened: {{file}}"
+  },
+  "build": {
+    "started": "Build started (target {{target}}, {{n}} items)",
+    "phase": "Build step: {{phase}}",
+    "tick": "{{phase}} {{current}}/{{total}} — {{detail}}",
+    "finished": "Build finished: {{n}} resources, {{warnings}} warnings, {{seconds}} s",
+    "failed": "Build failed: {{error}}",
+    "busy": "Build not started — another job is still running",
+    "validated": "Project checked: {{n}} notices, {{errors}} errors",
+    "validationFailed": "Project could not be checked",
+    "jobStarted": "Build running (target {{target}})",
+    "jobDone": "Build finished: {{n}} resources, {{warnings}} warnings",
+    "jobFailed": "Build failed",
+    "debugFailed": "Diagnostic file could not be read: {{file}}"
+  },
+  "texture": {
+    "optimized": "Texture shrunk: {{file}} ({{before}} → {{after}}, {{size}})",
+    "optimizeFailed": "Texture could not be shrunk: {{file}}",
+    "converted": "Image converted: {{from}} → {{to}}",
+    "convertFailed": "Image could not be converted: {{file}}"
+  },
+  "update": {
+    "available": "An update is available ({{version}})",
+    "checkFailed": "Update check failed",
+    "installed": "Update installed — atelier restarts now",
+    "installFailed": "Update could not be installed"
+  }
+}

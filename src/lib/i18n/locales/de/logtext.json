@@ -1,0 +1,161 @@
+{
+  "ui": {
+    "plainOn": "Klartext: an",
+    "plainOff": "Klartext: aus",
+    "hiddenLines": "{{n}} technische Zeilen ausgeblendet",
+    "rawHint": "Original: {{raw}}"
+  },
+  "source": {
+    "app": "App",
+    "engine": "Engine"
+  },
+  "level": {
+    "TRACE": "Detail",
+    "DEBUG": "Detail",
+    "INFO": "Info",
+    "WARN": "Warnung",
+    "ERROR": "Fehler"
+  },
+  "phase": {
+    "validate": "Prüfung",
+    "plan": "Planung",
+    "copy": "Dateien kopieren",
+    "ymt": "YMT erzeugen",
+    "meta": "Manifeste schreiben",
+    "package": "Paketieren",
+    "tattoos": "Tattoos"
+  },
+  "slot": {
+    "head": "Kopf",
+    "berd": "Masken / Bärte",
+    "hair": "Haare",
+    "uppr": "Oberkörper / Arme",
+    "lowr": "Hosen",
+    "hand": "Taschen / Fallschirme",
+    "feet": "Schuhe",
+    "teef": "Ketten / Schals",
+    "accs": "Unterhemden",
+    "task": "Westen",
+    "decl": "Sticker / Abzeichen",
+    "jbib": "Jacken / Oberteile",
+    "p_head": "Hüte / Helme",
+    "p_eyes": "Brillen",
+    "p_ears": "Ohrringe",
+    "p_lwrist": "Uhren",
+    "p_rwrist": "Armbänder",
+    "p_hip": "Hüft-Accessoires"
+  },
+  "app": {
+    "starting": "atelier startet",
+    "loggingReady": "Protokollierung bereit (Fenster + Datei)",
+    "loggingNoFile": "Protokollierung läuft, aber es konnte keine Log-Datei angelegt werden",
+    "effectsOk": "Fensteroptik angewendet",
+    "effectsFailed": "Fensteroptik konnte nicht angewendet werden ({{error}})",
+    "exiting": "atelier wird beendet"
+  },
+  "svc": {
+    "starting": "Hintergrund-Engine startet…",
+    "ready": "Hintergrund-Engine bereit",
+    "listening": "Hintergrund-Engine läuft (Version {{version}})",
+    "manualRestart": "Hintergrund-Engine wird neu gestartet",
+    "crashed": "Hintergrund-Engine unerwartet beendet — Neustart ({{attempt}} von {{max}})",
+    "crashedPlain": "Hintergrund-Engine unerwartet beendet",
+    "gaveUp": "Hintergrund-Engine konnte nach {{n}} Versuchen nicht neu gestartet werden — bitte atelier neu starten",
+    "commandError": "Fehler der Hintergrund-Engine: {{error}}",
+    "spawnFailed": "Hintergrund-Engine konnte nicht gestartet werden: {{error}}",
+    "badDevPort": "Ungültige Entwickler-Port-Einstellung — wird ignoriert",
+    "noToken": "Hintergrund-Engine wurde ohne Sicherheits-Token nicht gestartet",
+    "hostGone": "atelier wurde geschlossen — Hintergrund-Engine wird beendet",
+    "devNoAuth": "Entwicklermodus: Die Hintergrund-Engine läuft ohne Sicherheits-Token",
+    "rejected": "Eine Anfrage wurde ohne Berechtigung abgelehnt ({{path}})"
+  },
+  "gta": {
+    "pathSet": "GTA-V-Ordner gesetzt: {{path}}",
+    "keys": "GTA-V-Schlüssel werden gelesen…",
+    "cacheInit": "GTA-V-Dateien werden zum ersten Mal eingelesen — das kann ein paar Minuten dauern…",
+    "cacheReady": "GTA-V-Dateien bereit",
+    "cacheStatus": "GTA-V-Dateien werden gelesen: {{detail}}",
+    "pumpError": "Problem beim Lesen der GTA-V-Dateien"
+  },
+  "ped": {
+    "male": "männlicher Charakter",
+    "female": "weiblicher Charakter",
+    "prewarmStart": "Charaktermodelle werden vorbereitet…",
+    "prewarmDone": "Charaktermodelle bereit",
+    "prewarmCrashed": "Charaktermodelle konnten nicht vorbereitet werden",
+    "prewarmed": "Charaktermodell bereit: {{ped}} ({{n}} Teile)",
+    "prewarmFailed": "Charaktermodell konnte nicht vorbereitet werden: {{ped}}",
+    "baseLoaded": "Basismodell geladen: {{ped}} ({{n}} Teile)",
+    "loadFailed": "Charaktermodell konnte nicht geladen werden: {{ped}}"
+  },
+  "preview": {
+    "built": "3D-Vorschau erstellt ({{vertices}} Punkte, {{size}})",
+    "outfitBuilt": "Outfit-Vorschau erstellt ({{n}} Kleidungsstücke, {{size}})",
+    "notCached": "Vorschau konnte nicht zwischengespeichert werden — sie wird beim nächsten Mal neu erstellt",
+    "failed": "Vorschau fehlgeschlagen: {{file}}",
+    "outfitFailed": "Outfit-Vorschau fehlgeschlagen",
+    "textureFailed": "Eine Textur konnte nicht gelesen werden: {{texture}}",
+    "thumbFailed": "Vorschaubild konnte nicht erzeugt werden: {{texture}}"
+  },
+  "appearance": {
+    "drawableMissing": "{{slot}}: Variante {{drawable}} gibt es im Spiel nicht — Standard wird verwendet",
+    "textureClamped": "{{slot}}: Farbe {{texture}} gibt es nicht — {{used}} wird stattdessen verwendet",
+    "drawableFailed": "{{slot}}: {{name}} konnte nicht geladen werden ({{reason}}) — Standard wird verwendet",
+    "textureFailed": "{{slot}}: Textur {{name}} konnte nicht geladen werden ({{reason}}) — das Teil bleibt ohne Textur"
+  },
+  "face": {
+    "compositeFailed": "Gesicht konnte nicht angewendet werden — die Standardhaut bleibt",
+    "transient": "Gesichtstextur war diesmal nicht lesbar: {{file}}",
+    "ytdFailed": "Gesichtstextur-Datei konnte nicht geladen werden: {{file}}",
+    "textureFailed": "Gesichtstextur konnte nicht gelesen werden: {{texture}}",
+    "skinParent": "Ein Teil des Gesichts konnte nicht zugeordnet werden — der Standard bleibt",
+    "encodeFailed": "Gesichtstextur konnte nicht vorbereitet werden"
+  },
+  "pose": {
+    "resolved": "Pose geladen: {{pose}}",
+    "candidate": "Pose {{pose}}: Eine Variante ist nicht verfügbar, die nächste wird probiert",
+    "unavailable": "Pose nicht verfügbar: {{pose}} ({{reason}})",
+    "loadFailed": "Pose konnte nicht geladen werden: {{pose}}",
+    "evalFailed": "Pose konnte nicht angewendet werden: {{pose}}"
+  },
+  "anim": {
+    "resolved": "Animation geladen: {{anim}} ({{frames}} Bilder)",
+    "candidate": "Animation {{anim}}: Eine Variante ist nicht verfügbar, die nächste wird probiert",
+    "unavailable": "Animation nicht verfügbar: {{anim}} ({{reason}})",
+    "loadFailed": "Animation konnte nicht geladen werden: {{anim}}",
+    "sampleFailed": "Animation konnte nicht abgespielt werden: {{anim}}",
+    "dictFailed": "Animationspaket konnte nicht geladen werden: {{dict}}"
+  },
+  "io": {
+    "scanned": "Ordner durchsucht: {{folder}} — {{n}} Einträge, {{warnings}} Hinweise",
+    "scanFailed": "Ordner konnte nicht durchsucht werden: {{folder}}",
+    "parseFailed": "Datei konnte nicht gelesen werden: {{file}}",
+    "readFailed": "Datei konnte nicht geöffnet werden: {{file}}"
+  },
+  "build": {
+    "started": "Build gestartet (Ziel {{target}}, {{n}} Teile)",
+    "phase": "Build-Schritt: {{phase}}",
+    "tick": "{{phase}} {{current}}/{{total}} — {{detail}}",
+    "finished": "Build fertig: {{n}} Ressourcen, {{warnings}} Warnungen, {{seconds}} s",
+    "failed": "Build fehlgeschlagen: {{error}}",
+    "busy": "Build nicht gestartet — es läuft noch ein anderer Vorgang",
+    "validated": "Projekt geprüft: {{n}} Hinweise, {{errors}} Fehler",
+    "validationFailed": "Projekt konnte nicht geprüft werden",
+    "jobStarted": "Build läuft (Ziel {{target}})",
+    "jobDone": "Build fertig: {{n}} Ressourcen, {{warnings}} Warnungen",
+    "jobFailed": "Build fehlgeschlagen",
+    "debugFailed": "Diagnose-Datei konnte nicht gelesen werden: {{file}}"
+  },
+  "texture": {
+    "optimized": "Textur verkleinert: {{file}} ({{before}} → {{after}}, {{size}})",
+    "optimizeFailed": "Textur konnte nicht verkleinert werden: {{file}}",
+    "converted": "Bild umgewandelt: {{from}} → {{to}}",
+    "convertFailed": "Bild konnte nicht umgewandelt werden: {{file}}"
+  },
+  "update": {
+    "available": "Ein Update ist verfügbar ({{version}})",
+    "checkFailed": "Update-Prüfung fehlgeschlagen",
+    "installed": "Update installiert — atelier startet jetzt neu",
+    "installFailed": "Update konnte nicht installiert werden"
+  }
+}

@@ -60,6 +60,17 @@ export async function setLogConsoleEnabled(enabled: boolean): Promise<void> {
   await store.set("logConsoleEnabled", enabled);
 }
 
+/** Plain-language rendering in the live log window (on by default). */
+export async function getLogPlainLanguage(): Promise<boolean> {
+  const store = await getStore();
+  return (await store.get<boolean>("logPlainLanguage")) ?? true;
+}
+
+export async function setLogPlainLanguage(plain: boolean): Promise<void> {
+  const store = await getStore();
+  await store.set("logPlainLanguage", plain);
+}
+
 /** UI language code (e.g. "en", "de"). Null = not chosen yet (defaults to English). */
 export async function getLanguage(): Promise<string | null> {
   const store = await getStore();

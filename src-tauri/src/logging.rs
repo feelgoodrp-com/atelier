@@ -82,26 +82,48 @@ pub fn set_log_stream(state: tauri::State<'_, Arc<LogStream>>, enabled: bool) {
 }
 
 /// Collects the `message` field (+ any extra fields as `key=value`).
+///
+/// Events bridged from the `log` crate (dependencies going through
+/// tracing-log) carry `log.target`, `log.file`, `log.line` and
+/// `log.module_path` as ordinary fields. Rendered into the message they are
+/// pure noise — `log.file` is an absolute path into the cargo registry. Keep
+/// `log.target` as the real target, drop the rest.
 #[derive(Default)]
 struct MessageVisitor {
     message: String,
     extras: String,
+    bridged_target: Option<String>,
+}
+
+impl MessageVisitor {
+    /// True when the field is `log`-crate bridge metadata (never rendered).
+    fn is_bridge_field(&mut self, name: &str, value: &str) -> bool {
+        if name == "log.target" {
+            self.bridged_target = Some(value.trim_matches('"').to_string());
+            return true;
+        }
+        name.starts_with("log.")
+    }
 }
 
 impl Visit for MessageVisitor {
     fn record_str(&mut self, field: &Field, value: &str) {
         if field.name() == "message" {
             self.message = value.to_string();
-        } else {
+        } else if !self.is_bridge_field(field.name(), value) {
             self.extras.push_str(&format!(" {}={}", field.name(), value));
         }
     }
 
     fn record_debug(&mut self, field: &Field, value: &dyn std::fmt::Debug) {
-        if field.name() == "message" {
+        let name = field.name();
+        if name == "message" {
             self.message = format!("{value:?}");
-        } else {
-            self.extras.push_str(&format!(" {}={:?}", field.name(), value));
+            return;
+        }
+        let rendered = format!("{value:?}");
+        if !self.is_bridge_field(name, &rendered) {
+            self.extras.push_str(&format!(" {name}={rendered}"));
         }
     }
 }
@@ -125,13 +147,19 @@ impl<S: tracing::Subscriber> Layer<S> for WebviewLayer {
         let meta = event.metadata();
         let mut visitor = MessageVisitor::default();
         event.record(&mut visitor);
+        // A bridged `log` record's own target is more useful than the
+        // tracing-log shim's ("log").
+        let target = visitor
+            .bridged_target
+            .take()
+            .unwrap_or_else(|| meta.target().to_string());
         let entry = LogEntry {
             ts: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map(|d| d.as_millis() as u64)
                 .unwrap_or(0),
             level: meta.level().to_string(),
-            target: meta.target().to_string(),
+            target,
             message: format!("{}{}", visitor.message, visitor.extras),
         };
         {

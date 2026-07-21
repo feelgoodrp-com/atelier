@@ -56,10 +56,13 @@
     "copy": "Dateien kopieren",
     "ymt": "YMT-Generierung",
     "meta": "Manifeste schreiben",
-    "package": "Paketierung"
+    "package": "Paketierung",
+    "tattoos": "Tattoos"
   },
   "building": {
-    "starting": "Build wird gestartet…"
+    "starting": "Build wird gestartet…",
+    "openLogs": "Live-Logs",
+    "logsHint": "Öffnet ein eigenes Fenster mit dem laufenden Build-Log."
   },
   "done": {
     "title_one": "Build abgeschlossen — {{count}} Ressource erstellt.",

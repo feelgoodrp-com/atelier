@@ -46,6 +46,42 @@ fn get_log_dir(app: tauri::AppHandle) -> Option<String> {
     app.path().app_log_dir().ok().map(|p| p.display().to_string())
 }
 
+/// Logical inner size of the log window — kept in sync with the builder below
+/// so the placement math knows how wide the window will be.
+const LOG_WINDOW_SIZE: (f64, f64) = (980.0, 560.0);
+
+/// Logical top-left for a log window docked beside the main window: right of
+/// it when the monitor has room, else left. `None` when the geometry can't be
+/// read or neither side fits — the OS then places the window itself.
+fn beside_main_window(app: &tauri::AppHandle) -> Option<(f64, f64)> {
+    const GAP: f64 = 12.0;
+
+    let main = app.get_webview_window("main")?;
+    let scale = main.scale_factor().ok()?;
+    let pos = main.outer_position().ok()?.to_logical::<f64>(scale);
+    let size = main.outer_size().ok()?.to_logical::<f64>(scale);
+
+    // Monitor bounds keep the window on-screen; unknown monitor = no clamp.
+    let (min_x, max_x) = match main.current_monitor().ok().flatten() {
+        Some(monitor) => {
+            let m_pos = monitor.position().to_logical::<f64>(scale);
+            let m_size = monitor.size().to_logical::<f64>(scale);
+            (m_pos.x, m_pos.x + m_size.width)
+        }
+        None => (f64::MIN, f64::MAX),
+    };
+
+    let right = pos.x + size.width + GAP;
+    let left = pos.x - LOG_WINDOW_SIZE.0 - GAP;
+    if right + LOG_WINDOW_SIZE.0 <= max_x {
+        Some((right, pos.y))
+    } else if left >= min_x {
+        Some((left, pos.y))
+    } else {
+        None
+    }
+}
+
 /// Opens (or focuses) the live log console as its OWN window.
 /// MUST be async: synchronous window creation deadlocks the main event loop
 /// on Windows (documented wry/Tauri gotcha) — the new webview stays white
@@ -61,18 +97,26 @@ async fn open_log_window(app: tauri::AppHandle) -> Result<(), String> {
 
     // Plain app URL — the frontend decides what to render from the WINDOW
     // LABEL (query strings in WebviewUrl::App get path-encoded and 404).
-    let window = tauri::WebviewWindowBuilder::new(
+    let mut builder = tauri::WebviewWindowBuilder::new(
         &app,
         "logs",
         tauri::WebviewUrl::App("index.html".into()),
     )
-    .title("atelier — Echtzeit-Log")
-    .inner_size(980.0, 560.0)
+    // Neutral until the webview knows the UI language (see log-window.tsx).
+    .title("atelier")
+    .inner_size(LOG_WINDOW_SIZE.0, LOG_WINDOW_SIZE.1)
     .min_inner_size(640.0, 320.0)
     .decorations(false)
-    .transparent(true)
-    .build()
-    .map_err(|e| e.to_string())?;
+    .transparent(true);
+
+    // Dock it BESIDE the main window (right, else left if that would leave the
+    // monitor) so build progress is readable next to the build dialog. Only on
+    // creation — a window the user moved keeps its place when re-focused.
+    if let Some((x, y)) = beside_main_window(&app) {
+        builder = builder.position(x, y);
+    }
+
+    let window = builder.build().map_err(|e| e.to_string())?;
 
     // Same glass look as the main window.
     use tauri::window::{Effect, EffectsBuilder};

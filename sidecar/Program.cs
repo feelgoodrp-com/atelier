@@ -12,6 +12,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole(options => options.LogToStandardErrorThreshold = LogLevel.Trace);
 
+// The ASP.NET pipeline logs every single request several times over at
+// Information ("Request starting/finished", CORS, endpoint execution, result
+// serialization). With per-keystroke preview requests and the SSE build
+// stream that is ~98% of everything the host records — it drowns the app's
+// own messages in the live log window and costs IPC per line. Our categories
+// (Atelier.* / Feelgood.*) are untouched.
+builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
+builder.Logging.AddFilter("System", LogLevel.Warning);
+
 // Default: ephemeral loopback port (port 0, resolved after startup).
 // FG_SIDECAR_DEV_PORT pins a fixed port for manual development.
 var port = 0;
