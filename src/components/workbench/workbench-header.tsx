@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { BuildDialog } from "@/components/build/build-dialog";
+import { isBuildRunning, useBuildStore } from "@/lib/stores/build-store";
+import { useUiStore } from "@/lib/stores/ui-store";
 import { BulkOptimizeDialog } from "@/components/build/bulk-optimize-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -193,6 +195,14 @@ export function WorkbenchHeader({ onOpenDuplicates }: WorkbenchHeaderProps) {
   const setPreviewOpen = useWorkbenchStore((s) => s.setPreviewOpen);
 
   const [buildOpen, setBuildOpen] = useState(false);
+  const buildActive = useBuildStore(
+    // A finished session must not keep the button on "back to build".
+    (s) => s.active && s.step !== "done" && s.step !== "failed",
+  );
+  // A check/build reads every ydd and ytd from disk — block the actions that
+  // would rewrite those files underneath it.
+  const buildRunning = useBuildStore((s) => s.active && isBuildRunning(s.step));
+  const setScreen = useUiStore((s) => s.setScreen);
   const [bulkOptimizeOpen, setBulkOptimizeOpen] = useState(false);
 
   const canUndo = useStore(
@@ -340,7 +350,12 @@ export function WorkbenchHeader({ onOpenDuplicates }: WorkbenchHeaderProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-72">
-            <DropdownMenuItem onClick={() => setBulkOptimizeOpen(true)}>
+            {/* Rewrites texture files in place — must not run while the
+                sidecar is reading them for a check or build. */}
+            <DropdownMenuItem
+              disabled={buildRunning}
+              onClick={() => setBulkOptimizeOpen(true)}
+            >
               <Images className="h-4 w-4" />
               {t("header.optimizeOversized")}
             </DropdownMenuItem>
@@ -348,7 +363,12 @@ export function WorkbenchHeader({ onOpenDuplicates }: WorkbenchHeaderProps) {
         </DropdownMenu>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-7 px-3 text-xs">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-3 text-xs"
+              disabled={buildRunning}
+            >
               <Plus className="h-3.5 w-3.5" />
               {t("header.import")}
             </Button>
@@ -373,14 +393,18 @@ export function WorkbenchHeader({ onOpenDuplicates }: WorkbenchHeaderProps) {
                 (project?.drawables.length ?? 0) === 0 &&
                 (project?.tattoos.length ?? 0) === 0
               }
-              onClick={() => setBuildOpen(true)}
+              onClick={() =>
+                // Jumped here from a running session? Go back to it instead of
+                // starting a second one.
+                buildActive ? setScreen("build") : setBuildOpen(true)
+              }
             >
               <Hammer className="h-3.5 w-3.5" />
-              {t("header.build")}
+              {buildActive ? t("header.backToBuild") : t("header.build")}
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            {t("header.buildTooltip")}
+            {buildActive ? t("header.backToBuildTooltip") : t("header.buildTooltip")}
           </TooltipContent>
         </Tooltip>
       </div>

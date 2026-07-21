@@ -15,6 +15,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { BuildDialog } from "@/components/build/build-dialog";
+import { useBuildStore } from "@/lib/stores/build-store";
+import { useUiStore } from "@/lib/stores/ui-store";
 import { CloudSection } from "@/components/workbench/cloud-section";
 import { ProjectName, SaveIndicator } from "@/components/workbench/workbench-header";
 import { useProjectStore } from "@/lib/stores/project-store";
@@ -23,6 +25,11 @@ export function TattooHeader() {
   const { t } = useTranslation("tattoos");
   const project = useProjectStore((s) => s.project);
   const [buildOpen, setBuildOpen] = useState(false);
+  const buildActive = useBuildStore(
+    // A finished session must not keep the button on "back to build".
+    (s) => s.active && s.step !== "done" && s.step !== "failed",
+  );
+  const setScreen = useUiStore((s) => s.setScreen);
 
   const canUndo = useStore(useProjectStore.temporal, (s) => s.pastStates.length > 0);
   const canRedo = useStore(useProjectStore.temporal, (s) => s.futureStates.length > 0);
@@ -83,13 +90,15 @@ export function TattooHeader() {
               size="sm"
               className="h-7 px-3 text-xs"
               disabled={!canBuild}
-              onClick={() => setBuildOpen(true)}
+              onClick={() => (buildActive ? setScreen("build") : setBuildOpen(true))}
             >
               <Hammer className="h-3.5 w-3.5" />
-              {t("header.build")}
+              {buildActive ? t("header.backToBuild") : t("header.build")}
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">{t("header.buildTooltip")}</TooltipContent>
+          <TooltipContent side="bottom">
+            {buildActive ? t("header.backToBuildTooltip") : t("header.buildTooltip")}
+          </TooltipContent>
         </Tooltip>
       </div>
 

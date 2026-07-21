@@ -38,13 +38,25 @@ function time(ts: number): string {
   ).padStart(2, "0")}`;
 }
 
-export function BuildLogPane({ className }: { className?: string }) {
+export function BuildLogPane({
+  className,
+  since: sinceProp,
+}: {
+  className?: string;
+  /**
+   * Cutoff timestamp. MUST come from the session (not mount time): the screen
+   * unmounts whenever the user jumps to the workbench, and a mount-scoped
+   * cutoff would hide everything the running job logged while they were away.
+   */
+  since?: number;
+}) {
   const { t } = useTranslation("build");
   const { t: tRaw, i18n } = useTranslation("logtext");
   const tl = tRaw as unknown as (key: string, vars?: Record<string, unknown>) => string;
 
   const entries = useLogConsoleStore((s) => s.entries);
-  const [since] = useState(() => Date.now());
+  const [mountedAt] = useState(() => Date.now());
+  const since = sinceProp ?? mountedAt;
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

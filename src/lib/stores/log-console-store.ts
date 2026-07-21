@@ -73,39 +73,62 @@ let unlisten: UnlistenFn | null = null;
  */
 let consumers = 0;
 
+/**
+ * Serializes start/stop. Both await Tauri calls, and React remounts them back
+ * to back (screen switches, StrictMode) — without a queue a stop can run
+ * between a start's awaits and leave either a leaked listener or a live
+ * counter with no subscription.
+ */
+let pending: Promise<void> = Promise.resolve();
+
+function enqueue(task: () => Promise<void>): Promise<void> {
+  pending = pending.then(task, task);
+  return pending;
+}
+
 /** Called on mount by a log consumer: seed history + subscribe to the stream. */
-export async function startLogStream(): Promise<void> {
-  consumers += 1;
-  if (consumers > 1) return;
-  try {
-    const history = await invoke<LogEntry[]>("get_log_buffer");
-    useLogConsoleStore.setState({ entries: history.slice(-MAX_ENTRIES) });
-    unlisten = await listen<LogEntry>("log://entry", (event) => {
-      useLogConsoleStore.setState((state) => {
-        const entries =
-          state.entries.length >= MAX_ENTRIES
-            ? [...state.entries.slice(-MAX_ENTRIES + 1), event.payload]
-            : [...state.entries, event.payload];
-        return { entries };
+export function startLogStream(): Promise<void> {
+  return enqueue(async () => {
+    consumers += 1;
+    if (consumers > 1) return; // already streaming in this window
+    try {
+      const history = await invoke<LogEntry[]>("get_log_buffer");
+      useLogConsoleStore.setState({ entries: history.slice(-MAX_ENTRIES) });
+      const off = await listen<LogEntry>("log://entry", (event) => {
+        useLogConsoleStore.setState((state) => {
+          const entries =
+            state.entries.length >= MAX_ENTRIES
+              ? [...state.entries.slice(-MAX_ENTRIES + 1), event.payload]
+              : [...state.entries, event.payload];
+          return { entries };
+        });
       });
-    });
-    await invoke("set_log_stream", { enabled: true });
-  } catch {
-    // No Tauri bridge (browser dev) — console stays empty.
-  }
+      // Everyone left while we were awaiting — drop it again.
+      if (consumers === 0) {
+        off();
+        return;
+      }
+      unlisten = off;
+      await invoke("set_log_stream", { enabled: true });
+    } catch {
+      // No Tauri bridge (browser dev) — console stays empty.
+    }
+  });
 }
 
 /** Called by a log consumer on unmount; the last one out closes the stream. */
-export async function stopLogStream(): Promise<void> {
-  consumers = Math.max(0, consumers - 1);
-  if (consumers > 0) return;
-  try {
-    await invoke("set_log_stream", { enabled: false });
-  } catch {
-    /* ignore */
-  }
-  unlisten?.();
-  unlisten = null;
+export function stopLogStream(): Promise<void> {
+  return enqueue(async () => {
+    consumers = Math.max(0, consumers - 1);
+    if (consumers > 0) return;
+    try {
+      await invoke("set_log_stream", { enabled: false });
+    } catch {
+      /* ignore */
+    }
+    unlisten?.();
+    unlisten = null;
+  });
 }
 
 export function levelRank(level: string): number {

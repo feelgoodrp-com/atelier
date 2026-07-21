@@ -37,6 +37,12 @@
     "shopMetaHint": "Macht die Drawables für Shop-/Kleidungs-Scripts auffindbar.",
     "next": "Weiter zur Prüfung"
   },
+  "screen": {
+    "title": "Build",
+    "recheck": "Erneut prüfen",
+    "searchPlaceholder": "Befunde filtern…",
+    "noMatches": "Kein Befund passt zum Filter."
+  },
   "validating": "Projekt wird geprüft…",
   "findings": {
     "noIssues": "Keine Probleme gefunden — bereit zum Bauen.",

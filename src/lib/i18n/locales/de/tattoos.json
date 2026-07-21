@@ -8,6 +8,8 @@
     "badge": "Tattoos",
     "build": "Bauen",
     "buildTooltip": "Tattoo-Pack bauen",
+    "backToBuild": "Zurück zum Build",
+    "backToBuildTooltip": "Zurück zur laufenden Prüfung/zum Build",
     "undo": "Rückgängig",
     "redo": "Wiederholen"
   },

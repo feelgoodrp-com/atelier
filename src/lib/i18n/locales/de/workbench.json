@@ -53,7 +53,9 @@
     "addFiles": "Dateien hinzufügen…",
     "importPack": "Pack importieren…",
     "build": "Bauen",
-    "buildTooltip": "Pack als Clothing-Ressource bauen (FiveM, Singleplayer, …)"
+    "buildTooltip": "Pack als Clothing-Ressource bauen (FiveM, Singleplayer, …)",
+    "backToBuild": "Zurück zum Build",
+    "backToBuildTooltip": "Zurück zur laufenden Prüfung/zum Build"
   },
   "filePicker": {
     "clothingTitle": "Clothing-Dateien wählen (YDD, YTD, YLD)",

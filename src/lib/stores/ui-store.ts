@@ -1,6 +1,13 @@
 import { create } from "zustand";
 
-export type Screen = "launcher" | "workbench" | "tattoos" | "settings" | "help";
+export type Screen =
+  | "launcher"
+  | "workbench"
+  | "tattoos"
+  | "settings"
+  | "help"
+  /** Validation + build session (see stores/build-store.ts). */
+  | "build";
 
 interface UiState {
   screen: Screen;

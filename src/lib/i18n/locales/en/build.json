@@ -37,6 +37,12 @@
     "shopMetaHint": "Makes the drawables discoverable for shop/clothing scripts.",
     "next": "Continue to validation"
   },
+  "screen": {
+    "title": "Build",
+    "recheck": "Check again",
+    "searchPlaceholder": "Filter findings…",
+    "noMatches": "No finding matches the filter."
+  },
   "validating": "Checking project…",
   "findings": {
     "noIssues": "No issues found — ready to build.",
