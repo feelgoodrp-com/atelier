@@ -15,6 +15,7 @@ Manage clothing, preview it in real-time 3D, and build it in one click for
 
 [**⬇ Download**](https://github.com/feelgoodrp-com/atelier/releases) ·
 [Backend](https://github.com/feelgoodrp-com/atelier-api) ·
+[In-game viewer](https://github.com/feelgoodrp-com/atelier-fivem) ·
 [In the spirit of grzyClothTool](https://github.com/grzybeek/grzyClothTool)
 
 </div>
@@ -49,6 +50,12 @@ optionally collaborate as a team over a cloud.
   and `fxmanifest.lua`.
 - **Texture optimization** — BC1/BC3/BC7 re-encode, downscale & mips, individually
   or as a batch across all oversized textures.
+- **In-game viewer** _(optional)_ — tick **Viewer metadata** when building for
+  FiveM and the pack also gets an `atelier-pack.json`, so
+  [atelier-fivem](https://github.com/feelgoodrp-com/atelier-fivem) can find it on
+  your server and let you browse it on a ped — with the labels and groups you
+  gave your items, instead of bare index numbers. Off by default; without the
+  tick the build output is unchanged and the pack stays invisible to the viewer.
 - **Team cloud** _(optional)_ — push/pull against versioned pack revisions, live
   presence and advisory locks (via [atelier-api](https://github.com/feelgoodrp-com/atelier-api)).
 - **Import wizard** — existing packs as well as `.ydd`/`.ytd`/`.yld` via drag &
