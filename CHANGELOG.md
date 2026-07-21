@@ -4,6 +4,48 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.9.0] — 2026-07-21
+
+### Added
+
+- **Build is its own screen.** The dialog now only asks for target, DLC name
+  and output folder — checking, findings and building happen on a full screen
+  in the app. The findings list finally has room: clickable counters for
+  errors/warnings/notes double as filters, there is a search field, and every
+  finding shows where it comes from (gender, slot, garment), the message and
+  its code.
+- **Live log next to the work, not in a second window.** The build screen has
+  a live log on the right rail the whole time, in plain language. The separate
+  log window is still one click away from the pane's header.
+- **Fix a finding and come back.** "Show in workbench" now leaves the build
+  session alive: fix the drawable, and the header's Build button reads **"Back
+  to build"** with the findings, filter and search still in place. A running
+  build no longer dies when the dialog closes.
+- **The check finally shows progress.** Project validation reads and parses
+  every ydd and ytd, which runs for minutes on a big project — and it used to
+  log nothing at all from start to finish. It now reports
+  `Validating drawable 42/300: <name>` before each item, so the log moves and
+  a stall names the file it is stuck on.
+
+### Changed
+
+- Importing files and optimizing textures in bulk are disabled while a check
+  or build is running — both rewrite the exact files the engine is reading.
+
+### Fixed
+
+- A build session is bound to its project and is dropped when another project
+  is opened. Without this, switching projects and pressing Build would have
+  built the **new** project into the **old** project's output folder, under
+  the old DLC name.
+- The live log no longer comes up empty after leaving the build screen and
+  returning while a job is running.
+- The "show in workbench" button only appears when the drawable still exists
+  (it silently did nothing after a delete), a finished session no longer
+  claims to be running, a second build cannot be started on top of a running
+  one, and a hiccup in the progress display can no longer abort the build's
+  progress stream.
+
 ## [1.8.1] — 2026-07-21
 
 ### Added
@@ -238,6 +280,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
+[1.9.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.9.0
 [1.8.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.8.1
 [1.8.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.8.0
 [1.7.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.7.0
