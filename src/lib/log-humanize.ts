@@ -98,6 +98,38 @@ function phaseLabel(phase: string, t: Translate): string {
 }
 
 // ---------------------------------------------------------------------------
+// Validation progress
+// ---------------------------------------------------------------------------
+
+/**
+ * The per-item pulse the sidecar emits during a project check
+ * (Validator.cs: "Validating drawable {Index}/{Total}: {Label}").
+ *
+ * This English log line is a DATA CONTRACT: the build screen's progress ring
+ * reads its position from it, because /validate is a plain request/response
+ * with no progress channel. Changing the sidecar's wording without changing
+ * this regex silently freezes the ring while the check keeps running — the
+ * selftest asserts the parse to catch exactly that.
+ */
+const VALIDATE_PROGRESS_RE = /^Validating drawable (\d+)\/(\d+): (.*)$/u;
+
+export interface ValidateProgress {
+  current: number;
+  total: number;
+  label: string;
+}
+
+/** Reads the check's position out of a raw log line; null if it is not one. */
+export function parseValidateProgress(message: string): ValidateProgress | null {
+  const m = VALIDATE_PROGRESS_RE.exec(message.trimStart());
+  if (!m) return null;
+  const current = Number.parseInt(m[1]!, 10);
+  const total = Number.parseInt(m[2]!, 10);
+  if (!Number.isFinite(current) || !Number.isFinite(total)) return null;
+  return { current, total, label: m[3]!.trim() };
+}
+
+// ---------------------------------------------------------------------------
 // Noise — lines that carry no information for a human reader
 // ---------------------------------------------------------------------------
 
@@ -321,7 +353,7 @@ const SIDECAR_RULES: Rule[] = [
 
   // --- validation / build --------------------------------------------------
   {
-    re: /^Validating drawable (\d+)\/(\d+): (.*)$/u,
+    re: VALIDATE_PROGRESS_RE,
     key: "build.checkingItem",
     vars: (m) => ({ current: m[1], total: m[2], label: m[3]!.trim() }),
   },

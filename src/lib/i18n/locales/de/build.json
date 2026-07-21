@@ -44,6 +44,7 @@
     "noMatches": "Kein Befund passt zum Filter."
   },
   "validating": "Projekt wird geprüft…",
+  "validating.finishing": "Fast fertig — projektweite Prüfungen laufen…",
   "findings": {
     "noIssues": "Keine Probleme gefunden — bereit zum Bauen.",
     "jumpToWorkbench": "Im Workbench anzeigen",

@@ -12,6 +12,12 @@ import { create } from "zustand";
 import { toast } from "sonner";
 import i18n from "@/lib/i18n";
 import { log } from "@/lib/log";
+import { parseValidateProgress, type ValidateProgress } from "@/lib/log-humanize";
+import {
+  startLogStream,
+  stopLogStream,
+  useLogConsoleStore,
+} from "@/lib/stores/log-console-store";
 import { errorMessage } from "@/lib/utils";
 import {
   BuildBusyError,
@@ -60,6 +66,8 @@ interface BuildState {
   error: string | null;
   /** Wall-clock start of the session — the log pane's cutoff. */
   startedAt: number;
+  /** Position of the running check, read from the sidecar's log pulse. */
+  validateProgress: ValidateProgress | null;
   /** Id of the running build job (kept for diagnostics on a lost stream). */
   jobId: string | null;
   /** Findings list UI, here so it survives a jump to the workbench. */
@@ -91,6 +99,7 @@ const initial = {
   builtOutDir: null,
   error: null,
   startedAt: 0,
+  validateProgress: null,
   jobId: null,
   filter: null,
   query: "",
@@ -120,13 +129,38 @@ export const useBuildStore = create<BuildState>((set, get) => ({
     const { project, projectDir } = useProjectStore.getState();
     if (!options || !project || !projectDir) return;
     if (projectDir !== get().projectDir) return; // session belongs elsewhere
+    if (get().step === "validating" && get().validateProgress) return; // already checking
 
-    set({ step: "validating", findings: [], error: null });
     const startedAt = Date.now();
+    set({
+      step: "validating",
+      findings: [],
+      error: null,
+      // `total` is known up front, so the ring starts determinate instead of
+      // spinning until the first line arrives.
+      validateProgress: { current: 0, total: project.drawables.length, label: "" },
+    });
     log.info("checking project", {
       drawables: project.drawables.length,
       dlcName: options.dlcName,
     });
+
+    // /validate is a plain request/response — its only progress signal is the
+    // sidecar's per-item log line. Subscribe HERE (not in a component): the
+    // build screen unmounts whenever the user jumps to the workbench, and the
+    // ring must keep counting. `since` keeps the ring buffer's replay of an
+    // earlier run from snapping this one straight to N/N.
+    const unsubscribe = useLogConsoleStore.subscribe((state, previous) => {
+      if (state.entries === previous.entries) return;
+      for (let i = previous.entries.length; i < state.entries.length; i++) {
+        const entry = state.entries[i];
+        if (!entry || entry.ts < startedAt) continue;
+        const progress = parseValidateProgress(entry.message);
+        if (progress) set({ validateProgress: progress });
+      }
+    });
+    void startLogStream();
+
     try {
       const findings = await validateProject(projectDir, project);
       log.info("project checked", {
@@ -140,6 +174,10 @@ export const useBuildStore = create<BuildState>((set, get) => ({
       log.error("project check failed", { error });
       toast.error(i18n.t("build:toast.validateFailed"), { description: error });
       set({ step: "failed", error });
+    } finally {
+      unsubscribe();
+      void stopLogStream();
+      set({ validateProgress: null });
     }
   },
 

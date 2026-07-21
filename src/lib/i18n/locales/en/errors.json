@@ -47,6 +47,7 @@
     "pedBodyUnavailable": "Ped body not available — set the GTA path in the settings",
     "poseUnavailable": "Pose not available",
     "buildBusy": "A build is already running — please wait until it finishes.",
+    "busy": "The engine is busy — a check or build is already running.",
     "streamFailed": "Sidecar stream could not be opened.",
     "progressLost": "Connection to the build progress was lost."
   },

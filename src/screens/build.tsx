@@ -7,7 +7,7 @@
  * something is happening.
  */
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CircularProgress } from "@/components/ui/circular-progress";
 import { cn, errorMessage } from "@/lib/utils";
 import { getSlotById } from "@/lib/gta/components";
 import { BuildLogPane } from "@/components/build/build-log-pane";
@@ -110,6 +111,72 @@ function FindingRow({
           {t("findings.jumpToWorkbench")}
         </Button>
       )}
+    </div>
+  );
+}
+
+/**
+ * The check's progress ring. Its position comes from the sidecar's per-item
+ * log pulse (see lib/log-humanize.ts) — /validate itself has no progress
+ * channel. Everything here is about never showing a number we do not have.
+ */
+function CheckProgress() {
+  const { t } = useTranslation("build");
+  const progress = useBuildStore((s) => s.validateProgress);
+  const current = progress?.current ?? 0;
+  const total = progress?.total ?? 0;
+
+  // Don't flash a ring for a check that takes 200ms.
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setVisible(true), 250);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // No line for a while? Stop pretending we know where we are.
+  const [stalled, setStalled] = useState(false);
+  useEffect(() => {
+    setStalled(false);
+    const timer = setTimeout(() => setStalled(true), 2000);
+    return () => clearTimeout(timer);
+  }, [current]);
+
+  // The per-item loop ends BEFORE the project-wide checks, so N/N is not done.
+  const finishing = total > 0 && current >= total;
+  const determinate = total > 0 && !stalled && !finishing;
+  const percent = total > 0 ? Math.round((current / total) * 100) : 0;
+
+  return (
+    <div
+      className={cn(
+        "flex flex-1 flex-col items-center justify-center gap-5 transition-opacity duration-200",
+        visible ? "opacity-100" : "opacity-0",
+      )}
+    >
+      <CircularProgress value={determinate ? percent : null}>
+        {determinate ? (
+          <>
+            <span className="font-mono text-lg font-semibold text-white">
+              {current}
+              <span className="text-white/40">/{total}</span>
+            </span>
+            <span className="text-[10px] text-white/35">{percent}%</span>
+          </>
+        ) : (
+          <Hammer className="h-5 w-5 text-white/25" />
+        )}
+      </CircularProgress>
+
+      <div className="flex min-h-[2.5rem] flex-col items-center gap-1">
+        <p className="text-sm text-white/60">
+          {finishing ? t("validating.finishing") : t("validating")}
+        </p>
+        {determinate && progress?.label && (
+          <p className="max-w-md truncate text-xs text-white/35">{progress.label}</p>
+        )}
+      </div>
+
+      <p className="max-w-md text-center text-xs text-white/25">{t("validating.hint")}</p>
     </div>
   );
 }
@@ -252,15 +319,7 @@ export function BuildScreen() {
       {/* Body --------------------------------------------------------- */}
       <div className="flex min-h-0 flex-1 gap-4 p-4">
         <div className="flex min-h-0 flex-1 flex-col gap-3">
-          {step === "validating" && (
-            <div className="flex flex-1 flex-col items-center justify-center gap-4">
-              <Loader2 className="h-8 w-8 animate-spin text-[#7289DA]" />
-              <p className="text-sm text-white/60">{t("validating")}</p>
-              <p className="max-w-md text-center text-xs text-white/30">
-                {t("validating.hint")}
-              </p>
-            </div>
-          )}
+          {step === "validating" && <CheckProgress />}
 
           {step === "building" && (
             <div className="flex flex-1 flex-col items-center justify-center gap-4">

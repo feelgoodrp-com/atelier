@@ -28,12 +28,18 @@ public static class BuildEndpoints
     // POST /validate
     // ------------------------------------------------------------------
 
-    private static IResult HandleValidate(ValidateRequest request, ILoggerFactory loggerFactory)
+    private static IResult HandleValidate(ValidateRequest request, BuildJobStore jobs, ILoggerFactory loggerFactory)
     {
         var log = loggerFactory.CreateLogger("Atelier.Build.Validate");
 
         var input = ValidateProjectInput(request?.ProjectDir, request?.Project);
         if (input != null) return input;
+
+        // One check or build at a time: both read every ydd/ytd of the project,
+        // and the progress log line carries no run id, so two concurrent runs
+        // would also make the app's progress ring jump between two counters.
+        if (!jobs.TryEnterValidation())
+            return Results.Json(new ErrorResponse("busy"), statusCode: StatusCodes.Status409Conflict);
 
         try
         {
@@ -46,6 +52,10 @@ public static class BuildEndpoints
         {
             log.LogError(ex, "Validation failed");
             return Results.BadRequest(new ErrorResponse($"Projekt konnte nicht validiert werden: {ex.Message}"));
+        }
+        finally
+        {
+            jobs.ExitValidation();
         }
     }
 

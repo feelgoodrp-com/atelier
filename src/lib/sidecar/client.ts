@@ -313,16 +313,38 @@ export class BuildBusyError extends Error {
   }
 }
 
-/** POST /validate — runs the pre-build validation against the project on disk. */
+/**
+ * 409 on POST /validate — a check or a build is already running. Separate from
+ * {@link BuildBusyError} because the caller may have triggered either one.
+ */
+export class SidecarBusyError extends Error {
+  constructor() {
+    super(i18n.t("errors:sidecar.busy"));
+    this.name = "SidecarBusyError";
+  }
+}
+
+/**
+ * POST /validate — runs the pre-build validation against the project on disk.
+ * Throws {@link SidecarBusyError} on 409: the sidecar runs one check or build
+ * at a time, and both read every file of the project.
+ */
 export async function validateProject(
   projectDir: string,
   project: unknown,
 ): Promise<ValidationFinding[]> {
-  const res = await sidecarFetch<ValidateResponse>("/validate", {
+  const { base, token } = sidecarTarget();
+  const res = await fetch(`${base}/validate`, {
     method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-fg-atelier-token": token,
+    },
     body: JSON.stringify({ projectDir, project }),
   });
-  return res.findings;
+  if (res.status === 409) throw new SidecarBusyError();
+  if (!res.ok) throw new Error(await sidecarErrorMessage(res));
+  return ((await res.json()) as ValidateResponse).findings;
 }
 
 /**

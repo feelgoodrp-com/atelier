@@ -4,6 +4,28 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.9.1] — 2026-07-21
+
+### Added
+
+- **Progress ring for the project check.** Instead of a spinner that says
+  nothing, the check now shows how far it is: `42/300`, the percentage, and the
+  garment currently being read. The total is known before the first item, so
+  the ring starts out determinate.
+  It stays honest about what it does not know: when no progress arrives for two
+  seconds it falls back to spinning, `N/N` switches to *"almost done — running
+  the project-wide checks"* (the per-item loop finishes before the project-wide
+  checks do, so `N/N` is not done), and a project without drawables spins
+  rather than inventing a number. A check faster than 250 ms shows no ring at
+  all instead of flashing one.
+
+### Changed
+
+- **One check or build at a time.** Both read every ydd and ytd of the project,
+  so the engine now rejects a second one with a clear message instead of
+  running them on top of each other. Repeatedly pressing "check again" used to
+  stack concurrent full validations.
+
 ## [1.9.0] — 2026-07-21
 
 ### Added
@@ -280,6 +302,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
+[1.9.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.9.1
 [1.9.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.9.0
 [1.8.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.8.1
 [1.8.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.8.0

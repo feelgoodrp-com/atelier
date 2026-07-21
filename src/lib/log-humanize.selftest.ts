@@ -11,7 +11,7 @@
 
 import en from "./i18n/locales/en/logtext.json";
 import de from "./i18n/locales/de/logtext.json";
-import { __rules, humanizeEntry, sourceLabel } from "./log-humanize";
+import { __rules, humanizeEntry, parseValidateProgress, sourceLabel } from "./log-humanize";
 import type { LogEntry } from "./stores/log-console-store";
 
 let failures = 0;
@@ -178,6 +178,27 @@ console.log("\nfallback + indentation");
 // ---------------------------------------------------------------------------
 // 2. Locale coverage
 // ---------------------------------------------------------------------------
+
+console.log("\nvalidate progress parser (data contract for the check's progress ring)");
+{
+  const p = parseValidateProgress("Validating drawable 42/300: Neon Jacket");
+  ok(p !== null, "the sidecar's pulse parses at all");
+  ok(p?.current === 42 && p?.total === 300, "current/total are numbers", JSON.stringify(p));
+  ok(p?.label === "Neon Jacket", "label is extracted", JSON.stringify(p));
+
+  // The .NET console formatter indents its message lines by six spaces.
+  const indented = parseValidateProgress("      Validating drawable 7/9: Cargo Pants");
+  ok(indented?.current === 7 && indented?.total === 9, "the six-space indent is tolerated");
+
+  ok(parseValidateProgress("Validated project X: 9 findings (4 errors)") === null, "the summary line is not progress");
+  ok(parseValidateProgress("build copy 42/180 — jacket.ytd") === null, "a build tick is not check progress");
+  ok(parseValidateProgress("") === null, "empty input is safe");
+  // A label may contain slashes and colons — the greedy tail must survive it.
+  ok(
+    parseValidateProgress("Validating drawable 1/2: Jacke: rot/blau")?.label === "Jacke: rot/blau",
+    "labels with colons and slashes stay intact",
+  );
+}
 
 console.log("\nlocale coverage");
 {

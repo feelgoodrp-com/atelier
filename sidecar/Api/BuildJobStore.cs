@@ -84,11 +84,43 @@ public sealed class BuildJobStore
     private BuildJob? _active;
 
     /// <summary>Registers a new job; returns null when another build is still running.</summary>
+    /// <summary>
+    /// True while a validation holds the engine. Validation and build both read
+    /// every ydd/ytd of the project, so they must not overlap — and validation
+    /// has no job of its own to check against.
+    /// </summary>
+    private bool _validating;
+
+    /// <summary>
+    /// Takes the exclusive slot for a validation run. Returns false when a
+    /// build or another validation is already running; release with
+    /// <see cref="ExitValidation"/> in a finally.
+    /// </summary>
+    public bool TryEnterValidation()
+    {
+        lock (_gate)
+        {
+            Evict();
+            if (_validating || _active is { IsDone: false }) return false;
+            _validating = true;
+            return true;
+        }
+    }
+
+    public void ExitValidation()
+    {
+        lock (_gate)
+        {
+            _validating = false;
+        }
+    }
+
     public BuildJob? TryStart()
     {
         lock (_gate)
         {
             Evict();
+            if (_validating) return null;
             if (_active is { IsDone: false }) return null;
             var job = new BuildJob();
             _jobs[job.JobId] = job;

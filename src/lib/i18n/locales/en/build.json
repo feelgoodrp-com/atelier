@@ -44,6 +44,7 @@
     "noMatches": "No finding matches the filter."
   },
   "validating": "Checking project…",
+  "validating.finishing": "Almost done — running the project-wide checks…",
   "findings": {
     "noIssues": "No issues found — ready to build.",
     "jumpToWorkbench": "Show in workbench",
