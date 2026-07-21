@@ -131,7 +131,8 @@ const WEBVIEW_RULES: Rule[] = [
     key: "build.started",
     vars: (_m, c) => ({
       target: String(c.json?.target ?? "?"),
-      n:Number(c.json?.drawables ?? 0),
+      // Never invent a number: an unreadable context shows "?", not "0".
+      n: c.json?.drawables ?? "?",
     }),
   },
   { re: /^build phase: (\S+)/u, key: "build.phase", vars: (m, c) => ({ phase: phaseLabel(m[1]!, c.t) }) },
@@ -149,8 +150,8 @@ const WEBVIEW_RULES: Rule[] = [
     re: /^build finished\b/u,
     key: "build.finished",
     vars: (_m, c) => ({
-      n:Number(c.json?.resources ?? 0),
-      warnings: Number(c.json?.warnings ?? 0),
+      n: c.json?.resources ?? "?",
+      warnings: c.json?.warnings ?? "?",
       seconds: String(c.json?.seconds ?? "?"),
     }),
   },

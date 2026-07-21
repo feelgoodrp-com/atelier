@@ -64,6 +64,14 @@ console.log("\nrules — webview (React)");
   const done = run("webview", 'build finished context={"resources":2,"warnings":1,"outDir":"C:\\\\out","seconds":12.4}');
   ok(done.text.includes('"n":2') && done.text.includes('"seconds":"12.4"'), "build finished reads counts + duration", done.text);
 
+  // A context that cannot be parsed must not turn into invented numbers.
+  const broken = run("webview", "build finished context={not json");
+  ok(
+    broken.kind === "human" && broken.text.includes('"n":"?"') && !broken.text.includes('"n":0'),
+    "an unreadable context shows ? instead of a made-up 0",
+    broken.text,
+  );
+
   const failed = run("webview", 'build failed context={"error":"Datei fehlt","jobId":"j1"}');
   ok(failed.text.includes("build.failed") && failed.text.includes("Datei fehlt"), "build failed carries the error");
 
