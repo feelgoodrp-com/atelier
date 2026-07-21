@@ -4,6 +4,21 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.10.0] — 2026-07-21
+
+### Added
+
+- **Viewer metadata for the in-game viewer** — a new FiveM-only checkbox in the
+  build dialog. With it ticked, the build also writes an `atelier-pack.json`
+  into the resource, carrying what the game itself does not need and therefore
+  loses: the **label**, **group**, slot name, texture count, mode and flags of
+  every item.
+  That file is what [atelier-fivem](https://github.com/feelgoodrp-com/atelier-fivem)
+  looks for — a new companion resource that finds your packs on a running
+  server and lets you browse them in-game on a mannequin. No checkbox, no file,
+  and the pack stays invisible to it: nothing is guessed from folder contents.
+  Off by default; with the option off the build output is unchanged.
+
 ## [1.9.1] — 2026-07-21
 
 ### Added
@@ -302,6 +317,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
+[1.10.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.10.0
 [1.9.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.9.1
 [1.9.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.9.0
 [1.8.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.8.1
