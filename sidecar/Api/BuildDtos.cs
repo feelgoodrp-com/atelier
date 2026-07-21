@@ -11,7 +11,8 @@ public sealed record BuildRequestOptions(
     string? ResourceName,
     bool? GenerateShopMeta,
     int? SplitAt,
-    bool? GenerateTattooShopMeta);
+    bool? GenerateTattooShopMeta,
+    bool? GenerateViewerManifest);
 
 public sealed record BuildRequest(
     string? ProjectDir,

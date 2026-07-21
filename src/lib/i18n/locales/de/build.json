@@ -35,6 +35,8 @@
     "outDirTitle": "Ausgabeordner für den Build wählen",
     "shopMeta": "shop_ped_apparel.meta erzeugen",
     "shopMetaHint": "Macht die Drawables für Shop-/Kleidungs-Scripts auffindbar.",
+    "viewerManifest": "Viewer-Metadaten (atelier-pack.json)",
+    "viewerManifestHint": "Nötig für den In-Game-Viewer; enthält Labels und Gruppen.",
     "next": "Weiter zur Prüfung"
   },
   "screen": {

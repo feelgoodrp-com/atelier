@@ -350,6 +350,12 @@ export interface BuildRequestOptions {
   resourceName: string | null;
   generateShopMeta: boolean;
   splitAt: number;
+  /**
+   * Writes atelier-pack.json (labels + groups) into every built part — the
+   * metadata the in-game viewer reads. FiveM only; the sidecar ignores it for
+   * every other target. Off by default: it changes nothing the game needs.
+   */
+  generateViewerManifest: boolean;
 }
 
 /** Request body of POST /build — `project` is the pack.atelier JSON. */

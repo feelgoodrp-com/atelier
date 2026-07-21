@@ -44,6 +44,8 @@ export interface BuildOptions {
   dlcName: string;
   resourceName: string | null;
   generateShopMeta: boolean;
+  /** atelier-pack.json for the in-game viewer (FiveM only, opt-in). */
+  generateViewerManifest: boolean;
 }
 
 interface BuildState {
@@ -209,6 +211,7 @@ export const useBuildStore = create<BuildState>((set, get) => ({
           resourceName: options.resourceName,
           generateShopMeta: options.generateShopMeta,
           splitAt: 256,
+          generateViewerManifest: options.generateViewerManifest,
         },
       });
 

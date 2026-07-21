@@ -74,6 +74,8 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
   const [resourceName, setResourceName] = useState("");
   const [outDir, setOutDir] = useState<string | null>(null);
   const [generateShopMeta, setGenerateShopMeta] = useState(true);
+  // Off by default: pure viewer metadata, nothing the game itself needs.
+  const [generateViewerManifest, setGenerateViewerManifest] = useState(false);
 
   // Re-initialize from project settings + remembered folder on every open.
   useEffect(() => {
@@ -82,6 +84,7 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
     setDlcName(useProjectStore.getState().project?.settings.dlcName ?? "");
     setResourceName("");
     setGenerateShopMeta(true);
+    setGenerateViewerManifest(false);
     void getLastBuildOutDir().then((dir) => {
       if (dir) setOutDir((current) => current ?? dir);
     });
@@ -120,6 +123,7 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
         dlcName: normalizedDlc,
         resourceName: trimmedResource || null,
         generateShopMeta,
+        generateViewerManifest,
       },
       useUiStore.getState().screen,
     );
@@ -222,13 +226,28 @@ export function BuildDialog({ open, onOpenChange }: BuildDialogProps) {
           </div>
 
           {target === "fivem" && (
-            <div className="flex items-center justify-between rounded-[10px] border border-white/10 bg-white/5 px-3 py-2">
-              <div className="flex flex-col">
-                <span className="text-xs text-white/70">{t("setup.shopMeta")}</span>
-                <span className="text-[10px] text-white/35">{t("setup.shopMetaHint")}</span>
+            <>
+              <div className="flex items-center justify-between rounded-[10px] border border-white/10 bg-white/5 px-3 py-2">
+                <div className="flex flex-col">
+                  <span className="text-xs text-white/70">{t("setup.shopMeta")}</span>
+                  <span className="text-[10px] text-white/35">{t("setup.shopMetaHint")}</span>
+                </div>
+                <Switch checked={generateShopMeta} onCheckedChange={setGenerateShopMeta} />
               </div>
-              <Switch checked={generateShopMeta} onCheckedChange={setGenerateShopMeta} />
-            </div>
+
+              <div className="flex items-center justify-between rounded-[10px] border border-white/10 bg-white/5 px-3 py-2">
+                <div className="flex flex-col">
+                  <span className="text-xs text-white/70">{t("setup.viewerManifest")}</span>
+                  <span className="text-[10px] text-white/35">
+                    {t("setup.viewerManifestHint")}
+                  </span>
+                </div>
+                <Switch
+                  checked={generateViewerManifest}
+                  onCheckedChange={setGenerateViewerManifest}
+                />
+              </div>
+            </>
           )}
         </div>
 

@@ -105,7 +105,10 @@ public static class BuildEndpoints
             target, dlcName, resourceName,
             request.Options?.GenerateShopMeta ?? true,
             splitAt,
-            request.Options?.GenerateTattooShopMeta ?? false);
+            request.Options?.GenerateTattooShopMeta ?? false,
+            // FiveM-only: the other targets ship an rpf, which has no resource
+            // root to read a json from.
+            (request.Options?.GenerateViewerManifest ?? false) && target == "fivem");
 
         var job = jobs.TryStart();
         if (job == null)

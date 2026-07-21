@@ -19,10 +19,12 @@ public static class FivemBuilder
 
         var totalFiles = plan.Parts.Sum(p => p.Files.Count);
         var copied = 0;
-        var firstPart = true;
+        var partIndex = 0;
 
         foreach (var part in plan.Parts)
         {
+            var firstPart = partIndex == 0;
+
             var partFolder = Path.Combine(outDir, part.FolderName);
             var streamFolder = Path.Combine(partFolder, "stream");
             Directory.CreateDirectory(streamFolder);
@@ -121,14 +123,26 @@ public static class FivemBuilder
                     TattooManifestGenerator.Build(plan.Tattoos, part.FolderName));
             }
 
+            // Viewer metadata (opt-in): labels + groups for the in-game viewer.
+            // Per part, because localIndex restarts at 0 in every part.
+            string? viewerManifestFile = null;
+            if (plan.Options.GenerateViewerManifest)
+            {
+                viewerManifestFile = ViewerManifestGenerator.FileName;
+                File.WriteAllText(
+                    Path.Combine(partFolder, viewerManifestFile),
+                    ViewerManifestGenerator.Build(plan, part, partIndex, plan.Parts.Count));
+            }
+
             File.WriteAllText(
                 Path.Combine(partFolder, "fxmanifest.lua"),
-                BuildFxManifest(shopMetaFiles, firstPersonMeta, overlayFile, tattooShopFile, tattooManifestFile));
+                BuildFxManifest(shopMetaFiles, firstPersonMeta, overlayFile, tattooShopFile,
+                    tattooManifestFile, viewerManifestFile));
 
             BuildCommon.WriteBuildManifest(partFolder, "fivem", part.DlcName, part.DrawableCount);
 
             resources.Add(new BuildResourceReport(part.FolderName, part.DrawableCount));
-            firstPart = false;
+            partIndex++;
         }
 
         return new BuildReport(resources, warnings);
@@ -139,7 +153,8 @@ public static class FivemBuilder
         string? firstPersonMeta,
         string? overlayFile,
         string? tattooShopFile,
-        string? tattooManifestFile)
+        string? tattooManifestFile,
+        string? viewerManifestFile)
     {
         // Root-level files must be listed explicitly — the glob is stream/-scoped.
         var files = new List<string>
@@ -150,6 +165,9 @@ public static class FivemBuilder
         if (overlayFile != null) files.Add(overlayFile);
         if (tattooShopFile != null) files.Add(tattooShopFile);
         if (tattooManifestFile != null) files.Add(tattooManifestFile);
+        // Unlisted root files are unreadable from Lua (LoadResourceFile returns
+        // nil) — that is exactly why atelier-build.json is invisible in-game.
+        if (viewerManifestFile != null) files.Add(viewerManifestFile);
 
         var sb = new StringBuilder();
         sb.AppendLf("fx_version 'cerulean'");

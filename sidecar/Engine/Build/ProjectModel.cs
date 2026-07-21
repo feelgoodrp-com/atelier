@@ -13,9 +13,16 @@ public sealed record AtelierProjectDto(
     List<ProjectDrawableDto>? Drawables,
     // fgcloth v2 additions (optional so v1 senders still bind):
     List<ProjectTattooDto>? Tattoos = null,
-    TattooCollectionDto? TattooCollection = null);
+    TattooCollectionDto? TattooCollection = null,
+    // Authoring-only grouping (mirrors AtelierProject.groups in schema.ts). Has
+    // NO effect on any built asset; it exists so the opt-in viewer manifest can
+    // name the group a drawable belongs to.
+    List<ProjectGroupDto>? Groups = null);
 
 public sealed record ProjectSettingsDto(string? DlcName, string? DefaultGender);
+
+/// <summary>Authoring group — C# mirror of ProjectGroup (schema.ts).</summary>
+public sealed record ProjectGroupDto(string? Id, string? Name, string? Color);
 
 /// <summary>Relative (forward-slash) file reference inside the project folder.</summary>
 public sealed record AssetRefDto(string? Path, string? Hash, long Size);

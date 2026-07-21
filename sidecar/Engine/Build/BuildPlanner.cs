@@ -11,7 +11,10 @@ public sealed record BuildOptions(
     string ResourceName,
     bool GenerateShopMeta,
     int SplitAt,
-    bool GenerateTattooShopMeta = false);
+    bool GenerateTattooShopMeta = false,
+    // Writes atelier-pack.json (labels + groups) per part — FiveM only, opt-in.
+    // Purely additive: no other output file changes when it is on.
+    bool GenerateViewerManifest = false);
 
 public enum PlanFileKind { Ydd, Ytd, Yld, FirstPersonYdd }
 
@@ -29,7 +32,13 @@ public sealed record PlanFile(
     bool IsReplace,
     PlanFileKind Kind);
 
-/// <summary>Component drawable as it appears in one part's YMT.</summary>
+/// <summary>
+/// Component drawable as it appears in one part's YMT.
+///
+/// The trailing three members are AUTHORING metadata (label, group, replace
+/// target). The YMT generator ignores them; they exist so the opt-in viewer
+/// manifest can be written from the same plan.
+/// </summary>
 public sealed record PlanComponent(
     string DrawableUuid,
     int SlotId,
@@ -38,16 +47,25 @@ public sealed record PlanComponent(
     int TextureCount,
     bool OwnsCloth,
     bool HasFirstPerson,
-    bool HighHeels);
+    bool HighHeels,
+    string Label = "",
+    string? GroupId = null,
+    int? ReplaceTargetId = null);
 
-/// <summary>Prop drawable as it appears in one part's YMT prop section.</summary>
+/// <summary>
+/// Prop drawable as it appears in one part's YMT prop section. Same authoring
+/// metadata tail as <see cref="PlanComponent"/>.
+/// </summary>
 public sealed record PlanProp(
     string DrawableUuid,
     int AnchorId,
     string SlotName,
     int LocalIndex,
     int TextureCount,
-    double? HairScaleValue);
+    double? HairScaleValue,
+    string Label = "",
+    string? GroupId = null,
+    int? ReplaceTargetId = null);
 
 /// <summary>
 /// Everything the YMT generator needs for one (part, gender): the per-slot
@@ -74,6 +92,13 @@ public sealed class BuildPart
     public required string DlcName { get; init; }
     /// <summary>Per-gender YMT inputs; only genders that have addon drawables.</summary>
     public required List<BuildPlanGender> Genders { get; init; }
+    /// <summary>
+    /// Replace-mode drawables of this part, in the same per-gender shape — but
+    /// NEVER YMT input (planner rule 5). LocalIndex is the replaceTargetId and
+    /// DlcName is empty, because a replace file overrides a base-game asset.
+    /// Only the viewer manifest reads this; no builder touches it.
+    /// </summary>
+    public required List<BuildPlanGender> ReplaceGenders { get; init; }
     public required List<PlanFile> Files { get; init; }
     /// <summary>Addon drawables in this part (YMT entries across genders).</summary>
     public required int AddonDrawableCount { get; init; }
@@ -107,6 +132,15 @@ public sealed record TattooPlanItem(
 /// <summary>Shared overlay collection + its overlays (FiveM only).</summary>
 public sealed record TattooPlanCollection(string Collection, List<TattooPlanItem> Items);
 
+/// <summary>One authoring group, flattened for the viewer manifest.</summary>
+public sealed record PlanGroup(string Id, string Name);
+
+/// <summary>
+/// Project-level authoring metadata. Read by the viewer manifest only — no
+/// builder and no asset generator looks at it.
+/// </summary>
+public sealed record PlanProjectMeta(string ProjectId, string ProjectName, List<PlanGroup> Groups);
+
 public sealed class BuildPlan
 {
     public required BuildOptions Options { get; init; }
@@ -114,6 +148,8 @@ public sealed class BuildPlan
     public required List<string> Warnings { get; init; }
     /// <summary>Tattoo overlays (emitted into part 1 by the FiveM builder only).</summary>
     public required TattooPlanCollection Tattoos { get; init; }
+    /// <summary>Labels/groups for the opt-in viewer manifest.</summary>
+    public required PlanProjectMeta Project { get; init; }
 }
 
 // ---------------------------------------------------------------------------
@@ -274,6 +310,7 @@ public static class BuildPlanner
 
             // 5: replace overrides ride along in part 1 only.
             var replaceCount = 0;
+            var replaceGenders = new List<BuildPlanGender>();
             if (partIndex == 0)
             {
                 foreach (var replace in replaces)
@@ -283,6 +320,7 @@ public static class BuildPlanner
                         dlcName: null, nnn: replace.ReplaceTargetId!.Value);
                     replaceCount++;
                 }
+                replaceGenders = PlanReplaceMetadata(replaces);
             }
 
             parts.Add(new BuildPart
@@ -290,6 +328,7 @@ public static class BuildPlanner
                 FolderName = options.ResourceName + suffix,
                 DlcName = partDlc,
                 Genders = genders,
+                ReplaceGenders = replaceGenders,
                 Files = files,
                 AddonDrawableCount = addonCount,
                 ReplaceDrawableCount = replaceCount,
@@ -298,7 +337,22 @@ public static class BuildPlanner
 
         var tattoos = PlanTattoos(project, projectDir, warnings);
 
-        return new BuildPlan { Options = options, Parts = parts, Warnings = warnings, Tattoos = tattoos };
+        var projectMeta = new PlanProjectMeta(
+            project.Id ?? string.Empty,
+            project.Name ?? string.Empty,
+            (project.Groups ?? new List<ProjectGroupDto>())
+                .Where(g => g.Id != null)
+                .Select(g => new PlanGroup(g.Id!, g.Name ?? string.Empty))
+                .ToList());
+
+        return new BuildPlan
+        {
+            Options = options,
+            Parts = parts,
+            Warnings = warnings,
+            Tattoos = tattoos,
+            Project = projectMeta,
+        };
     }
 
     /// <summary>
@@ -388,7 +442,9 @@ public static class BuildPlanner
                     slot,
                     localIndex,
                     textureCount,
-                    drawable.Flags?.HairScaleValue));
+                    drawable.Flags?.HairScaleValue,
+                    Label: drawable.Label ?? string.Empty,
+                    GroupId: drawable.GroupId));
             }
             else
             {
@@ -400,7 +456,9 @@ public static class BuildPlanner
                     textureCount,
                     OwnsCloth: drawable.Physics?.Path != null,
                     HasFirstPerson: drawable.FirstPerson?.Path != null,
-                    HighHeels: drawable.Flags?.HighHeels == true));
+                    HighHeels: drawable.Flags?.HighHeels == true,
+                    Label: drawable.Label ?? string.Empty,
+                    GroupId: drawable.GroupId));
             }
 
             AddDrawableFiles(files, drawable, projectDir, pedName, partDlc, localIndex);
@@ -415,6 +473,76 @@ public static class BuildPlanner
             Components = components.OrderBy(c => c.SlotId).ThenBy(c => c.LocalIndex).ToList(),
             Props = props.OrderBy(p => p.AnchorId).ThenBy(p => p.LocalIndex).ToList(),
         };
+    }
+
+    /// <summary>
+    /// Describes the replace-mode drawables for the viewer manifest ONLY. This
+    /// deliberately does not feed <see cref="BuildPart.Genders"/>: a replace
+    /// drawable must never enter a YMT (planner rule 5), so mixing it in would
+    /// change the built output. LocalIndex is the replaceTargetId (the NNN the
+    /// file was written under) and DlcName stays empty — the file overrides a
+    /// base-game asset and belongs to no dlc.
+    /// </summary>
+    private static List<BuildPlanGender> PlanReplaceMetadata(List<ProjectDrawableDto> replaces)
+    {
+        var result = new List<BuildPlanGender>();
+
+        foreach (var gender in new[] { "male", "female" })
+        {
+            var forGender = replaces.Where(r => (r.Gender ?? "male") == gender).ToList();
+            if (forGender.Count == 0) continue;
+
+            var components = new List<PlanComponent>();
+            var props = new List<PlanProp>();
+
+            foreach (var drawable in forGender)
+            {
+                var slot = drawable.Type!;
+                var targetId = drawable.ReplaceTargetId!.Value;
+                var textureCount = drawable.Textures?.Count ?? 0;
+
+                if (drawable.IsProp)
+                {
+                    props.Add(new PlanProp(
+                        drawable.Id ?? string.Empty,
+                        GtaSlots.PropAnchorIds[slot],
+                        slot,
+                        targetId,
+                        textureCount,
+                        drawable.Flags?.HairScaleValue,
+                        Label: drawable.Label ?? string.Empty,
+                        GroupId: drawable.GroupId,
+                        ReplaceTargetId: targetId));
+                }
+                else
+                {
+                    components.Add(new PlanComponent(
+                        drawable.Id ?? string.Empty,
+                        GtaSlots.ComponentIds[slot],
+                        slot,
+                        targetId,
+                        textureCount,
+                        OwnsCloth: drawable.Physics?.Path != null,
+                        HasFirstPerson: drawable.FirstPerson?.Path != null,
+                        HighHeels: drawable.Flags?.HighHeels == true,
+                        Label: drawable.Label ?? string.Empty,
+                        GroupId: drawable.GroupId,
+                        ReplaceTargetId: targetId));
+                }
+            }
+
+            result.Add(new BuildPlanGender
+            {
+                Gender = gender,
+                PedName = GtaSlots.PedName(gender),
+                GenderLetter = GtaSlots.GenderLetter(gender),
+                DlcName = string.Empty,
+                Components = components.OrderBy(c => c.SlotId).ThenBy(c => c.LocalIndex).ToList(),
+                Props = props.OrderBy(p => p.AnchorId).ThenBy(p => p.LocalIndex).ToList(),
+            });
+        }
+
+        return result;
     }
 
     private static void AddDrawableFiles(
