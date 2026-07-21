@@ -4,6 +4,39 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.8.1] — 2026-07-21
+
+### Added
+
+- **Live logs during a build** — the build dialog now has a **"Live logs"**
+  button (and one more on the failure screen) that opens the log window docked
+  beside the main window, so you can see that the build is still working. Every
+  build step is written to the log: start, each phase, every progress tick, and
+  the result with its duration.
+- **Plain language in the log window** — log lines are rewritten into readable
+  sentences (`Outfit GLB built: 4 items, 2847392 bytes, ped=mp_f_freemode_01` →
+  *"Outfit preview created (4 garments, 2.7 MB)"*), in English and German. File
+  paths shrink to file names, byte counts become sizes, character models and
+  clothing slots get real names. Toggle it with the **language button** in the
+  log toolbar; hovering a line shows the original, and **Copy** always copies
+  the raw lines for bug reports. Anything without a rule stays visible verbatim.
+
+### Changed
+
+- **Much quieter logs** — the sidecar no longer logs the ASP.NET request
+  pipeline (`Request starting/finished`, CORS, endpoint execution). That was
+  ~98% of all log volume and drowned out the app's own messages.
+- The log window hides pure plumbing (stack frames, log-formatter headers) in
+  plain-language mode and shows how many lines it hid; the raw view is
+  unchanged.
+- The log window title now follows the app language instead of always being
+  German.
+
+### Fixed
+
+- Log lines coming from dependencies no longer carry `log.file=…` cargo-registry
+  paths in the message; the record's own target is shown instead.
+
 ## [1.8.0] — 2026-07-17
 
 ### Added
@@ -205,6 +238,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
+[1.8.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.8.1
 [1.8.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.8.0
 [1.7.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.7.0
 [#12]: https://github.com/feelgoodrp-com/atelier/pull/12

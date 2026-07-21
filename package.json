@@ -1,7 +1,7 @@
 {
   "name": "atelier",
   "private": true,
-  "version": "1.8.0",
+  "version": "1.8.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,7 +12,8 @@
     "tauri:build": "bun run sidecar:publish && tauri build",
     "sidecar:publish": "powershell -NoProfile -ExecutionPolicy Bypass -File sidecar/publish.ps1",
     "selftest:project": "bun run src/lib/project/__selftest__.ts",
-    "selftest:menyoo": "bun run src/lib/preview/__selftest__.ts"
+    "selftest:menyoo": "bun run src/lib/preview/__selftest__.ts",
+    "selftest:logs": "bun run src/lib/log-humanize.selftest.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
