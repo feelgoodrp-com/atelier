@@ -4,6 +4,33 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [1.11.1] — 2026-08-26
+
+### Fixed
+
+- **Clothing import: multi-YDD drawables and dropped textures.** A drawable with
+  an alternation model — `hair_000_u.ydd` plus `hair_000_u_1.ydd` (and `_2`,
+  `_3`) — was imported as several separate drawables, and once a drawable had
+  such a sibling its textures were dropped entirely ("imported without texture").
+  `{base}_1.ydd` is the first-person alternate; `_1/_2/_3` are alternation
+  models, not separate drawables. Import now folds them into the one drawable:
+  `_1` becomes its first-person model, `_2+` are reported as unsupported, and —
+  with the sibling folded — every texture attaches again. Fixed on both the
+  folder-scan and the add-files paths. Thanks to **epsilon [5WAY]** for the
+  report.
+
+### Changed
+
+- The **High Heels** flag now shows for feet only, and the flags section hides
+  entirely when no flag applies to the slot (it used to show High Heels on every
+  drawable).
+
+### Added
+
+- **Assign a first-person model by hand** in the inspector — the first-person
+  entry now has an assign/remove control, for packs that name the alternate
+  differently than `{base}_1.ydd`.
+
 ## [1.11.0] — 2026-08-26
 
 ### Added
@@ -340,6 +367,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
+[1.11.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.11.1
 [1.11.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.11.0
 [1.10.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.10.0
 [1.9.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.9.1
