@@ -119,7 +119,7 @@ checkEq("suggestDlcName slugs", suggestDlcName("Feelgood Süßer-Pack 2!"), "fee
 console.log("\n[2] migrations");
 // ---------------------------------------------------------------------------
 
-check("v2 passthrough", migrateProjectFile(JSON.parse(JSON.stringify(sample))) !== null);
+check("v3 passthrough", migrateProjectFile(JSON.parse(JSON.stringify(sample))) !== null);
 
 // v1 → v2 lift: strip the v2-only fields, drop the version, then migrate.
 const v1doc = JSON.parse(JSON.stringify(createEmptyProject("Legacy Pack"))) as Record<
@@ -129,21 +129,28 @@ const v1doc = JSON.parse(JSON.stringify(createEmptyProject("Legacy Pack"))) as R
 delete v1doc.tattooCollection;
 delete v1doc.tattoos;
 v1doc.fgcloth = 1;
+delete (v1doc.sync as Record<string, unknown>).workspaceVersion;
 const v1settings = v1doc.settings as { dlcName: string };
 const lifted = migrateProjectFile(v1doc) as {
   fgcloth: number;
   tattoos: unknown[];
   tattooCollection: { name: string; label: string };
+  sync: { workspaceVersion: number | null };
 };
-checkEq("v1→v2 bumps version + adds empty tattoos", [lifted.fgcloth, lifted.tattoos], [2, []]);
+checkEq("v1→v3 chains both migrations + adds empty tattoos", [lifted.fgcloth, lifted.tattoos], [3, []]);
 checkEq(
   "v1→v2 derives the collection name from dlcName",
   lifted.tattooCollection.name,
   v1settings.dlcName,
 );
 check(
-  "lifted v1 project validates against the v2 schema",
+  "lifted v1 project validates against the v3 schema",
   atelierProjectSchema.safeParse(lifted).success,
+);
+checkEq(
+  "v1→v3 adds the live workspace cursor",
+  lifted.sync.workspaceVersion,
+  null,
 );
 
 let migrationThrew = false;
@@ -415,6 +422,7 @@ clearProjectHistory();
 const pulledSync = {
   remoteProjectId: "pack-1",
   baseRevision: 3,
+  workspaceVersion: null,
   lastSyncedAt: new Date().toISOString(),
 };
 useProjectStore.getState().applyPulledState([roundtripped], pulledSync);

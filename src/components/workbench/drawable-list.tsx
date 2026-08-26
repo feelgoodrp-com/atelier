@@ -100,7 +100,7 @@ interface RowProps {
   selected: boolean;
   /** True when the open 3D preview currently renders this drawable. */
   previewed: boolean;
-  /** Username when someone ELSE holds the advisory edit lock. */
+  /** Username when someone ELSE holds the server-enforced edit lock. */
   lockedBy: string | null;
   canReorder: boolean;
   /** Absolute position (windowed mode) or undefined (normal flow). */

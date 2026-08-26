@@ -26,7 +26,8 @@ export function assetKindOf(path: string): UploadAssetKind {
   const ext = /\.([a-z0-9]+)$/i.exec(path)?.[1]?.toLowerCase();
   if (ext === "ytd") return "ytd";
   if (ext === "yld") return "yld";
-  return "ydd"; // .ydd + first-person meshes
+  if (ext === "ydd") return "ydd";
+  return "blob"; // tattoo source images (png/jpg/webp/dds)
 }
 
 /**
@@ -89,6 +90,7 @@ export function collectLocalAssets(
     add(d.physics);
     add(d.firstPerson);
   }
+  for (const tattoo of project.tattoos) add(tattoo.image);
   return assets;
 }
 

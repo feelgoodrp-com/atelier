@@ -42,23 +42,12 @@ import { linkProject } from "@/lib/sync/pack-sync";
 import type { SyncPhase } from "@/lib/sync/pack-sync";
 import { useAuthStore, useCloudEnabled } from "@/lib/stores/auth-store";
 import { useCollabStore } from "@/lib/stores/collab-store";
+import { useLiveStore } from "@/lib/stores/live-store";
 import { useProjectStore } from "@/lib/stores/project-store";
 import { useSyncStore } from "@/lib/stores/sync-store";
 
 function errorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
-}
-
-/** True when local state has edits the cloud has not seen yet (reactive). */
-function useUnsyncedChanges(): boolean {
-  const dirty = useProjectStore((s) => s.dirty);
-  const updatedAt = useProjectStore((s) => s.project?.updatedAt ?? null);
-  const lastSyncedAt = useProjectStore(
-    (s) => s.project?.sync.lastSyncedAt ?? null,
-  );
-  if (dirty) return true;
-  if (!lastSyncedAt) return true;
-  return updatedAt !== null && Date.parse(updatedAt) > Date.parse(lastSyncedAt);
 }
 
 // ---------------------------------------------------------------------------
@@ -150,7 +139,7 @@ function CloudLinkDialog() {
       const pack = await createPack(trimmed);
       await linkProject(pack.packId);
       toast.success(t("cloud.linkedToast", { name: pack.name }), {
-        description: t("cloud.linkedDescriptionUpload"),
+        description: t("cloud.linkedDescriptionLive"),
       });
       setOpen(false);
     } catch (e) {
@@ -168,12 +157,7 @@ function CloudLinkDialog() {
     try {
       await linkProject(pack.packId);
       toast.success(t("cloud.linkedToast", { name: pack.name }), {
-        description:
-          pack.headRevision > 0
-            ? t("cloud.linkedDescriptionPull", {
-                revision: pack.headRevision,
-              })
-            : t("cloud.linkedDescriptionUpload"),
+        description: t("cloud.linkedDescriptionLive"),
       });
       setOpen(false);
     } catch (e) {
@@ -283,10 +267,13 @@ const PULL_PHASES: Array<{ id: SyncPhase; labelKey: string }> = [
 function SyncProgressDialog() {
   const { t } = useTranslation("workbench");
   const busy = useSyncStore((s) => s.busy);
-  const progress = useSyncStore((s) => s.progress);
-  if (!busy) return null;
+  const syncProgress = useSyncStore((s) => s.progress);
+  const liveTransfer = useLiveStore((s) => s.transfer);
+  const operation = liveTransfer?.direction ?? busy;
+  const progress = liveTransfer?.progress ?? syncProgress;
+  if (!operation) return null;
 
-  const phases = busy === "push" ? PUSH_PHASES : PULL_PHASES;
+  const phases = operation === "push" ? PUSH_PHASES : PULL_PHASES;
   const activeIndex = progress
     ? phases.findIndex((p) => p.id === progress.phase)
     : 0;
@@ -303,7 +290,7 @@ function SyncProgressDialog() {
       >
         <DialogHeader>
           <DialogTitle className="text-white">
-            {busy === "push"
+            {operation === "push"
               ? t("cloud.uploading")
               : t("cloud.loadingLatest")}
           </DialogTitle>
@@ -507,96 +494,49 @@ function ServerBuildAction() {
 
 function LinkedControls() {
   const { t } = useTranslation("workbench");
-  const baseRevision = useProjectStore(
-    (s) => s.project?.sync.baseRevision ?? null,
-  );
-  const lastSyncedAt = useProjectStore(
-    (s) => s.project?.sync.lastSyncedAt ?? null,
-  );
-  const collabStatus = useCollabStore((s) => s.status);
-  const busy = useSyncStore((s) => s.busy);
-  const push = useSyncStore((s) => s.push);
-  const pull = useSyncStore((s) => s.pull);
-  const unsynced = useUnsyncedChanges();
+  const status = useLiveStore((state) => state.status);
+  const version = useLiveStore((state) => state.version);
+  const pending = useLiveStore((state) => state.pending);
+  const error = useLiveStore((state) => state.error);
+
+  const online = status === "online";
+  const active = status === "connecting" || status === "syncing";
+  const label =
+    status === "error"
+      ? t("cloud.liveError")
+      : pending > 0
+        ? t("cloud.liveSaving", { count: pending })
+        : online
+          ? t("cloud.live")
+          : t("cloud.connecting");
 
   return (
     <>
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="flex h-7 cursor-default items-center gap-1.5 rounded-full bg-white/5 px-2.5">
-            <Cloud
-              className={cn(
-                "h-3.5 w-3.5",
-                collabStatus === "online"
-                  ? "text-emerald-400"
-                  : collabStatus === "connecting"
-                    ? "text-amber-300"
-                    : "text-white/35",
-              )}
-            />
-            <span className="font-mono text-[10px] text-white/60">
-              {t("cloud.rev", { revision: baseRevision ?? 0 })}
-            </span>
+            {active || (pending > 0 && status !== "error") ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-300" />
+            ) : (
+              <Cloud
+                className={cn(
+                  "h-3.5 w-3.5",
+                  online ? "text-emerald-400" : "text-red-400",
+                )}
+              />
+            )}
+            <span className="text-[10px] font-medium text-white/65">{label}</span>
+            {version !== null && (
+              <span className="font-mono text-[9px] text-white/30">v{version}</span>
+            )}
           </div>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          {collabStatus === "online"
-            ? t("cloud.connected")
-            : collabStatus === "connecting"
-              ? t("cloud.connecting")
-              : t("cloud.offline")}
-          {" · "}
-          {lastSyncedAt
-            ? t("cloud.lastSynced", {
-                time: formatRelativeTime(lastSyncedAt),
-              })
-            : t("cloud.neverSynced")}
+          {error ??
+            (pending > 0
+              ? t("cloud.livePendingTooltip", { count: pending })
+              : t("cloud.liveTooltip"))}
         </TooltipContent>
-      </Tooltip>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 px-2.5 text-xs"
-            disabled={busy !== null}
-            onClick={() => void push()}
-          >
-            {busy === "push" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <CloudUpload className="h-3.5 w-3.5" />
-            )}
-            {unsynced ? t("cloud.uploadChanges") : t("cloud.upload")}
-            {unsynced && (
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-            )}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          {t("cloud.uploadTooltip")}
-        </TooltipContent>
-      </Tooltip>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 rounded-[8px] text-white/55 hover:bg-white/10 hover:text-white"
-            disabled={busy !== null}
-            onClick={() => void pull()}
-            aria-label={t("cloud.loadLatest")}
-          >
-            {busy === "pull" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <CloudDownload className="h-3.5 w-3.5" />
-            )}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">{t("cloud.loadLatest")}</TooltipContent>
       </Tooltip>
 
       <ServerBuildAction />

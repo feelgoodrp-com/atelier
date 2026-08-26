@@ -48,6 +48,9 @@ import type {
   DrawableKind,
   DrawableMode,
   Gender,
+  ProjectGroup,
+  ProjectTattoo,
+  TattooCollection,
 } from "@/lib/project/schema";
 
 export type UserStatus = "pending" | "approved" | "locked";
@@ -457,6 +460,59 @@ export interface RevisionDrawable {
   flags: DrawableFlags;
 }
 
+export type WorkspaceEntityType = "group" | "drawable" | "tattoo";
+
+export interface WorkspaceTattoo extends Omit<ProjectTattoo, "image"> {
+  image: RevisionAssetRef | null;
+}
+
+export interface WorkspaceProject {
+  id: string;
+  name: string;
+  createdAt: string;
+  settings: { dlcName: string; defaultGender: Gender };
+  groups: ProjectGroup[];
+  drawables: RevisionDrawable[];
+  tattooCollection: TattooCollection;
+  tattoos: WorkspaceTattoo[];
+}
+
+export type WorkspaceLeafOperation =
+  | {
+      kind: "project.patch";
+      patch: {
+        name?: string;
+        settings?: Partial<WorkspaceProject["settings"]>;
+        tattooCollection?: Partial<WorkspaceProject["tattooCollection"]>;
+      };
+    }
+  | {
+      kind: "entity.upsert";
+      entityType: WorkspaceEntityType;
+      entity: ProjectGroup | RevisionDrawable | WorkspaceTattoo;
+    }
+  | {
+      kind: "entity.patch";
+      entityType: WorkspaceEntityType;
+      id: string;
+      patch: Record<string, unknown>;
+    }
+  | { kind: "entity.delete"; entityType: WorkspaceEntityType; id: string }
+  | { kind: "order.set"; entityType: "drawable" | "tattoo"; ids: string[] };
+
+export type WorkspaceOperation =
+  | WorkspaceLeafOperation
+  | { kind: "batch"; operations: WorkspaceLeafOperation[] };
+
+export interface LiveWorkspace {
+  packId: string;
+  schemaVersion: 1;
+  version: number;
+  project: WorkspaceProject;
+  updatedAt: string;
+  updatedByDiscordId: string;
+}
+
 export interface RemoteRevision {
   packId: string;
   revision: number;
@@ -533,6 +589,39 @@ export async function postRevision(
 }
 
 // ---------------------------------------------------------------------------
+// Realtime live workspace
+// ---------------------------------------------------------------------------
+
+export async function getWorkspace(packId: string): Promise<LiveWorkspace> {
+  const res = await request<{ workspace: LiveWorkspace }>(
+    `/api/v1/packs/${encodeURIComponent(packId)}/workspace`,
+  );
+  return res.workspace;
+}
+
+export async function initializeWorkspace(
+  packId: string,
+  project: WorkspaceProject,
+  baseRevision: number,
+): Promise<LiveWorkspace> {
+  const res = await request<{ workspace: LiveWorkspace }>(
+    `/api/v1/packs/${encodeURIComponent(packId)}/workspace/initialize`,
+    { method: "POST", body: JSON.stringify({ project, baseRevision }) },
+  );
+  return res.workspace;
+}
+
+export async function postWorkspaceOperation(
+  packId: string,
+  args: { operationId: string; baseVersion: number; operation: WorkspaceOperation },
+): Promise<{ version: number; duplicate?: boolean; rebased?: boolean }> {
+  return request<{ version: number; duplicate?: boolean; rebased?: boolean }>(
+    `/api/v1/packs/${encodeURIComponent(packId)}/workspace/operations`,
+    { method: "POST", body: JSON.stringify(args) },
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Server-side builds (atelier-api routes/builds.ts — publicBuild shape)
 // ---------------------------------------------------------------------------
 
@@ -582,7 +671,7 @@ export async function getServerBuild(buildId: string): Promise<ServerBuild> {
 // CAS assets + resumable uploads
 // ---------------------------------------------------------------------------
 
-export type UploadAssetKind = "ydd" | "ytd" | "yld" | "glb";
+export type UploadAssetKind = "ydd" | "ytd" | "yld" | "glb" | "blob";
 
 export interface AssetCheckResult {
   missing: string[];
@@ -664,7 +753,7 @@ export function completeUpload(uploadId: string): Promise<{ ok: boolean; sha256:
 }
 
 // ---------------------------------------------------------------------------
-// Drawable edit locks (advisory, 90s TTL, heartbeat extends)
+// Entity edit locks (server-enforced, 90s TTL, heartbeat extends)
 // ---------------------------------------------------------------------------
 
 export interface PackLock {

@@ -7,9 +7,10 @@
  *   upgrade (stale JWT) -> refresh tokens before the next attempt.
  * - feeds collab-store: roster (joined/presence) + lock map (lock events).
  * - "head-changed" from someone else -> toast with a "Jetzt laden" action.
- * - advisory locks follow the selection: selected drawables are locked via
+ * - edit locks follow the selection: selected drawables/tattoos are locked via
  *   REST (POST), kept alive with a 30s heartbeat and released on deselect /
- *   project close. Editing is NEVER blocked — the locks are hints only.
+ *   project close. The authoritative operation endpoint rejects foreign edits
+ *   while an active lock exists, preventing silent same-object overwrites.
  */
 
 import { useEffect } from "react";
@@ -27,7 +28,10 @@ import {
 import { useAuthStore, useCloudEnabled } from "@/lib/stores/auth-store";
 import { useCollabStore, type CollabLock, type CollabUser } from "@/lib/stores/collab-store";
 import { useProjectStore } from "@/lib/stores/project-store";
+import { useLiveStore } from "@/lib/stores/live-store";
 import { useSyncStore } from "@/lib/stores/sync-store";
+import { handleLiveWorkspaceMessage } from "@/lib/sync/live";
+import { useTattooWorkbenchStore } from "@/lib/stores/tattoo-workbench-store";
 
 const PING_INTERVAL_MS = 25_000;
 const LOCK_HEARTBEAT_MS = 30_000;
@@ -76,7 +80,7 @@ function teardownSocket(): void {
 export function setCollabTarget(packId: string | null): void {
   if (packId === desiredPackId) return;
 
-  // Leaving a pack: free our advisory locks before switching context.
+  // Leaving a pack: free our edit locks before switching context.
   releaseAllHeldLocks();
   desiredPackId = packId;
   reconnectAttempts = 0;
@@ -181,6 +185,7 @@ function handleMessage(raw: string): void {
           /* best effort — broadcasts keep us converging */
         });
       requestLockSync();
+      handleLiveWorkspaceMessage(msg);
       break;
     }
     case "presence":
@@ -201,6 +206,10 @@ function handleMessage(raw: string): void {
       break;
     case "head-changed":
       onHeadChanged(msg);
+      break;
+    case "workspace-changed":
+    case "workspace-reset":
+      handleLiveWorkspaceMessage(msg);
       break;
     case "build-status":
       // Server-build progress of the pack room — only the build we requested
@@ -226,6 +235,9 @@ function handleMessage(raw: string): void {
 }
 
 function onHeadChanged(msg: Record<string, unknown>): void {
+  // In live mode immutable revisions are checkpoints/build inputs, not the
+  // collaboration head. Pulling one here would overwrite newer live state.
+  if (useLiveStore.getState().status !== "off") return;
   const revision = typeof msg.revision === "number" ? msg.revision : null;
   if (revision === null) return;
 
@@ -265,14 +277,20 @@ function toCollabLock(lock: PackLock): CollabLock {
   };
 }
 
-/** Selection ids that should be locked right now (existing drawables only). */
+/** Selection ids that should be locked right now (drawables and tattoos). */
 function desiredLockIds(): string[] {
   if (!desiredPackId) return [];
   if (useCollabStore.getState().lockDenied) return []; // viewer role
   const { project, selection } = useProjectStore.getState();
   if (!project || project.sync.remoteProjectId !== desiredPackId) return [];
-  const existing = new Set(project.drawables.map((d) => d.id));
-  return selection.filter((id) => existing.has(id)).slice(0, MAX_HELD_LOCKS);
+  const tattooSelection = useTattooWorkbenchStore.getState().selection;
+  const existing = new Set([
+    ...project.drawables.map((drawable) => drawable.id),
+    ...project.tattoos.map((tattoo) => tattoo.id),
+  ]);
+  return [...selection, ...tattooSelection]
+    .filter((id, index, all) => existing.has(id) && all.indexOf(id) === index)
+    .slice(0, MAX_HELD_LOCKS);
 }
 
 /** Coalescing trigger — repeated calls while running queue ONE extra pass. */
@@ -365,7 +383,7 @@ function releaseAllHeldLocks(): void {
 
 /**
  * Mount once (App): drives the WebSocket lifecycle from auth + project state
- * and mirrors the drawable selection into advisory locks.
+ * and mirrors drawable/tattoo selection into edit locks.
  */
 export function useCollab(): void {
   const cloudEnabled = useCloudEnabled();
@@ -375,6 +393,7 @@ export function useCollab(): void {
     (s) => s.project?.sync.remoteProjectId ?? null,
   );
   const selection = useProjectStore((s) => s.selection);
+  const tattooSelection = useTattooWorkbenchStore((s) => s.selection);
 
   useEffect(() => {
     const target =
@@ -386,5 +405,5 @@ export function useCollab(): void {
 
   useEffect(() => {
     requestLockSync();
-  }, [selection, remoteProjectId]);
+  }, [selection, tattooSelection, remoteProjectId]);
 }

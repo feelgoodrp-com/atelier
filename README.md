@@ -56,8 +56,12 @@ optionally collaborate as a team over a cloud.
   your server and let you browse it on a ped — with the labels and groups you
   gave your items, instead of bare index numbers. Off by default; without the
   tick the build output is unchanged and the pack stays invisible to the viewer.
-- **Team cloud** _(optional)_ — push/pull against versioned pack revisions, live
-  presence and advisory locks (via [atelier-api](https://github.com/feelgoodrp-com/atelier-api)).
+- **Team cloud** _(optional)_ — Google-Docs-style live project operations:
+  names, settings, groups, clothing, tattoos, ordering, deletes and optimized
+  asset hashes appear automatically on every connected client. Binary assets
+  are uploaded content-addressed before the operation is published; reconnects
+  recover from the durable server workspace and local operation queue (via
+  [atelier-api](https://github.com/feelgoodrp-com/atelier-api)).
 - **Import wizard** — existing packs as well as `.ydd`/`.ytd`/`.yld` via drag &
   drop, with automatic classification.
 
@@ -91,6 +95,7 @@ Useful scripts:
 ```powershell
 bun run build             # frontend typecheck + Vite build
 bun run selftest:project  # project-format / sync self-test
+bun run selftest:live     # realtime operation-diff self-test
 bun run sidecar:publish   # builds the sidecar (src-tauri/binaries/…)
 bun run tauri:build       # release bundle (installer + portable)
 ```

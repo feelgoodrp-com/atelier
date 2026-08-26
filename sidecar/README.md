@@ -151,7 +151,7 @@ Body:
 
 ```json
 {
-  "projectDir": "C:\\…", "project": { "fgcloth": 1, … },
+  "projectDir": "C:\\…", "project": { "fgcloth": 3, … },
   "target": "fivem" | "singleplayer" | "ragemp" | "altv",
   "outDir": "C:\\out",
   "options": { "dlcName": "mypack", "resourceName": null, "generateShopMeta": true, "splitAt": 128 }

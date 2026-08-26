@@ -111,7 +111,7 @@
     "newGroup": "New group…",
     "moveGender": "Move gender",
     "deleteSelection": "Delete selection",
-    "lockNotice": "{{name}} is currently editing this drawable. Edits are still possible (advisory lock).",
+    "lockNotice": "{{name}} is currently editing this drawable. Please wait—changes are rejected while it is locked.",
     "label": "Label",
     "gender": "Gender",
     "slot": "Slot",
@@ -252,6 +252,7 @@
     "you": "{{name}} (you)",
     "packsLoadFailed": "Could not load packs",
     "linkedToast": "Linked with “{{name}}”",
+    "linkedDescriptionLive": "The current state is connecting; changes will then appear automatically for every team member.",
     "linkedDescriptionUpload": "Upload your drawables to the cloud with “Upload”.",
     "linkedDescriptionPull": "The pack is at rev {{revision}} — “Load latest version” fetches the cloud state.",
     "createFailed": "Could not create pack",
@@ -291,6 +292,11 @@
     "upload": "Upload",
     "uploadTooltip": "Upload the local state to the cloud as a new revision",
     "linkWithCloud": "Link with cloud",
-    "linkWithCloudTooltip": "Connect the project to a cloud pack (team sync)"
+    "linkWithCloudTooltip": "Connect the project to a cloud pack (team sync)",
+    "live": "Live",
+    "liveSaving": "Live · saving {{count}}",
+    "liveError": "Live error",
+    "liveTooltip": "All project changes are shared with the team automatically in realtime.",
+    "livePendingTooltip": "{{count}} change(s) are being stored safely in the cloud."
   }
 }

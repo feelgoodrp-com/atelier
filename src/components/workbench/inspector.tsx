@@ -270,7 +270,8 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
   // canonical file names shown in the Dateien section.
   const derivedId = project ? (selectDerivedDrawableIds(project)[drawable.id] ?? 0) : 0;
 
-  // Advisory lock hint — editing stays possible, this is information only.
+  // The server enforces foreign locks; disable this inspector preemptively so
+  // the user does not see an optimistic edit that will immediately be reverted.
   const lock = useCollabStore((s) => s.locks[drawable.id]);
   const selfDiscordId = useAuthStore((s) => s.user?.discordId);
   const foreignLock =
@@ -325,6 +326,7 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
           </div>
         )}
 
+        <fieldset disabled={foreignLock !== null} className="contents">
         {/* Label */}
         <div className="flex flex-col gap-1.5">
           <FieldLabel>{t("inspector.label")}</FieldLabel>
@@ -592,6 +594,7 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
         <Separator className="bg-white/8" />
 
         <TexturePanel drawable={drawable} />
+        </fieldset>
       </div>
 
       <GroupDialog

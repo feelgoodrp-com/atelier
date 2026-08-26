@@ -5,6 +5,7 @@
  * Lifts chain (v1 → v2 → …) until {@link PROJECT_FILE_VERSION} is reached; zod
  * validation runs AFTER migration (in lib/project/io.ts).
  *   v1 → v2: adds the tattoo model (tattooCollection + empty tattoos[]).
+ *   v2 → v3: adds sync.workspaceVersion for the realtime collaboration head.
  */
 
 import i18n from "@/lib/i18n";
@@ -39,6 +40,18 @@ function migrateV1ToV2(raw: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
+function migrateV2ToV3(raw: Record<string, unknown>): Record<string, unknown> {
+  const sync =
+    typeof raw.sync === "object" && raw.sync !== null && !Array.isArray(raw.sync)
+      ? (raw.sync as Record<string, unknown>)
+      : {};
+  return {
+    ...raw,
+    fgcloth: 3,
+    sync: { ...sync, workspaceVersion: null },
+  };
+}
+
 /**
  * Takes the raw JSON.parse result of a pack.atelier file and returns an object
  * shaped like the current {@link PROJECT_FILE_VERSION}. Zod validation happens
@@ -54,6 +67,11 @@ export function migrateProjectFile(raw: unknown): unknown {
 
   if (version === 1) {
     doc = migrateV1ToV2(doc);
+    version = doc.fgcloth;
+  }
+
+  if (version === 2) {
+    doc = migrateV2ToV3(doc);
     version = doc.fgcloth;
   }
 

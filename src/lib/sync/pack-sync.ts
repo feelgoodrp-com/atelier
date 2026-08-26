@@ -111,7 +111,12 @@ async function saveOpenProject(): Promise<void> {
 export async function linkProject(packId: string): Promise<void> {
   const { project, projectDir, setSyncState } = useProjectStore.getState();
   if (!project || !projectDir) throw new Error(i18n.t("sync:errors.noProjectOpen"));
-  setSyncState({ remoteProjectId: packId, baseRevision: null, lastSyncedAt: null });
+  setSyncState({
+    remoteProjectId: packId,
+    baseRevision: null,
+    workspaceVersion: null,
+    lastSyncedAt: null,
+  });
   await saveOpenProject();
 }
 
@@ -120,7 +125,7 @@ export async function linkProject(packId: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 /** Uploads one local file via the resumable chunk protocol. */
-async function uploadLocalAsset(projectDir: string, asset: LocalAsset): Promise<void> {
+export async function uploadLocalAsset(projectDir: string, asset: LocalAsset): Promise<void> {
   const name = baseName(asset.ref.path);
   const absPath = joinPath(projectDir, asset.ref.path);
 
@@ -134,7 +139,21 @@ async function uploadLocalAsset(projectDir: string, asset: LocalAsset): Promise<
   // The revision will reference ref.hash — a drifted file would brick the
   // upload at /complete anyway, so fail early with a readable message.
   if ((await sha256Hex(bytes)) !== asset.ref.hash) {
-    throw new Error(i18n.t("sync:errors.fileDrifted", { name }));
+    // In-place texture optimization keeps every prior generation by hash.
+    // A durable live operation may still need one of those bytes after the
+    // same path has already been optimized again while offline.
+    const backupPath = joinPath(
+      projectDir,
+      ".atelier-cache/texture-backups",
+      `${asset.ref.hash}-${name}`,
+    );
+    if (asset.kind === "ytd" && (await exists(backupPath).catch(() => false))) {
+      const backup = await readFile(backupPath);
+      if ((await sha256Hex(backup)) === asset.ref.hash) bytes = backup;
+      else throw new Error(i18n.t("sync:errors.fileDrifted", { name }));
+    } else {
+      throw new Error(i18n.t("sync:errors.fileDrifted", { name }));
+    }
   }
 
   let session: UploadSession;
@@ -239,6 +258,7 @@ export async function pushProject(options: PushOptions = {}): Promise<PushResult
   useProjectStore.getState().setSyncState({
     remoteProjectId: packId,
     baseRevision: result.revision.revision,
+    workspaceVersion: project.sync.workspaceVersion,
     lastSyncedAt: new Date().toISOString(),
   });
   await saveOpenProject();
@@ -335,10 +355,20 @@ export async function pullProject(options: PullOptions = {}): Promise<PullResult
     fromRevisionDrawable(d, pathBySha, localGroupIds),
   );
 
+  const latest = useProjectStore.getState();
+  if (
+    latest.projectDir !== projectDir ||
+    latest.project?.id !== project.id ||
+    latest.project.sync.remoteProjectId !== packId
+  ) {
+    throw new Error(i18n.t("sync:errors.projectChanged"));
+  }
+
   // ONE undo step: drawables + sync block together.
-  useProjectStore.getState().applyPulledState(mapped, {
+  latest.applyPulledState(mapped, {
     remoteProjectId: packId,
     baseRevision: manifest.revision,
+    workspaceVersion: project.sync.workspaceVersion,
     lastSyncedAt: new Date().toISOString(),
   });
   await saveOpenProject();

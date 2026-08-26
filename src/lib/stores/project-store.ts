@@ -105,6 +105,12 @@ interface ProjectState {
    */
   applyPulledState: (drawables: ProjectDrawable[], sync: ProjectSync) => void;
   /**
+   * Replaces the complete materialized project after a confirmed live-cloud
+   * operation without recording that replacement as an undo step. The live
+   * bridge clears stale whole-project history immediately afterward.
+   */
+  applyLiveProject: (project: AtelierProject) => void;
+  /**
    * Updates the sync block WITHOUT recording an undo step (link/push
    * bookkeeping must not be undoable). Still marks the project dirty.
    */
@@ -436,6 +442,22 @@ export const useProjectStore = create<ProjectState>()(
                 }
               : state,
           ),
+
+        applyLiveProject: (project) => {
+          const temporal = useProjectStore.temporal.getState();
+          temporal.pause();
+          try {
+            set((state) => ({
+              project,
+              dirty: true,
+              selection: state.selection.filter((id) =>
+                project.drawables.some((drawable) => drawable.id === id),
+              ),
+            }));
+          } finally {
+            temporal.resume();
+          }
+        },
 
         setSyncState: (sync) => {
           const temporal = useProjectStore.temporal.getState();

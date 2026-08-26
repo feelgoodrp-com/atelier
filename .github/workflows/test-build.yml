@@ -1,0 +1,91 @@
+# Manually builds a downloadable Windows test package without creating a tag,
+# GitHub Release or updater signature. Intended for verifying feature branches
+# and unreleased changes before the real signed release pipeline is used.
+name: Test Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Realtime collaboration selftest
+        run: bun run selftest:live
+
+      - name: Project schema selftest
+        run: bun run selftest:project
+
+      - name: Publish sidecar
+        shell: pwsh
+        run: ./sidecar/publish.ps1
+
+      - name: Build unsigned test installers
+        shell: pwsh
+        run: |
+          # A test build does not feed the public auto-updater, so updater
+          # artifacts/signatures are intentionally disabled for this run.
+          $testConfig = Join-Path $env:RUNNER_TEMP "tauri.test-build.json"
+          '{"bundle":{"createUpdaterArtifacts":false}}' |
+            Set-Content -LiteralPath $testConfig -Encoding utf8
+          bun run tauri build --ci --no-sign --config $testConfig
+
+      - name: Assemble portable test ZIP
+        shell: pwsh
+        run: |
+          $releaseDir = "src-tauri/target/release"
+          $portableDir = "dist-test/atelier by feelgood"
+          New-Item -ItemType Directory -Force $portableDir | Out-Null
+          $main = @("$releaseDir/atelier by feelgood.exe", "$releaseDir/atelier.exe") |
+            Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $main) { throw "Main executable not found under $releaseDir" }
+          Copy-Item $main "$portableDir/atelier by feelgood.exe"
+          Copy-Item `
+            "src-tauri/binaries/fg-atelier-sidecar-x86_64-pc-windows-msvc.exe" `
+            "$portableDir/fg-atelier-sidecar.exe"
+          if (Test-Path "$releaseDir/WebView2Loader.dll") {
+            Copy-Item "$releaseDir/WebView2Loader.dll" $portableDir
+          }
+          @(
+            "atelier by feelgood – unsigned test build",
+            "",
+            "Start 'atelier by feelgood.exe'. Keep fg-atelier-sidecar.exe in the same folder.",
+            "This package is for testing only and does not use the automatic updater."
+          ) -join "`r`n" | Set-Content "$portableDir/README.txt" -Encoding utf8
+          Compress-Archive -Path $portableDir -DestinationPath "atelier-test-portable.zip" -Force
+
+      - name: Upload test packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: atelier-windows-test-${{ github.run_number }}
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+          path: |
+            src-tauri/target/release/bundle/nsis/*-setup.exe
+            src-tauri/target/release/bundle/msi/*.msi
+            atelier-test-portable.zip

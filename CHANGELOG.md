@@ -4,6 +4,28 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Realtime team workspace.** Linked projects now publish stable-id,
+  field-level operations automatically and apply accepted WebSocket operations
+  immediately on every connected client. Adds full project coverage (groups,
+  drawables, tattoos, ordering, deletes and asset changes), crash-safe local
+  operation queuing, reconnect catch-up and exact content-addressed binary
+  transfer. `pack.atelier` format v3 stores the live workspace cursor.
+
+### Fixed
+
+- Transient workspace contention, rate limits and missing CAS uploads now keep
+  their durable operation queued instead of discarding a valid local change.
+- Startup/reconnect broadcasts can no longer fall into the gap before the
+  first HTTP snapshot, and edits made while remote assets download are
+  re-overlaid before the project store is replaced.
+- Full authoritative sync verifies local asset size and SHA-256, preventing an
+  externally changed or partially optimized texture from masquerading as the
+  cloud version.
+
 ## [1.10.0] — 2026-07-21
 
 ### Added

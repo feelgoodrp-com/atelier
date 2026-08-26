@@ -20,6 +20,7 @@ import { getLogConsoleEnabled, getOnboardingDone } from "@/lib/settings";
 import { openLogWindow, useLogConsoleStore } from "@/lib/stores/log-console-store";
 import { usePresenceHeartbeat } from "@/lib/sync/presence";
 import { useCollab } from "@/lib/sync/collab";
+import { useLiveWorkspace } from "@/lib/sync/live";
 import { startAutosave } from "@/lib/project/autosave";
 import { useUpdateStore } from "@/lib/stores/update-store";
 import { loadPreferences, usePreferencesStore } from "@/lib/stores/preferences-store";
@@ -52,8 +53,9 @@ function App() {
   // "Wer ist online?" heartbeat (active only when logged in + approved).
   usePresenceHeartbeat();
 
-  // Pack-room WebSocket + advisory edit locks (cloud-linked projects only).
+  // Pack-room WebSocket + enforced edit locks (cloud-linked projects only).
   useCollab();
+  useLiveWorkspace();
 
   // Restore settings + silent login on startup.
   useEffect(() => {

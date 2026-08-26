@@ -455,9 +455,9 @@ public static class BuildEndpoints
             return Results.BadRequest(new ErrorResponse($"Projektordner nicht gefunden: {projectDir}"));
         if (project == null)
             return Results.BadRequest(new ErrorResponse("Feld 'project' fehlt."));
-        if (project.Fgcloth is not (1 or 2))
+        if (project.Fgcloth is not (1 or 2 or 3))
             return Results.BadRequest(new ErrorResponse(
-                $"Nicht unterstützte Projektversion (fgcloth={project.Fgcloth}, erwartet 1 oder 2)."));
+                $"Nicht unterstützte Projektversion (fgcloth={project.Fgcloth}, erwartet 1, 2 oder 3)."));
         return null;
     }
 }

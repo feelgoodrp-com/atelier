@@ -17,6 +17,8 @@ import {
   pushProject,
   type SyncProgress,
 } from "@/lib/sync/pack-sync";
+import { refreshLiveWorkspace } from "@/lib/sync/live";
+import { useLiveStore } from "@/lib/stores/live-store";
 import { useProjectStore } from "@/lib/stores/project-store";
 
 export type SyncBusy = "push" | "pull" | null;
@@ -122,12 +124,18 @@ export const useSyncStore = create<SyncState>((set, get) => ({
 
   pull: async (opts) => {
     if (get().busy) return;
-    if (!opts?.force && hasUnsyncedLocalChanges()) {
+    const live = useLiveStore.getState().status !== "off";
+    if (!live && !opts?.force && hasUnsyncedLocalChanges()) {
       set({ pullConfirmOpen: true });
       return;
     }
     set({ busy: "pull", progress: null, pullConfirmOpen: false });
     try {
+      if (live) {
+        const version = await refreshLiveWorkspace();
+        toast.success(i18n.t("sync:pull.liveSuccess", { version }));
+        return;
+      }
       const result = await pullProject({
         onProgress: (progress) => set({ progress }),
       });

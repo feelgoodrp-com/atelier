@@ -1,6 +1,6 @@
 /**
  * Live collaboration state of the joined pack room (fed by lib/sync/collab.ts):
- * connection status, roster ("wer ist im Pack online?") and the advisory lock
+ * connection status, roster ("wer ist im Pack online?") and the edit-lock
  * map (drawableEntryId -> holder). Locks arrive via WebSocket broadcasts and
  * via the REST acquire responses; there is no initial lock list endpoint, so
  * the map fills up as events come in.

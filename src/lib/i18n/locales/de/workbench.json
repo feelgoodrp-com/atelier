@@ -111,7 +111,7 @@
     "newGroup": "Neue Gruppe…",
     "moveGender": "Geschlecht verschieben",
     "deleteSelection": "Auswahl löschen",
-    "lockNotice": "{{name}} bearbeitet dieses Drawable gerade. Änderungen sind weiterhin möglich (Hinweis-Sperre).",
+    "lockNotice": "{{name}} bearbeitet dieses Drawable gerade. Bitte warte – Änderungen werden während der Sperre nicht übernommen.",
     "label": "Label",
     "gender": "Geschlecht",
     "slot": "Slot",
@@ -252,6 +252,7 @@
     "you": "{{name}} (du)",
     "packsLoadFailed": "Packs konnten nicht geladen werden",
     "linkedToast": "Mit „{{name}}“ verknüpft",
+    "linkedDescriptionLive": "Der aktuelle Stand wird verbunden; danach erscheinen Änderungen automatisch live bei allen Teammitgliedern.",
     "linkedDescriptionUpload": "Lade deine Drawables mit „Hochladen“ in die Cloud.",
     "linkedDescriptionPull": "Das Pack steht bei Rev {{revision}} — „Neueste Version laden“ holt den Cloud-Stand.",
     "createFailed": "Pack konnte nicht erstellt werden",
@@ -291,6 +292,11 @@
     "upload": "Hochladen",
     "uploadTooltip": "Lokalen Stand als neue Revision in die Cloud hochladen",
     "linkWithCloud": "Mit Cloud verknüpfen",
-    "linkWithCloudTooltip": "Projekt mit einem Cloud-Pack verbinden (Team-Sync)"
+    "linkWithCloudTooltip": "Projekt mit einem Cloud-Pack verbinden (Team-Sync)",
+    "live": "Live",
+    "liveSaving": "Live · {{count}} wird gespeichert",
+    "liveError": "Live-Fehler",
+    "liveTooltip": "Alle Projektänderungen werden automatisch in Echtzeit mit dem Team geteilt.",
+    "livePendingTooltip": "{{count}} Änderung(en) werden gerade sicher in der Cloud gespeichert."
   }
 }

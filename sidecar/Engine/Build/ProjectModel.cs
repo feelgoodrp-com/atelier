@@ -1,7 +1,7 @@
 namespace Feelgood.Atelier.Sidecar.Engine.Build;
 
 /// <summary>
-/// C# mirror of the `pack.atelier` project file (fgcloth v1, see
+/// C# mirror of the `pack.atelier` project file (fgcloth v1-v3, see
 /// atelier/src/lib/project/schema.ts). Only build-relevant fields are mapped;
 /// unknown JSON properties are ignored by the (case-insensitive) binder.
 /// </summary>

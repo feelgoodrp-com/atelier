@@ -1,5 +1,5 @@
 /**
- * Zod schema for the `pack.atelier` project file (fgcloth v1).
+ * Zod schema for the current `pack.atelier` project file.
  *
  * Shape is the shared contract between app, sidecar and atelier-api — keep in
  * sync with the Phase-1 contract documentation. Notably the in-game drawableId
@@ -31,9 +31,9 @@ export type {
   TattooZoneId,
 } from "@/lib/gta/tattoos";
 
-// fgcloth v2 added the tattoo-authoring model (tattooCollection + tattoos[]);
-// v1 projects are lifted in migrations.ts (additive: empty tattoos array).
-export const PROJECT_FILE_VERSION = 2;
+// fgcloth v2 added tattoos; v3 adds the durable live-workspace cursor used by
+// realtime cloud collaboration. Both older versions are lifted in migrations.
+export const PROJECT_FILE_VERSION = 3;
 
 // ---------------------------------------------------------------------------
 // Building blocks
@@ -197,6 +197,7 @@ export type ProjectSettings = z.infer<typeof projectSettingsSchema>;
 export const projectSyncSchema = z.object({
   remoteProjectId: z.string().nullable(),
   baseRevision: z.number().int().nullable(),
+  workspaceVersion: z.number().int().nonnegative().nullable(),
   lastSyncedAt: z.iso.datetime().nullable(),
 });
 export type ProjectSync = z.infer<typeof projectSyncSchema>;
@@ -246,7 +247,12 @@ export function createEmptyProject(name: string): AtelierProject {
     drawables: [],
     tattooCollection: { name: dlcName, label: "Tattoos" },
     tattoos: [],
-    sync: { remoteProjectId: null, baseRevision: null, lastSyncedAt: null },
+    sync: {
+      remoteProjectId: null,
+      baseRevision: null,
+      workspaceVersion: null,
+      lastSyncedAt: null,
+    },
   };
 }
 

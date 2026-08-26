@@ -5,6 +5,7 @@
   },
   "pull": {
     "success": "Rev {{revision}} geladen",
+    "liveSuccess": "Live-Projekt aktualisiert — v{{version}}",
     "downloaded_one": "{{count}} Datei heruntergeladen.",
     "downloaded_other": "{{count}} Datei(en) heruntergeladen.",
     "allLocal": "Alle Dateien waren bereits lokal vorhanden.",
@@ -50,6 +51,7 @@
   "errors": {
     "noProjectOpen": "Kein Projekt geöffnet.",
     "notLinked": "Das Projekt ist noch nicht mit der Cloud verknüpft.",
+    "projectChanged": "Der Cloud-Abgleich wurde abgebrochen, weil inzwischen ein anderes Projekt geöffnet wurde.",
     "fileMissing": "Datei fehlt lokal: {{path}}",
     "fileDrifted": "„{{name}}“ wurde außerhalb von atelier verändert (Hash weicht ab). Bitte die Datei neu importieren.",
     "uploadHashFailed": "Upload von „{{name}}“ ist fehlgeschlagen (Hash-Prüfung). Bitte erneut versuchen.",
@@ -61,6 +63,8 @@
     "done": "Fertig",
     "committing": "Revision wird erstellt…",
     "allLocal": "Alle Dateien sind bereits lokal vorhanden",
-    "downloadStarting": "Download startet…"
+    "downloadStarting": "Download startet…",
+    "workspaceLoading": "Live-Projekt wird geladen…",
+    "workspaceInitializing": "Live-Projekt wird erstellt…"
   }
 }
