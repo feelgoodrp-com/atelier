@@ -158,4 +158,6 @@ Keep the copyright line (`Required Notice` in the license) intact.
   import, the RGBA8888 format and dialog fixes.
 - **[Blaccii](https://github.com/Blaccii)** — community contributor: the
   256-drawable split limit.
+- **[DasEric](https://github.com/DasEric)** — community contributor: the
+  realtime team workspace ([#13](https://github.com/feelgoodrp-com/atelier/pull/13)).
 - Built by the **feelgood team** and **Claude Fable 5(RIP)**.

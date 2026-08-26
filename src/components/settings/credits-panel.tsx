@@ -82,6 +82,11 @@ const PEOPLE: Person[] = [
     roleKey: "credits.roles.blaccii",
     links: [{ kind: "github", url: "https://github.com/Blaccii" }],
   },
+  {
+    name: "DasEric",
+    roleKey: "credits.roles.dasEric",
+    links: [{ kind: "github", url: "https://github.com/DasEric" }],
+  },
 ];
 
 /** feelgood's own community Discord — distinct from the third-party credits above. */

@@ -4,7 +4,7 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.11.0] — 2026-08-26
 
 ### Added
 
@@ -13,7 +13,8 @@ and this project follows [Semantic Versioning](https://semver.org/).
   immediately on every connected client. Adds full project coverage (groups,
   drawables, tattoos, ordering, deletes and asset changes), crash-safe local
   operation queuing, reconnect catch-up and exact content-addressed binary
-  transfer. `pack.atelier` format v3 stores the live workspace cursor.
+  transfer. `pack.atelier` format v3 stores the live workspace cursor. Thanks to
+  @DasEric ([#13]).
 
 ### Fixed
 
@@ -339,12 +340,14 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
+[1.11.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.11.0
 [1.10.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.10.0
 [1.9.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.9.1
 [1.9.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.9.0
 [1.8.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.8.1
 [1.8.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.8.0
 [1.7.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.7.0
+[#13]: https://github.com/feelgoodrp-com/atelier/pull/13
 [#12]: https://github.com/feelgoodrp-com/atelier/pull/12
 [1.6.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.6.1
 [1.6.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.6.0
