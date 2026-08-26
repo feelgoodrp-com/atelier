@@ -55,6 +55,15 @@ public static class ImportScanner
     private static readonly Regex YddPropFull =
         new(@"^(?<slot>p_[a-z]+)_(?<num>\d{3})(?:_(?<variant>[a-z]))?\.ydd$", RegexOptions.Compiled);
 
+    // "Alternation model" — a base drawable's model plus a trailing _1/_2/_3, e.g.
+    // hair_000_u_1.ydd next to hair_000_u.ydd. These are NOT separate drawables:
+    // _1 is the first-person / alternate model, higher numbers are further
+    // alternations (see docs.gta.clothing/game-mechanics/files-naming, and
+    // atelier's own BuildPlanner.InnerFirstPersonYdd = {slot}_{NNN}_u_1.ydd).
+    // The "stem" is the base file name without the trailing _<n>.ydd.
+    private static readonly Regex AlternationSuffix =
+        new(@"^(?<stem>.+)_(?<alt>\d+)\.ydd$", RegexOptions.Compiled);
+
     // Diffuse textures: jbib_diff_000_a_uni.ytd / jbib_diff_000_a.ytd / p_head_diff_000_a.ytd
     private static readonly Regex YtdDiff =
         new(@"^(?<slot>[a-z0-9_]+?)_diff_(?<num>\d{1,3})_(?<letter>[a-z])(?:_[a-z0-9_]+)?\.ytd$", RegexOptions.Compiled);
@@ -87,6 +96,7 @@ public static class ImportScanner
         public int? DrawableId { get; set; }
         public string Confidence { get; set; } = "low";
         public string? YldPath { get; set; }
+        public string? FirstPersonPath { get; set; }
         public List<ImportScanTexture> Textures { get; } = new();
     }
 
@@ -115,7 +125,7 @@ public static class ImportScanner
         {
             var consumed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             TryApplyPackMetadata(dir, root, files, entries, consumed, warnings, log);
-            ScanByConvention(dir, root, files, entries, consumed, unmatchedTextures, ref ignoredMapCount);
+            ScanByConvention(dir, root, files, entries, consumed, unmatchedTextures, warnings, ref ignoredMapCount);
         }
 
         if (ignoredMapCount > 0)
@@ -273,7 +283,7 @@ public static class ImportScanner
     private static void ScanByConvention(
         string dir, string root, List<string> files,
         List<ImportScanEntry> entries, HashSet<string> consumed,
-        List<string> unmatchedTextures, ref int ignoredMapCount)
+        List<string> unmatchedTextures, List<string> warnings, ref int ignoredMapCount)
     {
         var candidates = new List<YddCandidate>();
 
@@ -287,6 +297,13 @@ public static class ImportScanner
             ClassifyYdd(candidate);
             candidates.Add(candidate);
         }
+
+        // Fold alternation models ({base}_1.ydd, _2, _3) into their base drawable
+        // BEFORE matching textures. Without this each _N becomes a phantom
+        // drawable AND makes the base's (slot, drawableId) ambiguous, so
+        // FindOwner drops every texture. _1 becomes the base's first-person
+        // model; _2+ cannot be represented and are reported but not imported.
+        FoldAlternationModels(candidates, consumed, warnings);
 
         foreach (var file in files)
         {
@@ -352,8 +369,50 @@ public static class ImportScanner
                 candidate.DrawableId,
                 candidate.Textures,
                 candidate.YldPath,
-                candidate.Confidence));
+                candidate.Confidence,
+                candidate.FirstPersonPath));
         }
+    }
+
+    /// <summary>
+    /// Attaches alternation-model YDDs ({base}_1/_2/_3.ydd) to their base
+    /// drawable and removes them from <paramref name="candidates"/> so they are
+    /// neither emitted as their own drawable nor confuse texture ownership.
+    /// _1 → the base's first-person model; _2+ are reported as unsupported.
+    /// </summary>
+    private static void FoldAlternationModels(
+        List<YddCandidate> candidates, HashSet<string> consumed, List<string> warnings)
+    {
+        // Index the bases by (prefix, baseName) so we only fold a _<n> when its
+        // stem actually exists as a real drawable in the same folder.
+        var byName = new Dictionary<(string, string), YddCandidate>();
+        foreach (var c in candidates)
+            byName.TryAdd((c.Prefix, c.BaseName), c);
+
+        var folded = new HashSet<YddCandidate>();
+        foreach (var c in candidates)
+        {
+            var m = AlternationSuffix.Match(c.BaseName);
+            if (!m.Success) continue;
+            var stemName = m.Groups["stem"].Value + ".ydd";
+            if (!byName.TryGetValue((c.Prefix, stemName), out var baseCand) || baseCand == c)
+                continue; // no matching base → treat as a normal drawable
+
+            if (m.Groups["alt"].Value == "1" && baseCand.FirstPersonPath == null)
+            {
+                baseCand.FirstPersonPath = c.Path;
+            }
+            else
+            {
+                warnings.Add(
+                    $"Alternations-Modell nicht importiert (nicht unterstützt): {Path.GetFileName(c.Path)}");
+            }
+
+            folded.Add(c);
+            consumed.Add(c.Path);
+        }
+
+        candidates.RemoveAll(folded.Contains);
     }
 
     private static void ClassifyYdd(YddCandidate candidate)

@@ -111,6 +111,8 @@ export interface ImportScanEntry {
   textures: ImportScanTexture[];
   yldPath: string | null;
   confidence: "high" | "medium" | "low";
+  /** First-person alternate model ({base}_1.ydd), folded into this drawable. */
+  firstPersonPath: string | null;
 }
 
 /** Response of POST /import/scan { folderPath }. */

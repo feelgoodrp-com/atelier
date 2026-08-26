@@ -467,22 +467,29 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
           </Select>
         </div>
 
+        {(drawable.type === "feet" ||
+          drawable.type === "hair" ||
+          drawable.type === "p_head") && (
+          <>
         <Separator className="bg-white/8" />
 
-        {/* Flags */}
+        {/* Flags — only the ones that apply to this slot. High heels are
+            meaningful for feet only; hair-scale for hair/hats only. */}
         <div className="flex flex-col gap-3">
           <FieldLabel>{t("inspector.flags")}</FieldLabel>
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-white/70">{t("inspector.highHeels")}</span>
-            <Switch
-              checked={drawable.flags.highHeels}
-              onCheckedChange={(checked) =>
-                updateDrawable(drawable.id, {
-                  flags: { ...drawable.flags, highHeels: checked },
-                })
-              }
-            />
-          </div>
+          {drawable.type === "feet" && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-white/70">{t("inspector.highHeels")}</span>
+              <Switch
+                checked={drawable.flags.highHeels}
+                onCheckedChange={(checked) =>
+                  updateDrawable(drawable.id, {
+                    flags: { ...drawable.flags, highHeels: checked },
+                  })
+                }
+              />
+            </div>
+          )}
           {(drawable.type === "hair" || drawable.type === "p_head") && (
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
@@ -537,6 +544,8 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
             </div>
           )}
         </div>
+          </>
+        )}
 
         <Separator className="bg-white/8" />
 

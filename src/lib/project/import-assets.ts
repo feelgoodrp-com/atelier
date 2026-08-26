@@ -73,6 +73,13 @@ function fileNameOf(path: string): string {
   return path.split(/[\\/]/).pop() ?? path;
 }
 
+/** Lowercase file name after any ped prefix (…^name), for grouping. */
+function strippedYddName(path: string): string {
+  const name = fileNameOf(path).toLowerCase();
+  const caret = name.lastIndexOf("^");
+  return caret === -1 ? name : name.slice(caret + 1);
+}
+
 function stripExtension(name: string): string {
   return name.replace(/\.[a-z0-9]+$/i, "");
 }
@@ -184,6 +191,35 @@ export async function importAssetFiles(
     }
   }
 
+  // Fold alternation models ({base}_1.ydd, _2, _3) into their base drawable —
+  // same rule as the folder-scan path. _1 is the base's first-person model;
+  // _2+ cannot be represented and are skipped. Neither becomes its own drawable,
+  // which also keeps the base's textures from being split across phantoms.
+  const yddByName = new Map<string, ClassifiedPath>();
+  for (const y of ydds) {
+    const key = `${y.classified.gender ?? "any"}|${strippedYddName(y.path)}`;
+    if (!yddByName.has(key)) yddByName.set(key, y);
+  }
+  const firstPersonByBase = new Map<string, string>();
+  const alternationPaths = new Set<string>();
+  for (const y of ydds) {
+    const m = /^(?<stem>.+)_(?<alt>\d+)\.ydd$/.exec(strippedYddName(y.path));
+    if (!m) continue;
+    const baseKey = `${y.classified.gender ?? "any"}|${m.groups!.stem}.ydd`;
+    const base = yddByName.get(baseKey);
+    if (!base || base === y) continue; // no real base → keep as its own drawable
+    if (m.groups!.alt === "1" && !firstPersonByBase.has(base.path)) {
+      firstPersonByBase.set(base.path, y.path);
+    } else {
+      skipped.push({
+        path: y.path,
+        reason: i18n.t("errors:import.alternationUnsupported"),
+      });
+    }
+    alternationPaths.add(y.path);
+  }
+  const baseYdds = ydds.filter((y) => !alternationPaths.has(y.path));
+
   // Index textures/physics by (type, drawableId) so they attach to their ydd.
   const texturesByGroup = new Map<string, ClassifiedPath[]>();
   for (const ytd of ytds) {
@@ -210,7 +246,7 @@ export async function importAssetFiles(
   const claimedYtds = new Set<string>();
   const claimedYlds = new Set<string>();
 
-  for (const ydd of ydds) {
+  for (const ydd of baseYdds) {
     const warnings: string[] = [];
     const c = ydd.classified;
 
@@ -329,6 +365,22 @@ export async function importAssetFiles(
       );
     }
 
+    // First-person alternate model ({base}_1.ydd), folded onto this drawable.
+    let firstPerson: AssetRef | null = null;
+    const fpPath = firstPersonByBase.get(ydd.path);
+    if (fpPath) {
+      try {
+        const { hash, size } = await sha256OfFile(fpPath);
+        const relPath = await copyIntoAssets(projectDir, fpPath, gender, type);
+        firstPerson = { path: relPath, hash, size };
+      } catch (e) {
+        skipped.push({
+          path: fpPath,
+          reason: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }
+
     const drawable = createDrawable({
       gender,
       kind,
@@ -339,6 +391,7 @@ export async function importAssetFiles(
       ydd: yddRef,
       textures,
       physics,
+      firstPerson,
     });
 
     drawables.push({
@@ -435,6 +488,8 @@ export interface PlannedImportEntry {
   /** Ordered texture variants (array order == a, b, c, …). */
   texturePaths: string[];
   yldPath: string | null;
+  /** First-person alternate model ({base}_1.ydd), auto-detected on scan. */
+  firstPersonPath: string | null;
   gender: Gender;
   type: SlotId;
   label: string;
@@ -539,6 +594,27 @@ export async function importPlannedEntries(
       }
     }
 
+    // First-person alternate model ({base}_1.ydd), detected by the scanner and
+    // folded into this drawable rather than imported as its own drawable.
+    let firstPerson: AssetRef | null = null;
+    if (entry.firstPersonPath) {
+      try {
+        const { hash, size } = await sha256OfFile(entry.firstPersonPath);
+        const relPath = await copyIntoAssets(
+          projectDir,
+          entry.firstPersonPath,
+          entry.gender,
+          entry.type,
+        );
+        firstPerson = { path: relPath, hash, size };
+      } catch (e) {
+        skipped.push({
+          path: entry.firstPersonPath,
+          reason: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }
+
     drawables.push(
       createDrawable({
         gender: entry.gender,
@@ -548,6 +624,7 @@ export async function importPlannedEntries(
         ydd: yddRef,
         textures,
         physics,
+        firstPerson,
       }),
     );
     onProgress?.(++done, entries.length);

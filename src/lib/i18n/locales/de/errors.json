@@ -24,6 +24,7 @@
     "normalSpecularNotVariant": "Normal-/Specular-Maps werden nicht als Variante importiert.",
     "maxTextureVariants": "Maximal 26 Textur-Varianten pro Drawable (a–z).",
     "duplicateSkipped": "Duplikat – dieses Mesh ist bereits im Projekt.",
+    "alternationUnsupported": "Zusätzliches Alternations-Modell — nicht importiert (atelier hält ein First-Person-Modell pro Drawable).",
     "noTexturesFound": "Keine Texturen gefunden — Drawable hat noch keine Variante.",
     "genderNotDetected": "Geschlecht nicht erkannt — Standard ({{gender}}) verwendet.",
     "noMatchingYdd": "Keine zugehörige YDD-Datei im Import gefunden.",

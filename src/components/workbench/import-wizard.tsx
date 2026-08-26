@@ -388,6 +388,7 @@ export function ImportWizard() {
         yddPath: row.entry.yddPath,
         texturePaths: row.entry.textures.map((t) => t.path),
         yldPath: row.entry.yldPath,
+        firstPersonPath: row.entry.firstPersonPath,
         gender: row.gender,
         type: row.type as SlotId,
         label: stripExtension(baseName(row.entry.yddPath)),

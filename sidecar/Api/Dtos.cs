@@ -312,7 +312,10 @@ public sealed record ImportScanEntry(
     int? GuessedDrawableId,
     IReadOnlyList<ImportScanTexture> Textures,
     string? YldPath,
-    string Confidence);
+    string Confidence,
+    // First-person alternate model ({base}_1.ydd), auto-detected and folded
+    // into its base drawable rather than imported as its own drawable.
+    string? FirstPersonPath = null);
 
 public sealed record ImportScanResponse(
     IReadOnlyList<ImportScanEntry> Entries,
