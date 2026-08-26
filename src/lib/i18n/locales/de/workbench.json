@@ -133,7 +133,13 @@
     "noYddMesh": "Kein YDD-Mesh zugewiesen.",
     "filesHint": "Dateinamen werden beim Build automatisch aus Slot + Nummer vergeben — das Label ist nur eine Notiz für dich und ändert nichts am Pack.",
     "physics": "Physik (YLD)",
-    "firstPerson": "First Person"
+    "firstPerson": "First Person",
+    "firstPersonNone": "Kein First-Person-Modell",
+    "firstPersonAssign": "Zuweisen",
+    "firstPersonRemove": "First-Person-Modell entfernen",
+    "firstPersonPickTitle": "First-Person-.ydd wählen",
+    "firstPersonPickFilter": "First-Person-Modell (.ydd)",
+    "firstPersonFailed": "First-Person-Modell konnte nicht zugewiesen werden"
   },
   "texturePanel": {
     "noTexturesInDictionary": "Keine Texturen im Dictionary",

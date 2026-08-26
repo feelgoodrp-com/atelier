@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import {
   ArrowLeftRight,
   FileBox,
@@ -7,6 +9,8 @@ import {
   Lock,
   Plus,
   Trash2,
+  User,
+  X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -47,6 +51,7 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { useCollabStore } from "@/lib/stores/collab-store";
 import { usePreferencesStore } from "@/lib/stores/preferences-store";
 import { selectDerivedDrawableIds, useProjectStore } from "@/lib/stores/project-store";
+import { importDrawableMesh } from "@/lib/project/import-assets";
 import { canonicalYddName } from "@/lib/gta/stream-names";
 import type { Gender, ProjectDrawable } from "@/lib/project/schema";
 import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
@@ -263,8 +268,42 @@ function BulkPanel({ ids }: { ids: string[] }) {
 function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
   const { t } = useTranslation("workbench");
   const project = useProjectStore((s) => s.project);
+  const projectDir = useProjectStore((s) => s.projectDir);
   const updateDrawable = useProjectStore((s) => s.updateDrawable);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
+  const [assigningFp, setAssigningFp] = useState(false);
+
+  // Assign a first-person alternate model by hand. Import normally folds
+  // {base}_1.ydd automatically; this covers packs where it is named otherwise.
+  const assignFirstPerson = useCallback(async () => {
+    if (!projectDir) return;
+    const selected = await openDialog({
+      title: t("inspector.firstPersonPickTitle"),
+      filters: [{ name: t("inspector.firstPersonPickFilter"), extensions: ["ydd"] }],
+    }).catch(() => null);
+    if (typeof selected !== "string") return;
+
+    setAssigningFp(true);
+    try {
+      const ref = await importDrawableMesh(
+        projectDir,
+        selected,
+        drawable.gender,
+        drawable.type,
+      );
+      updateDrawable(drawable.id, { firstPerson: ref });
+    } catch (e) {
+      toast.error(t("inspector.firstPersonFailed"), {
+        description: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setAssigningFp(false);
+    }
+  }, [projectDir, drawable.id, drawable.gender, drawable.type, updateDrawable, t]);
+
+  const removeFirstPerson = useCallback(() => {
+    updateDrawable(drawable.id, { firstPerson: null });
+  }, [drawable.id, updateDrawable]);
 
   // Build-time number (bucket position / replace target) — drives the
   // canonical file names shown in the Dateien section.
@@ -578,8 +617,8 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
           <p className="text-[10px] leading-relaxed text-white/30">
             {t("inspector.filesHint")}
           </p>
-          <div className="flex gap-1.5">
-            {drawable.physics && (
+          {drawable.physics && (
+            <div className="flex gap-1.5">
               <Badge
                 variant="outline"
                 className="border-emerald-500/40 text-[10px] text-emerald-300"
@@ -587,17 +626,53 @@ function SingleInspector({ drawable }: { drawable: ProjectDrawable }) {
               >
                 {t("inspector.physics")}
               </Badge>
-            )}
-            {drawable.firstPerson && (
-              <Badge
-                variant="outline"
-                className="border-white/15 text-[10px] text-white/60"
-                title={drawable.firstPerson.path}
-              >
-                {t("inspector.firstPerson")}
-              </Badge>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* First-person alternate model — auto-detected on import ({base}_1.ydd),
+              assignable/removable by hand for packs that name it otherwise. */}
+          {drawable.kind === "component" && (
+            <div className="flex items-center gap-2 rounded-[10px] bg-white/5 px-2.5 py-2">
+              <User className="h-4 w-4 shrink-0 text-[#7289DA]" />
+              {drawable.firstPerson ? (
+                <>
+                  <div className="min-w-0 flex-1" title={drawable.firstPerson.path}>
+                    <p className="truncate text-xs text-white/75">
+                      {t("inspector.firstPerson")}
+                    </p>
+                    <p className="truncate text-[10px] text-white/30">
+                      {baseName(drawable.firstPerson.path)}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0 text-white/40 hover:text-white"
+                    title={t("inspector.firstPersonRemove")}
+                    onClick={removeFirstPerson}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <span className="min-w-0 flex-1 truncate text-xs text-white/40">
+                    {t("inspector.firstPersonNone")}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 shrink-0 text-[11px]"
+                    disabled={assigningFp || !projectDir}
+                    onClick={() => void assignFirstPerson()}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    {t("inspector.firstPersonAssign")}
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         <Separator className="bg-white/8" />

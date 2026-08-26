@@ -439,6 +439,22 @@ export async function importTextureFile(
   return { path: relPath, hash: parsed.sha256, size: parsed.sizeBytes };
 }
 
+/**
+ * Copies a single mesh file (e.g. a manually assigned first-person .ydd) into
+ * the project's assets and returns its ref. Validates it parses as a YDD so a
+ * wrong file is rejected before it lands in the project.
+ */
+export async function importDrawableMesh(
+  projectDir: string,
+  filePath: string,
+  gender: Gender,
+  type: SlotId,
+): Promise<AssetRef> {
+  const parsed = await parseYdd(filePath);
+  const relPath = await copyIntoAssets(projectDir, filePath, gender, type);
+  return { path: relPath, hash: parsed.sha256, size: parsed.sizeBytes };
+}
+
 /** Raster formats the texture panel accepts alongside .ytd. */
 export const IMAGE_TEXTURE_RE = /\.(png|jpe?g|webp)$/i;
 
