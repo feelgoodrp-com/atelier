@@ -34,7 +34,7 @@ public static class GlbBuilder
     {
         var ydd = LoadYdd(yddBytes);
         if (ydd?.Drawables == null || ydd.Drawables.Length == 0)
-            throw new InvalidDataException("Keine Drawables in der YDD-Datei gefunden.");
+            throw new InvalidDataException("No drawables found in the YDD file.");
 
         var mesh = new MeshAccumulator();
         // Single mode: hairScale (if any) applies to the WHOLE ydd; yLift lifts
@@ -55,7 +55,7 @@ public static class GlbBuilder
         }
 
         if (mesh.Positions.Count < 9 || garmentPrimitives.Count == 0)
-            throw new InvalidDataException("Keine renderbare Geometrie in der YDD-Datei gefunden.");
+            throw new InvalidDataException("No renderable geometry found in the YDD file.");
 
         var garmentHasUv0 = mesh.HasUv0;
 

@@ -57,34 +57,32 @@ export interface GtaSlot {
   componentId: number;
   /** PV_COMP_* / ANCHOR_* native name. */
   nativeName: string;
-  /** German UI label. */
-  label: string;
   /** lucide-react icon name (see icon map in the UI layer). */
   icon: string;
 }
 
 export const GTA_COMPONENTS: GtaSlot[] = [
-  { id: "head", kind: "component", componentId: 0, nativeName: "PV_COMP_HEAD", label: "Kopf", icon: "ScanFace" },
-  { id: "berd", kind: "component", componentId: 1, nativeName: "PV_COMP_BERD", label: "Masken / Bärte", icon: "VenetianMask" },
-  { id: "hair", kind: "component", componentId: 2, nativeName: "PV_COMP_HAIR", label: "Haare", icon: "Scissors" },
-  { id: "uppr", kind: "component", componentId: 3, nativeName: "PV_COMP_UPPR", label: "Oberkörper / Arme", icon: "PersonStanding" },
-  { id: "lowr", kind: "component", componentId: 4, nativeName: "PV_COMP_LOWR", label: "Hosen", icon: "RectangleVertical" },
-  { id: "hand", kind: "component", componentId: 5, nativeName: "PV_COMP_HAND", label: "Taschen / Fallschirme", icon: "Backpack" },
-  { id: "feet", kind: "component", componentId: 6, nativeName: "PV_COMP_FEET", label: "Schuhe", icon: "Footprints" },
-  { id: "teef", kind: "component", componentId: 7, nativeName: "PV_COMP_TEEF", label: "Ketten / Schals", icon: "Link" },
-  { id: "accs", kind: "component", componentId: 8, nativeName: "PV_COMP_ACCS", label: "Unterhemden", icon: "Shirt" },
-  { id: "task", kind: "component", componentId: 9, nativeName: "PV_COMP_TASK", label: "Westen", icon: "Shield" },
-  { id: "decl", kind: "component", componentId: 10, nativeName: "PV_COMP_DECL", label: "Sticker / Abzeichen", icon: "Sticker" },
-  { id: "jbib", kind: "component", componentId: 11, nativeName: "PV_COMP_JBIB", label: "Jacken / Oberteile", icon: "Layers" },
+  { id: "head", kind: "component", componentId: 0, nativeName: "PV_COMP_HEAD", icon: "ScanFace" },
+  { id: "berd", kind: "component", componentId: 1, nativeName: "PV_COMP_BERD", icon: "VenetianMask" },
+  { id: "hair", kind: "component", componentId: 2, nativeName: "PV_COMP_HAIR", icon: "Scissors" },
+  { id: "uppr", kind: "component", componentId: 3, nativeName: "PV_COMP_UPPR", icon: "PersonStanding" },
+  { id: "lowr", kind: "component", componentId: 4, nativeName: "PV_COMP_LOWR", icon: "RectangleVertical" },
+  { id: "hand", kind: "component", componentId: 5, nativeName: "PV_COMP_HAND", icon: "Backpack" },
+  { id: "feet", kind: "component", componentId: 6, nativeName: "PV_COMP_FEET", icon: "Footprints" },
+  { id: "teef", kind: "component", componentId: 7, nativeName: "PV_COMP_TEEF", icon: "Link" },
+  { id: "accs", kind: "component", componentId: 8, nativeName: "PV_COMP_ACCS", icon: "Shirt" },
+  { id: "task", kind: "component", componentId: 9, nativeName: "PV_COMP_TASK", icon: "Shield" },
+  { id: "decl", kind: "component", componentId: 10, nativeName: "PV_COMP_DECL", icon: "Sticker" },
+  { id: "jbib", kind: "component", componentId: 11, nativeName: "PV_COMP_JBIB", icon: "Layers" },
 ];
 
 export const GTA_PROPS: GtaSlot[] = [
-  { id: "p_head", kind: "prop", componentId: 0, nativeName: "ANCHOR_HEAD", label: "Hüte / Helme", icon: "HardHat" },
-  { id: "p_eyes", kind: "prop", componentId: 1, nativeName: "ANCHOR_EYES", label: "Brillen", icon: "Glasses" },
-  { id: "p_ears", kind: "prop", componentId: 2, nativeName: "ANCHOR_EARS", label: "Ohrringe", icon: "Ear" },
-  { id: "p_lwrist", kind: "prop", componentId: 6, nativeName: "ANCHOR_LEFT_WRIST", label: "Uhren", icon: "Watch" },
-  { id: "p_rwrist", kind: "prop", componentId: 7, nativeName: "ANCHOR_RIGHT_WRIST", label: "Armbänder", icon: "Gem" },
-  { id: "p_hip", kind: "prop", componentId: 8, nativeName: "ANCHOR_HIP", label: "Hüft-Accessoires", icon: "Anchor" },
+  { id: "p_head", kind: "prop", componentId: 0, nativeName: "ANCHOR_HEAD", icon: "HardHat" },
+  { id: "p_eyes", kind: "prop", componentId: 1, nativeName: "ANCHOR_EYES", icon: "Glasses" },
+  { id: "p_ears", kind: "prop", componentId: 2, nativeName: "ANCHOR_EARS", icon: "Ear" },
+  { id: "p_lwrist", kind: "prop", componentId: 6, nativeName: "ANCHOR_LEFT_WRIST", icon: "Watch" },
+  { id: "p_rwrist", kind: "prop", componentId: 7, nativeName: "ANCHOR_RIGHT_WRIST", icon: "Gem" },
+  { id: "p_hip", kind: "prop", componentId: 8, nativeName: "ANCHOR_HIP", icon: "Anchor" },
 ];
 
 export const ALL_SLOTS: GtaSlot[] = [...GTA_COMPONENTS, ...GTA_PROPS];

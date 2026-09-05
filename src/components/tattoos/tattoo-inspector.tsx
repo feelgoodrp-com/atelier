@@ -122,7 +122,7 @@ function SingleInspector({ tattoo }: { tattoo: ProjectTattoo }) {
           <SelectContent>
             {TATTOO_ZONES.map((z) => (
               <SelectItem key={z.id} value={z.id}>
-                {z.label}
+                {t(`zone.${z.id}`)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -153,7 +153,7 @@ function SingleInspector({ tattoo }: { tattoo: ProjectTattoo }) {
           <SelectContent>
             {TATTOO_TYPES.map((ty) => (
               <SelectItem key={ty.id} value={ty.id}>
-                {ty.label}
+                {t(`type.${ty.id}`)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -388,7 +388,7 @@ function MultiInspector({ ids }: { ids: string[] }) {
           <SelectContent>
             {TATTOO_ZONES.map((z) => (
               <SelectItem key={z.id} value={z.id}>
-                {z.label}
+                {t(`zone.${z.id}`)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -416,7 +416,7 @@ function MultiInspector({ ids }: { ids: string[] }) {
           <SelectContent>
             {TATTOO_TYPES.map((ty) => (
               <SelectItem key={ty.id} value={ty.id}>
-                {ty.label}
+                {t(`type.${ty.id}`)}
               </SelectItem>
             ))}
           </SelectContent>

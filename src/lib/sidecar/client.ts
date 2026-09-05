@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import i18n from "@/lib/i18n";
+import { localizeApiError } from "./localize";
 import { useSidecarStore } from "@/lib/stores/sidecar-store";
 import type {
   AnimInfo,
@@ -77,16 +78,21 @@ function sidecarTarget(): { base: string; token: string } {
   return { base: `http://127.0.0.1:${info.port}`, token: info.token };
 }
 
-/** Reads the `{ error }` envelope of a non-2xx sidecar response. */
+/**
+ * Reads the `{ error, params }` envelope of a non-2xx sidecar response and
+ * renders it in the UI language — `error` is a machine code, never prose.
+ */
 async function sidecarErrorMessage(res: Response): Promise<string> {
-  let message = i18n.t("errors:sidecar.genericError", { status: res.status });
   try {
-    const body = (await res.json()) as { error?: string };
-    if (body.error) message = body.error;
+    const body = (await res.json()) as {
+      error?: string;
+      params?: Record<string, string> | null;
+    };
+    if (body.error) return localizeApiError(body.error, body.params);
   } catch {
-    // non-JSON error body, keep generic message
+    // non-JSON error body, fall through to the generic message
   }
-  return message;
+  return i18n.t("errors:sidecar.genericError", { status: res.status });
 }
 
 /**
@@ -177,9 +183,13 @@ function parseFallbacksHeader(value: string | null): string[] {
  * pose_unavailable additionally carries the offending pose id.
  */
 async function throwPreviewError(res: Response): Promise<never> {
-  let envelope: { error?: string; pose?: string } = {};
+  let envelope: {
+    error?: string;
+    pose?: string;
+    params?: Record<string, string> | null;
+  } = {};
   try {
-    envelope = (await res.json()) as { error?: string; pose?: string };
+    envelope = (await res.json()) as typeof envelope;
   } catch {
     // non-JSON error body, keep generic message
   }
@@ -190,7 +200,9 @@ async function throwPreviewError(res: Response): Promise<never> {
     throw new PoseUnavailableError(envelope.pose ?? null);
   }
   throw new Error(
-    envelope.error ?? i18n.t("errors:sidecar.genericError", { status: res.status }),
+    envelope.error
+      ? localizeApiError(envelope.error, envelope.params)
+      : i18n.t("errors:sidecar.genericError", { status: res.status }),
   );
 }
 
@@ -349,7 +361,7 @@ export async function validateProject(
 
 /**
  * POST /build — starts a build job (202 { jobId }). Throws
- * {@link BuildBusyError} on 409 busy, a readable German error otherwise.
+ * {@link BuildBusyError} on 409 busy, a localized error otherwise.
  */
 export async function startBuild(request: StartBuildRequest): Promise<{ jobId: string }> {
   const { base, token } = sidecarTarget();

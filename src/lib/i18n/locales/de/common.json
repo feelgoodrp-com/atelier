@@ -15,5 +15,11 @@
   "error": "Fehler",
   "warning": "Warnung",
   "language": "Sprache",
-  "settings": "Einstellungen"
+  "settings": "Einstellungen",
+  "relativeTime": {
+    "justNow": "gerade eben",
+    "seconds": "vor {{n}} s",
+    "minutes": "vor {{n}} min",
+    "hours": "vor {{n}} h"
+  }
 }

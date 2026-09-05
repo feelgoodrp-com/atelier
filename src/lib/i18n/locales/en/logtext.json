@@ -116,7 +116,9 @@
     "candidate": "Pose {{pose}}: one variant is unavailable, trying the next",
     "unavailable": "Pose unavailable: {{pose}} ({{reason}})",
     "loadFailed": "Pose could not be loaded: {{pose}}",
-    "evalFailed": "Pose could not be applied: {{pose}}"
+    "evalFailed": "Pose could not be applied: {{pose}}",
+    "rollBoneSkipped": "Pose {{pose}}: a helper bone already inherits its rotation — correction skipped",
+    "matrixSanitized": "Pose {{pose}}: an imprecise skinning matrix was corrected"
   },
   "anim": {
     "resolved": "Animation loaded: {{anim}} ({{frames}} frames)",

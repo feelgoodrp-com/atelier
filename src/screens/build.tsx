@@ -36,6 +36,7 @@ import { useProjectStore } from "@/lib/stores/project-store";
 import { useUiStore } from "@/lib/stores/ui-store";
 import { useWorkbenchStore } from "@/lib/stores/workbench-store";
 import type { FindingSeverity, ValidationFinding } from "@/lib/sidecar/types";
+import { localizeFinding, localizeProgress, localizeWarning } from "@/lib/sidecar/localize";
 
 const SEVERITY_ORDER: FindingSeverity[] = ["error", "warn", "info"];
 
@@ -97,7 +98,7 @@ function FindingRow({
             <span className="truncate">{drawable.label || drawable.type}</span>
           </p>
         )}
-        <p className="break-words text-xs leading-relaxed">{finding.message}</p>
+        <p className="break-words text-xs leading-relaxed">{localizeFinding(finding)}</p>
         <p className="mt-1 font-mono text-[10px] opacity-40">{finding.code}</p>
       </div>
       {/* Only when the drawable still exists — otherwise the button is a lie. */}
@@ -220,7 +221,7 @@ export function BuildScreen() {
     const by: Record<FindingSeverity, ValidationFinding[]> = { error: [], warn: [], info: [] };
     for (const f of findings) {
       if (filter && f.severity !== filter) continue;
-      if (needle && !`${f.message} ${f.code}`.toLowerCase().includes(needle)) continue;
+      if (needle && !`${localizeFinding(f)} ${f.code}`.toLowerCase().includes(needle)) continue;
       (by[f.severity] ?? by.info).push(f);
     }
     return by;
@@ -337,7 +338,7 @@ export function BuildScreen() {
                 </div>
                 <Progress value={percent} className="h-1.5 bg-white/10" />
                 <p className="mt-2 min-h-4 truncate text-[11px] text-white/40">
-                  {progress?.message ?? ""}
+                  {progress ? localizeProgress(progress) : ""}
                 </p>
               </div>
             </div>
@@ -454,8 +455,11 @@ export function BuildScreen() {
                     <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300" />
                     <div className="min-w-0 text-xs text-amber-200">
                       {report.warnings.map((warning) => (
-                        <p key={warning} className="break-words">
-                          {warning}
+                        <p
+                          key={`${warning.code}:${JSON.stringify(warning.params ?? {})}`}
+                          className="break-words"
+                        >
+                          {localizeWarning(warning)}
                         </p>
                       ))}
                     </div>

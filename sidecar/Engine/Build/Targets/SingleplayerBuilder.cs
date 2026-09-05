@@ -1,3 +1,4 @@
+using Feelgood.Atelier.Sidecar.Api;
 using System.Text;
 using CodeWalker.GameFiles;
 
@@ -27,14 +28,14 @@ public static class SingleplayerBuilder
     /// <summary>Creates dlc.rpf inside <paramref name="folder"/> (shared with the RageMP target).</summary>
     public static BuildReport BuildDlcRpf(BuildPlan plan, string folder, BuildProgress progress)
     {
-        var warnings = new List<string>(plan.Warnings);
+        var warnings = new List<LocalizedMessage>(plan.Warnings);
         var resources = new List<BuildResourceReport>();
         var dlcName = plan.Options.DlcName;
 
         var rpfPath = Path.Combine(folder, "dlc.rpf");
         if (File.Exists(rpfPath)) File.Delete(rpfPath);
 
-        progress("package", 0, 1, "Erzeuge dlc.rpf");
+        progress("package", 0, 1, "dlcRpf");
         var dlcRpf = RpfFile.CreateNew(folder, "dlc.rpf", RpfEncryption.OPEN);
 
         var x64 = RpfFile.CreateDirectory(dlcRpf.Root, "x64");
@@ -67,7 +68,7 @@ public static class SingleplayerBuilder
                     contentEntries.Add(ContentEntry.Rpf($"%PLATFORM%/models/cdimages/{part.DlcName}{genderSuffix}_p.rpf"));
                 }
 
-                progress("ymt", 0, 1, $"Erzeuge CPedVariationInfo für {gender.PedName} ({part.DlcName})");
+                progress("ymt", 0, 1, "ymt", ("ped", gender.PedName), ("dlc", part.DlcName));
                 RpfFile.CreateFile(componentsRpf.Root,
                     StreamNames.Ymt(gender.PedName, part.DlcName),
                     YmtGenerator.BuildYmt(gender));
@@ -78,7 +79,7 @@ public static class SingleplayerBuilder
                     if (target == null) continue;
                     RpfFile.CreateFile(target, file.InnerName, File.ReadAllBytes(file.SourcePath));
                     written++;
-                    progress("copy", written, totalFiles, file.InnerName);
+                    progress("copy", written, totalFiles, "file", ("name", file.InnerName));
                 }
 
                 var creatureBytes = CreatureMetadataGenerator.Build(gender);
@@ -100,7 +101,7 @@ public static class SingleplayerBuilder
 
         if (creatureMetadatas.Count > 0)
         {
-            progress("meta", 0, 1, "Schreibe Creature-Metadata");
+            progress("meta", 0, 1, "creatureMetadata");
             var animFolder = RpfFile.CreateDirectory(x64, "anim");
             var creatureRpf = RpfFile.CreateNew(animFolder, "creaturemetadata.rpf");
             foreach (var (fileName, bytes) in creatureMetadatas)
@@ -108,7 +109,7 @@ public static class SingleplayerBuilder
             contentEntries.Add(ContentEntry.Rpf("%PLATFORM%/anim/creaturemetadata.rpf"));
         }
 
-        progress("meta", 0, 1, "Schreibe content.xml + setup2.xml");
+        progress("meta", 0, 1, "contentSetupXml");
         RpfFile.CreateFile(dlcRpf.Root, "content.xml",
             Encoding.UTF8.GetBytes(BuildContentXml(dlcName, contentEntries)));
         RpfFile.CreateFile(dlcRpf.Root, "setup2.xml",

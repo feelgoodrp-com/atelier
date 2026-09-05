@@ -35,6 +35,19 @@ export const ASSETS_DIR_NAME = "assets";
 export const CACHE_DIR_NAME = ".atelier-cache";
 export const AUTOSAVE_DIR_NAME = "autosave";
 
+/**
+ * Localizes one zod issue. Our own schema messages are stored as fully
+ * qualified i18n keys ("errors:schema.*") with their interpolation values in
+ * the issue's `params`; zod's built-in messages are English sentences that
+ * often contain a colon, so they must NOT be handed to i18next (it would read
+ * the part before the colon as a namespace and truncate the text).
+ */
+function schemaIssueMessage(issue: { message: string; params?: unknown }): string {
+  if (!issue.message.startsWith("errors:schema.")) return issue.message;
+  const params = (issue.params ?? {}) as Record<string, unknown>;
+  return i18n.t(issue.message, params);
+}
+
 /** Ring buffer size of recovery snapshots per project. */
 const AUTOSAVE_KEEP = 20;
 
@@ -64,7 +77,7 @@ export function sanitizeFolderName(name: string): string {
       .trim()
       .replace(/[\\/:*?"<>|]+/g, "-")
       .replace(/[. ]+$/g, "")
-      .trim() || "atelier-projekt"
+      .trim() || i18n.t("workbench:importWizard.defaultProjectName")
   );
 }
 
@@ -105,7 +118,7 @@ function parseProjectText(text: string, sourceLabel: string): AtelierProject {
       i18n.t("errors:io.invalidFormat", {
         source: sourceLabel,
         where,
-        message: issue?.message ?? i18n.t("errors:io.unknownError"),
+        message: issue ? schemaIssueMessage(issue) : i18n.t("errors:io.unknownError"),
       }),
     );
   }

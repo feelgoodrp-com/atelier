@@ -89,7 +89,7 @@ function slotLabel(raw: string, t: Translate): string {
       ALL_SLOTS.find((s) => s.componentId === numeric))
     : undefined;
   const slot = byId ?? byNumber;
-  return slot ? t(`slot.${slot.id}`, { defaultValue: slot.label }) : key;
+  return slot ? t(`slot.${slot.id}`, { defaultValue: slot.id }) : key;
 }
 
 /** Build phase ids emitted by the sidecar's SSE progress. */
@@ -329,6 +329,10 @@ const SIDECAR_RULES: Rule[] = [
   { re: /^Pose unavailable: (\S+) \(([^)]*)\)/u, key: "pose.unavailable", vars: (m) => ({ pose: m[1], reason: m[2] }) },
   { re: /^Pose load failed for (\S+)/u, key: "pose.loadFailed", vars: (m) => ({ pose: m[1] }) },
   { re: /^Pose evaluation failed for (\S+)/u, key: "pose.evalFailed", vars: (m) => ({ pose: m[1] }) },
+  // Skinning diagnostics — DEBUG level, but the log window shows them, so they
+  // need a rule like everything else or they would render in raw English.
+  { re: /^Pose (\S+): roll bone \S+ is parented to /u, key: "pose.rollBoneSkipped", vars: (m) => ({ pose: m[1] }) },
+  { re: /^Pose (\S+): sanitized non-affine skin matrix/u, key: "pose.matrixSanitized", vars: (m) => ({ pose: m[1] }) },
   {
     re: /^Animation (\S+) resolved via \S+ \((\d+) frames/u,
     key: "anim.resolved",

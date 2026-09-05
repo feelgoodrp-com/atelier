@@ -6,6 +6,7 @@
 //! `{ port, token }` in managed state so the frontend can talk to it
 //! directly over HTTP (header `x-fg-atelier-token`).
 
+use std::collections::BTreeMap;
 use std::sync::Mutex;
 use std::time::Duration;
 
@@ -50,8 +51,23 @@ pub struct SidecarInfo {
     pub port: Option<u16>,
     /// Per-session token the frontend must send as `x-fg-atelier-token`.
     pub token: Option<String>,
-    /// Human readable detail (German, shown in tooltips).
-    pub detail: Option<String>,
+    /// Machine code for the status detail shown in tooltips. The webview
+    /// renders it as `errors:sidecar.<code>` with `detail_params` — the text
+    /// itself never crosses this boundary, so it follows the UI language.
+    pub detail_code: Option<String>,
+    /// Interpolation values for the localized detail message.
+    pub detail_params: BTreeMap<String, String>,
+}
+
+impl SidecarInfo {
+    /// Sets the status detail as a machine code plus its `(name, value)` pairs.
+    fn set_detail(&mut self, code: &str, params: &[(&str, String)]) {
+        self.detail_code = Some(code.to_string());
+        self.detail_params = params
+            .iter()
+            .map(|(k, v)| ((*k).to_string(), v.clone()))
+            .collect();
+    }
 }
 
 pub struct SidecarState {
@@ -74,7 +90,8 @@ impl SidecarState {
                 status: SidecarStatus::Connecting,
                 port: None,
                 token: None,
-                detail: Some("Sidecar startet…".into()),
+                detail_code: Some("starting".into()),
+                detail_params: BTreeMap::new(),
             }),
             child: Mutex::new(None),
             crash_count: Mutex::new(0),
@@ -118,7 +135,7 @@ pub fn spawn_sidecar(app: &AppHandle) {
         i.status = SidecarStatus::Connecting;
         i.port = None;
         i.token = None;
-        i.detail = Some("Sidecar startet…".into());
+        i.set_detail("starting", &[]);
     });
 
     let command = match app.shell().sidecar(SIDECAR_PROGRAM) {
@@ -162,7 +179,7 @@ pub fn spawn_sidecar(app: &AppHandle) {
                             i.status = SidecarStatus::Ready;
                             i.port = Some(port);
                             i.token = Some(token);
-                            i.detail = Some(format!("Sidecar verbunden (Port {port})"));
+                            i.set_detail("connected", &[("port", port.to_string())]);
                         });
                     } else if !line.is_empty() {
                         info!(target: "sidecar::stdout", "{line}");
@@ -193,7 +210,7 @@ fn log_unavailable(app: &AppHandle, reason: &str) {
         i.status = SidecarStatus::Unavailable;
         i.port = None;
         i.token = None;
-        i.detail = Some("Sidecar nicht gefunden — sidecar/publish.ps1 ausführen".into());
+        i.set_detail("notFound", &[]);
     });
 }
 
@@ -234,7 +251,7 @@ fn handle_termination(app: &AppHandle, generation: u64, code: Option<i32>) {
             i.status = SidecarStatus::Error;
             i.port = None;
             i.token = None;
-            i.detail = Some("Sidecar mehrfach abgestürzt — Neustart in den Einstellungen".into());
+            i.set_detail("gaveUp", &[]);
         });
         return;
     }
@@ -244,11 +261,14 @@ fn handle_termination(app: &AppHandle, generation: u64, code: Option<i32>) {
         i.status = SidecarStatus::Connecting;
         i.port = None;
         i.token = None;
-        i.detail = Some(format!(
-            "Sidecar abgestürzt — Neustart in {}s (Versuch {attempt}/{})",
-            delay.as_secs(),
-            BACKOFF.len()
-        ));
+        i.set_detail(
+            "restarting",
+            &[
+                ("seconds", delay.as_secs().to_string()),
+                ("attempt", attempt.to_string()),
+                ("maxAttempts", BACKOFF.len().to_string()),
+            ],
+        );
     });
 
     let app = app.clone();

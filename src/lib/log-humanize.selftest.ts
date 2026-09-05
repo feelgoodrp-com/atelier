@@ -133,7 +133,9 @@ console.log("\nrules — .NET sidecar (stderr)");
     "sidecar::stderr",
     "Appearance: slot 4 drawable 12 not in the mp_m_freemode_01 variation info (DLC/out of range) - falling back to default",
   );
-  ok(slot.text.includes("Hosen") || slot.text.includes("slot.lowr"), "numeric component id resolves to a garment name", slot.text);
+  // Resolves to the lowr SLOT; the garment name itself comes from
+  // `workbench:slot.lowr` at render time, so assert on the slot id.
+  ok(slot.text.includes("lowr"), "numeric component id resolves to the lowr slot", slot.text);
 
   const tex = run("sidecar::stderr", "Optimized C:\\p\\shirt_diff.ytd: 2048x2048/8388608B -> 1024x1024/2097152B");
   ok(

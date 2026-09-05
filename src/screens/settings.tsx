@@ -658,7 +658,11 @@ function GeneralTab() {
         <CardContent className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm text-white/70">
             <span className={cn("h-2 w-2 rounded-full", sidecarDot)} />
-            <span>{sidecarInfo.detail ?? t("general.sidecar.statusUnknown")}</span>
+            <span>
+              {sidecarInfo.detailCode
+                ? t(`errors:sidecar.${sidecarInfo.detailCode}`, sidecarInfo.detailParams)
+                : t("general.sidecar.statusUnknown")}
+            </span>
           </div>
           <Button
             variant="outline"

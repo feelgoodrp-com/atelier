@@ -50,7 +50,7 @@ function App() {
   // it keeps the path in memory only, and ped-body preview needs it.
   useGtaPathSync();
 
-  // "Wer ist online?" heartbeat (active only when logged in + approved).
+  // Presence heartbeat (active only when logged in + approved).
   usePresenceHeartbeat();
 
   // Pack-room WebSocket + enforced edit locks (cloud-linked projects only).

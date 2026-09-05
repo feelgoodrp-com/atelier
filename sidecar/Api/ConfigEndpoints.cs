@@ -11,11 +11,11 @@ public static class ConfigEndpoints
         app.MapPost("/config", (ConfigRequest request, AppState state, PedBodyService pedBody, ILogger<AppState> log) =>
         {
             if (string.IsNullOrWhiteSpace(request?.GtaPath))
-                return Results.BadRequest(new ErrorResponse("Feld 'gtaPath' fehlt."));
+                return Fail.Bad("field_missing", ("field", "gtaPath"));
 
             var gtaPath = request.GtaPath.Trim();
             if (!Directory.Exists(gtaPath))
-                return Results.BadRequest(new ErrorResponse($"Ordner nicht gefunden: {gtaPath}"));
+                return Fail.Bad("folder_not_found", ("path", gtaPath));
 
             state.GtaPath = gtaPath;
             log.LogInformation("GTA path configured: {GtaPath}", gtaPath);

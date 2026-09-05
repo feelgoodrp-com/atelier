@@ -138,5 +138,19 @@
       "someFailed": "Einige Texturen konnten nicht optimiert werden",
       "noneOptimized": "Keine Textur optimiert"
     }
+  },
+  "progress": {
+    "file": "{{name}}",
+    "validating": "Validiere Projekt",
+    "validated": "Validierung ok ({{findings}} Hinweis(e))",
+    "planning": "Erstelle Build-Plan",
+    "planned": "{{drawables}} Drawable(s), {{tattoos}} Tattoo(s) in {{resources}} Ressource(n)",
+    "ymt": "Erzeuge CPedVariationInfo für {{ped}} ({{dlc}})",
+    "manifests": "Schreibe Manifeste für {{resource}}",
+    "tomlManifests": "Schreibe TOML-Manifeste für {{resource}}",
+    "tattooOverlays": "Erzeuge {{count}} Tattoo-Overlay(s)",
+    "dlcRpf": "Erzeuge dlc.rpf",
+    "creatureMetadata": "Schreibe Creature-Metadata",
+    "contentSetupXml": "Schreibe content.xml + setup2.xml"
   }
 }

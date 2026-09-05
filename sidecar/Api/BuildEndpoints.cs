@@ -39,7 +39,7 @@ public static class BuildEndpoints
         // and the progress log line carries no run id, so two concurrent runs
         // would also make the app's progress ring jump between two counters.
         if (!jobs.TryEnterValidation())
-            return Results.Json(new ErrorResponse("busy"), statusCode: StatusCodes.Status409Conflict);
+            return Fail.Status(StatusCodes.Status409Conflict, "busy");
 
         try
         {
@@ -51,7 +51,7 @@ public static class BuildEndpoints
         catch (Exception ex)
         {
             log.LogError(ex, "Validation failed");
-            return Results.BadRequest(new ErrorResponse($"Projekt konnte nicht validiert werden: {ex.Message}"));
+            return Fail.Bad("validate_failed", ("error", ex.Message));
         }
         finally
         {
@@ -72,34 +72,31 @@ public static class BuildEndpoints
 
         var target = request!.Target?.Trim().ToLowerInvariant();
         if (target == null || !Targets.Contains(target))
-            return Results.BadRequest(new ErrorResponse(
-                "Feld 'target' muss 'fivem', 'singleplayer', 'ragemp' oder 'altv' sein."));
+            return Fail.Bad("target_invalid", ("allowed", string.Join(", ", Targets)));
 
         if (string.IsNullOrWhiteSpace(request.OutDir))
-            return Results.BadRequest(new ErrorResponse("Feld 'outDir' fehlt."));
+            return Fail.Bad("field_missing", ("field", "outDir"));
         var outDir = Path.GetFullPath(request.OutDir.Trim());
 
         var project = request.Project!;
         var dlcName = (request.Options?.DlcName ?? project.Settings?.DlcName ?? string.Empty)
             .Trim().ToLowerInvariant();
         if (!DlcNamePattern.IsMatch(dlcName))
-            return Results.BadRequest(new ErrorResponse(
-                "Feld 'options.dlcName' muss aus [a-z0-9_] bestehen (oder im Projekt gesetzt sein)."));
+            return Fail.Bad("field_charset", ("field", "options.dlcName"), ("charset", "a-z0-9_"));
 
         var resourceName = request.Options?.ResourceName?.Trim();
         if (string.IsNullOrEmpty(resourceName)) resourceName = dlcName;
         if (!ResourceNamePattern.IsMatch(resourceName))
-            return Results.BadRequest(new ErrorResponse(
-                "Feld 'options.resourceName' muss aus [a-zA-Z0-9_-] bestehen."));
+            return Fail.Bad("field_charset", ("field", "options.resourceName"), ("charset", "a-zA-Z0-9_-"));
 
         var splitAt = request.Options?.SplitAt ?? 256;
         if (splitAt is < 1 or > 256)
-            return Results.BadRequest(new ErrorResponse("Feld 'options.splitAt' muss zwischen 1 und 256 liegen."));
+            return Fail.Bad("field_out_of_range", ("field", "options.splitAt"), ("min", "1"), ("max", "256"));
 
         var hasDrawables = project.Drawables is { Count: > 0 };
         var hasTattoos = project.Tattoos is { Count: > 0 };
         if (!hasDrawables && !hasTattoos)
-            return Results.BadRequest(new ErrorResponse("Projekt enthält weder Drawables noch Tattoos."));
+            return Fail.Bad("project_empty");
 
         var options = new BuildOptions(
             target, dlcName, resourceName,
@@ -112,7 +109,7 @@ public static class BuildEndpoints
 
         var job = jobs.TryStart();
         if (job == null)
-            return Results.Json(new ErrorResponse("busy"), statusCode: StatusCodes.Status409Conflict);
+            return Fail.Status(StatusCodes.Status409Conflict, "busy");
 
         var projectDir = request.ProjectDir!.Trim();
         _ = Task.Run(() => RunBuildJob(job, project, projectDir, outDir, options, log));
@@ -128,34 +125,37 @@ public static class BuildEndpoints
     {
         try
         {
-            job.Report("validate", 0, 1, "Validiere Projekt");
+            job.Report("validate", 0, 1, "validating");
             var findings = Validator.Validate(project, projectDir, options.SplitAt);
             var errors = findings.Where(f => f.Severity == "error").ToList();
             if (errors.Count > 0)
             {
-                var detail = string.Join(" | ", errors.Take(5).Select(e => e.Message));
-                var more = errors.Count > 5 ? $" (+{errors.Count - 5} weitere)" : string.Empty;
-                job.Fail($"Validierung fehlgeschlagen: {detail}{more}");
+                // The findings themselves are localized in the app from their
+                // codes; the terminal event only needs to say how many blocked.
+                job.Fail("validation_failed", ("count", errors.Count.ToString()));
                 return;
             }
-            job.Report("validate", 1, 1, $"Validierung ok ({findings.Count} Hinweise)");
+            job.Report("validate", 1, 1, "validated", ("findings", findings.Count.ToString()));
 
-            job.Report("plan", 0, 1, "Erstelle Build-Plan");
+            job.Report("plan", 0, 1, "planning");
             var plan = BuildPlanner.Plan(project, projectDir, options);
             var totalDrawables = plan.Parts.Sum(p => p.DrawableCount);
             // Tattoos are only emitted for the fivem target.
             var tattooCount = options.Target == "fivem" ? plan.Tattoos.Items.Count : 0;
             if (totalDrawables == 0 && tattooCount == 0)
             {
-                job.Fail("Build-Plan enthält keine baubaren Drawables oder Tattoos.");
+                job.Fail("plan_empty");
                 return;
             }
-            job.Report("plan", 1, 1,
-                $"{totalDrawables} Drawable(s), {tattooCount} Tattoo(s) in {plan.Parts.Count} Ressource(n) geplant");
+            job.Report("plan", 1, 1, "planned",
+                ("drawables", totalDrawables.ToString()),
+                ("tattoos", tattooCount.ToString()),
+                ("resources", plan.Parts.Count.ToString()));
 
             Directory.CreateDirectory(outDir);
-            void Progress(string phase, int current, int total, string message) =>
-                job.Report(phase, current, total, message);
+            void Progress(string phase, int current, int total, string messageCode,
+                params (string Key, string Value)[] messageParams) =>
+                job.Report(phase, current, total, messageCode, messageParams);
 
             var report = options.Target switch
             {
@@ -163,7 +163,7 @@ public static class BuildEndpoints
                 "singleplayer" => SingleplayerBuilder.Build(plan, outDir, Progress),
                 "ragemp" => RageMpBuilder.Build(plan, outDir, Progress),
                 "altv" => AltVBuilder.Build(plan, outDir, Progress),
-                _ => throw new InvalidOperationException($"Unbekanntes Ziel: {options.Target}"),
+                _ => throw new InvalidOperationException($"Unknown build target: {options.Target}"),
             };
 
             log.LogInformation("Build job {JobId} done: {Resources} resource(s), {Warnings} warning(s)",
@@ -173,7 +173,7 @@ public static class BuildEndpoints
         catch (Exception ex)
         {
             log.LogError(ex, "Build job {JobId} failed", job.JobId);
-            job.Fail($"Build fehlgeschlagen: {ex.Message}");
+            job.Fail("build_failed", ("error", ex.Message));
         }
     }
 
@@ -187,7 +187,7 @@ public static class BuildEndpoints
         if (string.IsNullOrWhiteSpace(jobId))
         {
             ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
-            await ctx.Response.WriteAsJsonAsync(new ErrorResponse("Query-Parameter 'jobId' fehlt."));
+            await ctx.Response.WriteAsJsonAsync(Fail.Body("field_missing", ("field", "jobId")));
             return;
         }
 
@@ -195,7 +195,7 @@ public static class BuildEndpoints
         if (job == null)
         {
             ctx.Response.StatusCode = StatusCodes.Status404NotFound;
-            await ctx.Response.WriteAsJsonAsync(new ErrorResponse("Unbekannte oder abgelaufene jobId."));
+            await ctx.Response.WriteAsJsonAsync(Fail.Body("job_unknown"));
             return;
         }
 
@@ -247,19 +247,19 @@ public static class BuildEndpoints
         var log = loggerFactory.CreateLogger("Atelier.Build.TextureOptimize");
 
         if (string.IsNullOrWhiteSpace(request?.YtdPath))
-            return Results.BadRequest(new ErrorResponse("Feld 'ytdPath' fehlt."));
+            return Fail.Bad("field_missing", ("field", "ytdPath"));
         var ytdPath = request.YtdPath.Trim();
         if (!Path.GetExtension(ytdPath).Equals(".ytd", StringComparison.OrdinalIgnoreCase))
-            return Results.BadRequest(new ErrorResponse("Erwartet wird eine .ytd-Datei."));
+            return Fail.Bad("unexpected_extension", ("expected", ".ytd"));
         if (!File.Exists(ytdPath))
-            return Results.BadRequest(new ErrorResponse($"Datei nicht gefunden: {ytdPath}"));
+            return Fail.Bad("file_not_found", ("path", ytdPath));
 
         if (request.MaxDimension is not (>= 16 and <= 8192))
-            return Results.BadRequest(new ErrorResponse("Feld 'maxDimension' muss zwischen 16 und 8192 liegen."));
+            return Fail.Bad("field_out_of_range", ("field", "maxDimension"), ("min", "16"), ("max", "8192"));
 
         var format = string.IsNullOrWhiteSpace(request.Format) ? null : request.Format.Trim().ToUpperInvariant();
         if (format is not (null or "BC1" or "BC3" or "BC7" or "RGBA8888"))
-            return Results.BadRequest(new ErrorResponse("Feld 'format' muss BC1, BC3, BC7, RGBA8888 oder null sein."));
+            return Fail.Bad("field_one_of", ("field", "format"), ("allowed", "BC1, BC3, BC7, RGBA8888, null"));
 
         try
         {
@@ -274,7 +274,7 @@ public static class BuildEndpoints
         catch (Exception ex)
         {
             log.LogError(ex, "Texture optimize failed for {Path}", ytdPath);
-            return Results.BadRequest(new ErrorResponse($"Textur konnte nicht optimiert werden: {ex.Message}"));
+            return Fail.Bad("texture_optimize_failed", ("error", ex.Message));
         }
     }
 
@@ -287,23 +287,23 @@ public static class BuildEndpoints
         var log = loggerFactory.CreateLogger("Atelier.Build.TextureFromImage");
 
         if (string.IsNullOrWhiteSpace(request?.ImagePath))
-            return Results.BadRequest(new ErrorResponse("Feld 'imagePath' fehlt."));
+            return Fail.Bad("field_missing", ("field", "imagePath"));
         var imagePath = request.ImagePath.Trim();
         if (!File.Exists(imagePath))
-            return Results.BadRequest(new ErrorResponse($"Datei nicht gefunden: {imagePath}"));
+            return Fail.Bad("file_not_found", ("path", imagePath));
 
         if (string.IsNullOrWhiteSpace(request.OutPath))
-            return Results.BadRequest(new ErrorResponse("Feld 'outPath' fehlt."));
+            return Fail.Bad("field_missing", ("field", "outPath"));
         var outPath = request.OutPath.Trim();
         if (!Path.GetExtension(outPath).Equals(".ytd", StringComparison.OrdinalIgnoreCase))
-            return Results.BadRequest(new ErrorResponse("Feld 'outPath' muss auf .ytd enden."));
+            return Fail.Bad("field_extension", ("field", "outPath"), ("expected", ".ytd"));
 
         if (request.MaxDimension is not (>= 16 and <= 8192))
-            return Results.BadRequest(new ErrorResponse("Feld 'maxDimension' muss zwischen 16 und 8192 liegen."));
+            return Fail.Bad("field_out_of_range", ("field", "maxDimension"), ("min", "16"), ("max", "8192"));
 
         var format = request.Format?.Trim().ToUpperInvariant();
         if (format is not ("BC1" or "BC3" or "BC7" or "RGBA8888"))
-            return Results.BadRequest(new ErrorResponse("Feld 'format' muss BC1, BC3, BC7 oder RGBA8888 sein."));
+            return Fail.Bad("field_one_of", ("field", "format"), ("allowed", "BC1, BC3, BC7, RGBA8888"));
 
         try
         {
@@ -318,7 +318,7 @@ public static class BuildEndpoints
         catch (Exception ex)
         {
             log.LogError(ex, "Image->YTD conversion failed for {Image}", request.ImagePath);
-            return Results.BadRequest(new ErrorResponse($"Bild konnte nicht konvertiert werden: {ex.Message}"));
+            return Fail.Bad("image_convert_failed", ("error", ex.Message));
         }
     }
 
@@ -331,7 +331,7 @@ public static class BuildEndpoints
         var log = loggerFactory.CreateLogger("Atelier.Build.DebugYmt");
 
         if (string.IsNullOrWhiteSpace(request?.Path) || !File.Exists(request.Path.Trim()))
-            return Results.BadRequest(new ErrorResponse("Feld 'path' fehlt oder Datei nicht gefunden."));
+            return Fail.Bad("path_missing_or_not_found", ("field", "path"));
         var path = request.Path.Trim();
 
         try
@@ -342,7 +342,7 @@ public static class BuildEndpoints
             var decompressed = ResourceBuilder.Decompress(data);
             var ped = RpfFile.GetFile<PedFile>(entry, decompressed);
             var info = ped.VariationInfo
-                ?? throw new InvalidDataException("Keine CPedVariationInfo in der Datei.");
+                ?? throw new InvalidDataException("No CPedVariationInfo in the file.");
 
             var availComp = info.ComponentIndices ?? Array.Empty<byte>();
             var components = new List<object>();
@@ -399,7 +399,7 @@ public static class BuildEndpoints
         catch (Exception ex)
         {
             log.LogError(ex, "Debug ymt parse failed for {Path}", path);
-            return Results.BadRequest(new ErrorResponse($"YMT konnte nicht geparst werden: {ex.Message}"));
+            return Fail.Bad("ymt_parse_failed", ("error", ex.Message));
         }
     }
 
@@ -412,7 +412,7 @@ public static class BuildEndpoints
         var log = loggerFactory.CreateLogger("Atelier.Build.DebugRpf");
 
         if (string.IsNullOrWhiteSpace(request?.Path) || !File.Exists(request.Path.Trim()))
-            return Results.BadRequest(new ErrorResponse("Feld 'path' fehlt oder Datei nicht gefunden."));
+            return Fail.Bad("path_missing_or_not_found", ("field", "path"));
         var path = request.Path.Trim();
 
         try
@@ -429,7 +429,7 @@ public static class BuildEndpoints
         catch (Exception ex)
         {
             log.LogError(ex, "Debug rpf scan failed for {Path}", path);
-            return Results.BadRequest(new ErrorResponse($"RPF konnte nicht gelesen werden: {ex.Message}"));
+            return Fail.Bad("rpf_read_failed", ("error", ex.Message));
         }
     }
 
@@ -450,14 +450,14 @@ public static class BuildEndpoints
     private static IResult? ValidateProjectInput(string? projectDir, AtelierProjectDto? project)
     {
         if (string.IsNullOrWhiteSpace(projectDir))
-            return Results.BadRequest(new ErrorResponse("Feld 'projectDir' fehlt."));
+            return Fail.Bad("field_missing", ("field", "projectDir"));
         if (!Directory.Exists(projectDir.Trim()))
-            return Results.BadRequest(new ErrorResponse($"Projektordner nicht gefunden: {projectDir}"));
+            return Fail.Bad("project_dir_not_found", ("path", projectDir));
         if (project == null)
-            return Results.BadRequest(new ErrorResponse("Feld 'project' fehlt."));
+            return Fail.Bad("field_missing", ("field", "project"));
         if (project.Fgcloth is not (1 or 2 or 3))
-            return Results.BadRequest(new ErrorResponse(
-                $"Nicht unterstützte Projektversion (fgcloth={project.Fgcloth}, erwartet 1, 2 oder 3)."));
+            return Fail.Bad("project_version_unsupported",
+                ("version", project.Fgcloth.ToString()), ("supported", "1, 2, 3"));
         return null;
     }
 }

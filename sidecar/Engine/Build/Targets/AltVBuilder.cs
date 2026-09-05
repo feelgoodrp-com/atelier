@@ -1,3 +1,4 @@
+using Feelgood.Atelier.Sidecar.Api;
 using System.Text;
 
 namespace Feelgood.Atelier.Sidecar.Engine.Build.Targets;
@@ -20,7 +21,7 @@ public static class AltVBuilder
     public static BuildReport Build(BuildPlan plan, string outDir, BuildProgress progress)
     {
         var resources = new List<BuildResourceReport>();
-        var warnings = new List<string>(plan.Warnings);
+        var warnings = new List<LocalizedMessage>(plan.Warnings);
 
         var totalFiles = plan.Parts.Sum(p => p.Files.Count);
         var copied = 0;
@@ -48,7 +49,7 @@ public static class AltVBuilder
                     Directory.CreateDirectory(propsInner);
                 }
 
-                progress("ymt", 0, 1, $"Erzeuge CPedVariationInfo für {gender.PedName} ({part.DlcName})");
+                progress("ymt", 0, 1, "ymt", ("ped", gender.PedName), ("dlc", part.DlcName));
                 File.WriteAllBytes(
                     Path.Combine(componentsRpfFolder, StreamNames.Ymt(gender.PedName, part.DlcName)),
                     YmtGenerator.BuildYmt(gender));
@@ -59,7 +60,7 @@ public static class AltVBuilder
                     if (targetFolder == null) continue;
                     File.Copy(file.SourcePath, Path.Combine(targetFolder, file.InnerName), overwrite: true);
                     copied++;
-                    progress("copy", copied, totalFiles, file.InnerName);
+                    progress("copy", copied, totalFiles, "file", ("name", file.InnerName));
                 }
 
                 var creatureBytes = CreatureMetadataGenerator.Build(gender);
@@ -82,7 +83,7 @@ public static class AltVBuilder
                 }
             }
 
-            progress("meta", 0, 1, $"Schreibe TOML-Manifeste für {part.FolderName}");
+            progress("meta", 0, 1, "tomlManifests", ("resource", part.FolderName));
             File.WriteAllText(Path.Combine(partFolder, "resource.toml"), BuildResourceToml());
             File.WriteAllText(Path.Combine(partFolder, "stream.toml"), BuildStreamToml(metaFiles));
             BuildCommon.WriteBuildManifest(partFolder, "altv", part.DlcName, part.DrawableCount);

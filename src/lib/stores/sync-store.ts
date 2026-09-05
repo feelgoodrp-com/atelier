@@ -25,7 +25,7 @@ export type SyncBusy = "push" | "pull" | null;
 
 /**
  * Server-build hook-in after a push: "offer" shows the subtle
- * "Server-Build anstoßen" action in the Cloud section; once requested, the
+ * "request a server build" action in the Cloud section; once requested, the
  * WS "build-status" broadcasts drive the status until done/error (toast).
  */
 export interface ServerBuildState {
@@ -70,7 +70,7 @@ interface SyncState {
   push: (baseRevisionOverride?: number) => Promise<void>;
   /** Loads the remote head; asks for confirmation when local changes exist. */
   pull: (opts?: { force?: boolean }) => Promise<void>;
-  /** "Server-Build anstoßen" — requests the build of the offered revision. */
+  /** Requests the server build of the offered revision. */
   requestServerBuild: () => Promise<void>;
   /** WS "build-status" hook (lib/sync/collab.ts). */
   applyServerBuildStatus: (buildId: string, status: ServerBuildStatus) => void;

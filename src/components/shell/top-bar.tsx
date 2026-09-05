@@ -64,7 +64,9 @@ function SidecarPill() {
   const tooltip =
     info.status === "ready" && health === "failing"
       ? t("sidecar.notResponding")
-      : (info.detail ?? t("sidecar.statusUnknown"));
+      : info.detailCode
+        ? t(`errors:sidecar.${info.detailCode}`, info.detailParams)
+        : t("sidecar.statusUnknown");
 
   return (
     <Tooltip>

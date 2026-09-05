@@ -213,7 +213,7 @@ export function TattooGrid() {
                 <ContextMenuSubContent className="w-44">
                   {TATTOO_ZONES.map((z) => (
                     <ContextMenuItem key={z.id} onClick={() => setZone(z.id)}>
-                      {z.label}
+                      {t(`zone.${z.id}`)}
                     </ContextMenuItem>
                   ))}
                 </ContextMenuSubContent>

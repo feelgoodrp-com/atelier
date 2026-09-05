@@ -6,6 +6,7 @@
  * sync pipeline (upload/download/copy) lives in pack-sync.ts.
  */
 
+import i18n from "@/lib/i18n";
 import { baseName } from "@/lib/format";
 import type {
   RevisionAssetRef,
@@ -149,7 +150,10 @@ export function fromRevisionDrawable(
     const path = pathBySha.get(ref.sha256);
     if (!path) {
       throw new Error(
-        `Asset ${ref.exportName} (${ref.sha256.slice(0, 12)}…) wurde nicht heruntergeladen.`,
+        i18n.t("sync:errors.assetNotDownloaded", {
+          name: ref.exportName,
+          sha: ref.sha256.slice(0, 12),
+        }),
       );
     }
     return { path, hash: ref.sha256, size: ref.size };

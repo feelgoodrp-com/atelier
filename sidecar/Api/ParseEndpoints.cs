@@ -20,8 +20,8 @@ public static class ParseEndpoints
             if (request?.Thumbnails != null)
             {
                 if (request.Thumbnails.MaxSize is not (>= 1 and <= 4096))
-                    return Results.BadRequest(new ErrorResponse(
-                        "Feld 'thumbnails.maxSize' muss eine Zahl zwischen 1 und 4096 sein."));
+                    return Fail.Bad("field_out_of_range",
+                        ("field", "thumbnails.maxSize"), ("min", "1"), ("max", "4096"));
                 thumbnailMaxSize = request.Thumbnails.MaxSize;
             }
 
@@ -39,15 +39,15 @@ public static class ParseEndpoints
         Func<byte[], string, long, string, object> parse)
     {
         if (string.IsNullOrWhiteSpace(rawPath))
-            return Results.BadRequest(new ErrorResponse("Feld 'path' fehlt."));
+            return Fail.Bad("field_missing", ("field", "path"));
 
         var path = rawPath.Trim();
         var extension = Path.GetExtension(path).ToLowerInvariant();
         if (extension != expectedExtension)
-            return Results.BadRequest(new ErrorResponse($"Erwartet wird eine {expectedExtension}-Datei."));
+            return Fail.Bad("unexpected_extension", ("expected", expectedExtension));
 
         if (!File.Exists(path))
-            return Results.BadRequest(new ErrorResponse($"Datei nicht gefunden: {path}"));
+            return Fail.Bad("file_not_found", ("path", path));
 
         byte[] bytes;
         try
@@ -57,11 +57,11 @@ public static class ParseEndpoints
         catch (Exception ex)
         {
             log.LogError(ex, "Failed to read {Path}", path);
-            return Results.BadRequest(new ErrorResponse($"Datei konnte nicht gelesen werden: {ex.Message}"));
+            return Fail.Bad("file_unreadable", ("path", path), ("error", ex.Message));
         }
 
         if (bytes.Length == 0)
-            return Results.BadRequest(new ErrorResponse("Datei ist leer."));
+            return Fail.Bad("file_empty", ("path", path));
 
         var sha256 = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
 
@@ -74,8 +74,8 @@ public static class ParseEndpoints
         {
             // CodeWalker throws on garbage/non-RSC7 input - report as client error.
             log.LogError(ex, "Parse failed for {Path} ({Bytes} bytes)", path, bytes.Length);
-            return Results.BadRequest(new ErrorResponse(
-                $"Datei konnte nicht geparst werden ({expectedExtension}): {ex.Message}"));
+            return Fail.Bad("parse_failed",
+                ("extension", expectedExtension), ("error", ex.Message));
         }
     }
 }

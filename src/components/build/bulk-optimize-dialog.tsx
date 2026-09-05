@@ -1,5 +1,5 @@
 /**
- * Bulk texture optimize ("Alle übergroßen Texturen optimieren…"):
+ * Bulk texture optimize ("Optimize all oversized textures…"):
  * scans every unique project texture via the cached /parse/ytd metadata
  * (preview store), lists files whose longest edge exceeds 2048 px and runs
  * the in-place optimization sequentially with progress. All successful
@@ -46,7 +46,7 @@ import { usePreviewStore } from "@/lib/stores/preview-store";
 import { useProjectStore } from "@/lib/stores/project-store";
 import type { AssetRef } from "@/lib/project/schema";
 
-/** Longest edge above which a texture counts as übergroß. */
+/** Longest edge above which a texture counts as oversized. */
 const OVERSIZE_THRESHOLD = 2048;
 
 function errorMessage(e: unknown): string {

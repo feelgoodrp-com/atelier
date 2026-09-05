@@ -9,8 +9,14 @@ export interface SidecarInfo {
   port: number | null;
   /** Per-session token, sent as `x-fg-atelier-token` header. */
   token: string | null;
-  /** Human readable detail (German), used for tooltips. */
-  detail: string | null;
+  /**
+   * Machine code for the status detail shown in tooltips — rendered as
+   * `errors:sidecar.<detailCode>` with `detailParams`, so the text follows the
+   * UI language instead of being frozen at emit time.
+   */
+  detailCode: string | null;
+  /** Interpolation values for the localized detail message. */
+  detailParams: Record<string, string>;
 }
 
 // ---------------------------------------------------------------------------
@@ -115,10 +121,20 @@ export interface ImportScanEntry {
   firstPersonPath: string | null;
 }
 
+/**
+ * A user-facing message the sidecar emits WITHOUT text: `code` names the
+ * message and `params` carries the values to interpolate, so the app renders it
+ * in its own language (`errors:warnings.<code>` / `errors:api.<code>`).
+ */
+export interface LocalizedMessage {
+  code: string;
+  params?: Record<string, string> | null;
+}
+
 /** Response of POST /import/scan { folderPath }. */
 export interface ImportScanResult {
   entries: ImportScanEntry[];
-  warnings: string[];
+  warnings: LocalizedMessage[];
 }
 
 /** Freemode ped skeleton/body the preview can render the clothing on. */
@@ -330,13 +346,18 @@ export interface PreviewGlbResult {
 
 export type FindingSeverity = "error" | "warn" | "info";
 
-/** One validation finding of POST /validate (message is German). */
+/**
+ * One validation finding of POST /validate. It carries no sentence — the UI
+ * renders `errors:findings.<code>` with {@link params}, so a language switch
+ * re-renders the panel without re-validating.
+ */
 export interface ValidationFinding {
   severity: FindingSeverity;
   code: string;
   /** Drawable uuid the finding belongs to (null = project-wide). */
   drawableId: string | null;
-  message: string;
+  /** Interpolation values for the localized message. */
+  params: Record<string, string>;
 }
 
 /** Response of POST /validate { projectDir, project }. */
@@ -377,7 +398,7 @@ export interface BuildResourceReport {
 /** Terminal build report (part of the SSE done event). */
 export interface BuildReport {
   resources: BuildResourceReport[];
-  warnings: string[];
+  warnings: LocalizedMessage[];
 }
 
 /** Non-terminal SSE event of GET /build/progress. */
@@ -385,14 +406,16 @@ export interface BuildProgressEvent {
   phase: string;
   current: number;
   total: number;
-  /** Live progress detail (German). */
-  message: string;
+  /** Detail line, rendered as `build:progress.<messageCode>`. */
+  messageCode: string;
+  /** Interpolation values for {@link messageCode}. */
+  messageParams?: Record<string, string> | null;
 }
 
-/** Terminal SSE event — either a report or a German error. */
+/** Terminal SSE event — either a report or an error CODE (`errors:api.<code>`). */
 export type BuildDoneEvent =
   | { done: true; outDir: string; report: BuildReport }
-  | { done: true; error: string };
+  | { done: true; error: string; errorParams?: Record<string, string> | null };
 
 /** Request body of POST /texture/optimize. */
 export interface TextureOptimizeRequest {

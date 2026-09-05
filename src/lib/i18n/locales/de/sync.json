@@ -56,7 +56,11 @@
     "fileDrifted": "„{{name}}“ wurde außerhalb von atelier verändert (Hash weicht ab). Bitte die Datei neu importieren.",
     "uploadHashFailed": "Upload von „{{name}}“ ist fehlgeschlagen (Hash-Prüfung). Bitte erneut versuchen.",
     "noCloudVersion": "In der Cloud existiert noch keine Version dieses Packs.",
-    "downloadCorrupt": "Download von „{{name}}“ ist beschädigt angekommen. Bitte erneut versuchen."
+    "downloadCorrupt": "Download von „{{name}}“ ist beschädigt angekommen. Bitte erneut versuchen.",
+    "noProjectDirOpen": "Kein Projektordner geöffnet.",
+    "notMaterialised": "„{{name}}“ wurde nicht materialisiert.",
+    "queuePersistFailed": "Live-Warteschlange konnte nicht gespeichert werden: {{error}}",
+    "assetNotDownloaded": "Asset {{name}} ({{sha}}…) wurde nicht heruntergeladen."
   },
   "progress": {
     "checking": "Dateien werden geprüft…",
@@ -66,5 +70,10 @@
     "downloadStarting": "Download startet…",
     "workspaceLoading": "Live-Projekt wird geladen…",
     "workspaceInitializing": "Live-Projekt wird erstellt…"
+  },
+  "live": {
+    "applyFailed": "Live-Änderung konnte nicht übernommen werden",
+    "locked": "Das Objekt wird gerade von einem anderen Teammitglied bearbeitet.",
+    "connectFailed": "Live-Projekt konnte nicht verbunden werden"
   }
 }

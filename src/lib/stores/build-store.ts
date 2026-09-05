@@ -32,6 +32,7 @@ import type {
   FindingSeverity,
   ValidationFinding,
 } from "@/lib/sidecar/types";
+import { localizeApiError, localizeProgress } from "@/lib/sidecar/localize";
 import { useProjectStore } from "@/lib/stores/project-store";
 import { useUiStore, type Screen } from "@/lib/stores/ui-store";
 
@@ -228,15 +229,20 @@ export const useBuildStore = create<BuildState>((set, get) => ({
             lastPhase = event.phase;
             log.info(`build phase: ${event.phase}`, { total: event.total });
           }
-          log.debug(`build ${event.phase} ${event.current}/${event.total} — ${event.message}`);
+          log.debug(
+            `build ${event.phase} ${event.current}/${event.total} — ${localizeProgress(event)}`,
+          );
         } catch {
           /* progress display is never worth killing the build for */
         }
       });
 
       if ("error" in done) {
-        log.error("build failed", { error: done.error, jobId });
-        set({ step: "failed", error: done.error });
+        // `done.error` is the sidecar's machine code — the panel shows the
+        // sentence, the log keeps the code so it stays greppable.
+        const error = localizeApiError(done.error, done.errorParams);
+        log.error("build failed", { error, code: done.error, jobId });
+        set({ step: "failed", error });
         return;
       }
       log.info("build finished", {

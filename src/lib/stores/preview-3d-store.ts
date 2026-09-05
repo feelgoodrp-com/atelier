@@ -62,12 +62,13 @@ const GLB_CACHE_MAX = 32;
 
 export type CameraPreset = "gesamt" | "kopf" | "torso" | "beine" | "fuesse";
 
-export const CAMERA_PRESETS: ReadonlyArray<{ id: CameraPreset; label: string }> = [
-  { id: "gesamt", label: "Gesamt" },
-  { id: "kopf", label: "Kopf" },
-  { id: "torso", label: "Torso" },
-  { id: "beine", label: "Beine" },
-  { id: "fuesse", label: "Füße" },
+// Ids only — the pane renders each one through `preview:camera.<id>`.
+export const CAMERA_PRESETS: ReadonlyArray<{ id: CameraPreset }> = [
+  { id: "gesamt" },
+  { id: "kopf" },
+  { id: "torso" },
+  { id: "beine" },
+  { id: "fuesse" },
 ];
 
 /**
@@ -75,12 +76,12 @@ export const CAMERA_PRESETS: ReadonlyArray<{ id: CameraPreset; label: string }> 
  * — used until the live list is fetched, per shared contract.
  */
 export const POSES_FALLBACK: ReadonlyArray<PoseInfo> = [
-  { id: "stand", label: "Stehen (Idle)" },
-  { id: "walk", label: "Gehen (eingefroren)" },
-  { id: "sit", label: "Sitzen" },
-  { id: "hands_up", label: "Hände hoch" },
-  { id: "aim", label: "Zielen" },
-  { id: "arms_crossed", label: "Arme verschränkt" },
+  { id: "stand", label: "Stand (idle)" },
+  { id: "walk", label: "Walk (frozen)" },
+  { id: "sit", label: "Sit" },
+  { id: "hands_up", label: "Hands up" },
+  { id: "aim", label: "Aim" },
+  { id: "arms_crossed", label: "Arms crossed" },
 ];
 
 export type GlbStatus = "loading" | "ready" | "error";

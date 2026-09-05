@@ -101,7 +101,7 @@ let remoteApplyChain: Promise<void> = Promise.resolve();
 
 class LiveQueuePersistenceError extends Error {
   constructor(cause: unknown) {
-    super(`Live-Warteschlange konnte nicht gespeichert werden: ${errorMessage(cause)}`);
+    super(i18n.t("sync:errors.queuePersistFailed", { error: errorMessage(cause) }));
     this.name = "LiveQueuePersistenceError";
   }
 }
@@ -528,7 +528,7 @@ async function ensureProjectAssetsUploaded(
   onProgress: ProgressFn = () => {},
 ): Promise<void> {
   const { projectDir } = useProjectStore.getState();
-  if (!projectDir) throw new Error("Kein Projektordner geöffnet.");
+  if (!projectDir) throw new Error(i18n.t("sync:errors.noProjectDirOpen"));
   const assets = collectLocalAssets(project);
   const hashes = [...assets.keys()].filter((hash) => !knownServerAssets.has(hash));
   const missing: string[] = [];
@@ -685,7 +685,7 @@ async function ensureRemoteAssets(
     });
     const bytes = await downloadAsset(asset.sha256);
     if ((await sha256Hex(bytes)) !== asset.sha256) {
-      throw new Error(`Cloud-Datei ${safeName} ist beschädigt.`);
+      throw new Error(i18n.t("sync:errors.downloadCorrupt", { name: safeName }));
     }
     const tmpPath = `${absPath}.part-${crypto.randomUUID()}`;
     await writeFile(tmpPath, bytes);
@@ -726,7 +726,7 @@ async function materializeWorkspace(
 ): Promise<AtelierProject> {
   const initialState = useProjectStore.getState();
   if (!initialState.project || !initialState.projectDir) {
-    throw new Error("Kein Projekt geöffnet.");
+    throw new Error(i18n.t("sync:errors.noProjectOpen"));
   }
   const projectDir = initialState.projectDir;
   const withPendingOverlay = (): WorkspaceProject => {
@@ -750,7 +750,7 @@ async function materializeWorkspace(
   while (true) {
     paths = await ensureRemoteAssets(cloud, current, projectDir, trustCurrentRefs, onProgress);
     const latestState = useProjectStore.getState();
-    if (!latestState.project) throw new Error("Kein Projekt geöffnet.");
+    if (!latestState.project) throw new Error(i18n.t("sync:errors.noProjectOpen"));
     current = latestState.project;
     const latestCloud = withPendingOverlay();
     if (allRemoteAssets(latestCloud).every((asset) => paths.has(asset.sha256))) {
@@ -763,7 +763,7 @@ async function materializeWorkspace(
   const localRef = (asset: RevisionAssetRef | null): AssetRef | null => {
     if (!asset) return null;
     const path = paths.get(asset.sha256);
-    if (!path) throw new Error(`Cloud-Datei ${asset.exportName} wurde nicht materialisiert.`);
+    if (!path) throw new Error(i18n.t("sync:errors.notMaterialised", { name: asset.exportName }));
     return { path, hash: asset.sha256, size: asset.size };
   };
   const now = new Date().toISOString();
@@ -986,9 +986,9 @@ async function sendPending(item: PendingOperation): Promise<void> {
       if (error instanceof ApiError && !shouldRetryWorkspaceRequest(error)) {
         removePending(item.operationId);
         useLiveStore.getState().setStatus("error", error.message);
-        toast.error("Live-Änderung konnte nicht übernommen werden", {
+        toast.error(i18n.t("sync:live.applyFailed"), {
           description: workspaceErrorCode(error) === "locked"
-            ? "Das Objekt wird gerade von einem anderen Teammitglied bearbeitet."
+            ? i18n.t("sync:live.locked")
             : error.message,
         });
         // Revert only the rejected optimistic operation, while overlaying any
@@ -1182,7 +1182,7 @@ export function setLiveWorkspaceTarget(packId: string | null): void {
     void bootstrapTask.catch((error) => {
       if (targetPackId !== packId || targetSessionKey !== startedSessionKey) return;
       useLiveStore.getState().setStatus("error", errorMessage(error));
-      toast.error("Live-Projekt konnte nicht verbunden werden", {
+      toast.error(i18n.t("sync:live.connectFailed"), {
         description: errorMessage(error),
       });
     });

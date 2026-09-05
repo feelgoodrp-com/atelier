@@ -56,7 +56,11 @@
     "fileDrifted": "“{{name}}” was modified outside atelier (hash mismatch). Please re-import the file.",
     "uploadHashFailed": "Upload of “{{name}}” failed (hash check). Please try again.",
     "noCloudVersion": "No version of this pack exists in the cloud yet.",
-    "downloadCorrupt": "Download of “{{name}}” arrived corrupted. Please try again."
+    "downloadCorrupt": "Download of “{{name}}” arrived corrupted. Please try again.",
+    "noProjectDirOpen": "No project folder open.",
+    "notMaterialised": "“{{name}}” could not be materialised locally.",
+    "queuePersistFailed": "Live queue could not be saved: {{error}}",
+    "assetNotDownloaded": "Asset {{name}} ({{sha}}…) was not downloaded."
   },
   "progress": {
     "checking": "Checking files…",
@@ -66,5 +70,10 @@
     "downloadStarting": "Download starting…",
     "workspaceLoading": "Loading live project…",
     "workspaceInitializing": "Creating live project…"
+  },
+  "live": {
+    "applyFailed": "Live change could not be applied",
+    "locked": "This object is currently being edited by another team member.",
+    "connectFailed": "Live project could not be connected"
   }
 }
