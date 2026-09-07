@@ -196,3 +196,27 @@ jobs:
             src-tauri/target/release/bundle/msi/*.msi
             atelier-${{ env.VERSION }}-portable.zip
             latest.json
+
+      # Drop the landing site's ISR cache so the new release shows up in seconds
+      # instead of within its 30-minute revalidation window. Never fails the
+      # release: the site self-heals on its own timer, and the step is skipped
+      # entirely when the secret isn't configured.
+      - name: Refresh landing site
+        continue-on-error: true
+        shell: pwsh
+        env:
+          LANDING_REVALIDATE_SECRET: ${{ secrets.LANDING_REVALIDATE_SECRET }}
+        run: |
+          if (-not $env:LANDING_REVALIDATE_SECRET) {
+            Write-Host "LANDING_REVALIDATE_SECRET not set — skipping landing refresh."
+            exit 0
+          }
+          try {
+            $res = Invoke-RestMethod -Method Post `
+              -Uri "https://atelier.feelgoodrp.com/api/revalidate" `
+              -Headers @{ Authorization = "Bearer $env:LANDING_REVALIDATE_SECRET" } `
+              -TimeoutSec 30
+            Write-Host "Landing revalidated: $($res | ConvertTo-Json -Compress)"
+          } catch {
+            Write-Host "Landing revalidate failed (non-fatal): $($_.Exception.Message)"
+          }
