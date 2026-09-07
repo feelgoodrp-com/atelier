@@ -116,7 +116,9 @@
     "candidate": "Pose {{pose}}: Eine Variante ist nicht verfügbar, die nächste wird probiert",
     "unavailable": "Pose nicht verfügbar: {{pose}} ({{reason}})",
     "loadFailed": "Pose konnte nicht geladen werden: {{pose}}",
-    "evalFailed": "Pose konnte nicht angewendet werden: {{pose}}"
+    "evalFailed": "Pose konnte nicht angewendet werden: {{pose}}",
+    "rollBoneSkipped": "Pose {{pose}}: ein Hilfsknochen erbt seine Rotation bereits — Korrektur übersprungen",
+    "matrixSanitized": "Pose {{pose}}: eine ungenaue Skinning-Matrix wurde korrigiert"
   },
   "anim": {
     "resolved": "Animation geladen: {{anim}} ({{frames}} Bilder)",

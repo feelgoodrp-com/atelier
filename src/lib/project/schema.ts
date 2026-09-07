@@ -52,7 +52,7 @@ export const slotIdSchema = z.enum(ALL_SLOT_IDS);
 
 const sha256HexSchema = z
   .string()
-  .regex(/^[0-9a-f]{64}$/, "muss ein SHA-256-Hex-Hash sein");
+  .regex(/^[0-9a-f]{64}$/, "errors:schema.sha256");
 
 /** Local file reference inside the project folder (forward-slash relative path). */
 export const assetRefSchema = z.object({
@@ -100,21 +100,23 @@ export const projectDrawableSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["type"],
-        message: `"${drawable.type}" ist kein Komponenten-Slot`,
+        params: { slot: drawable.type },
+        message: "errors:schema.notComponentSlot",
       });
     }
     if (drawable.kind === "prop" && !isPropSlotId(drawable.type)) {
       ctx.addIssue({
         code: "custom",
         path: ["type"],
-        message: `"${drawable.type}" ist kein Prop-Slot`,
+        params: { slot: drawable.type },
+        message: "errors:schema.notPropSlot",
       });
     }
     if (drawable.mode === "replace" && drawable.replaceTargetId === null) {
       ctx.addIssue({
         code: "custom",
         path: ["replaceTargetId"],
-        message: "Replace-Drawables brauchen ein replaceTargetId",
+        message: "errors:schema.replaceNeedsTarget",
       });
     }
   });
@@ -134,7 +136,7 @@ export type ProjectDrawable = z.infer<typeof projectDrawableSchema>;
 const overlayNameSchema = z
   .string()
   .min(1)
-  .regex(/^[A-Za-z0-9_]+$/, "nur Buchstaben, Ziffern und _");
+  .regex(/^[A-Za-z0-9_]+$/, "errors:schema.overlayNameCharset");
 
 /** Authoring-time placement hints (uvPos/scale/rotation). Effect unconfirmed. */
 export const tattooPlacementSchema = z.object({
@@ -179,7 +181,7 @@ export type ProjectTattoo = z.infer<typeof projectTattooSchema>;
 
 /** One shared overlay collection per pack (name derived from dlcName). */
 export const tattooCollectionSchema = z.object({
-  name: z.string().regex(/^[a-z0-9_]+$/, "nur Kleinbuchstaben, Ziffern und _"),
+  name: z.string().regex(/^[a-z0-9_]+$/, "errors:schema.collectionNameCharset"),
   label: z.string(),
 });
 export type TattooCollection = z.infer<typeof tattooCollectionSchema>;

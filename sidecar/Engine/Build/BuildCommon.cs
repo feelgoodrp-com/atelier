@@ -1,15 +1,22 @@
 using System.Text;
 using System.Text.Json;
+using Feelgood.Atelier.Sidecar.Api;
 
 namespace Feelgood.Atelier.Sidecar.Engine.Build;
 
 public sealed record BuildResourceReport(string Folder, int Drawables);
 
 /// <summary>Terminal build report (mirrored into the SSE done event).</summary>
-public sealed record BuildReport(List<BuildResourceReport> Resources, List<string> Warnings);
+public sealed record BuildReport(List<BuildResourceReport> Resources, List<LocalizedMessage> Warnings);
 
-/// <summary>Progress callback: phase, current, total, human message (German).</summary>
-public delegate void BuildProgress(string phase, int current, int total, string message);
+/// <summary>
+/// Progress callback: phase, current, total, and a MACHINE CODE for the detail
+/// line plus its interpolation values. The desktop app renders the code as
+/// <c>build:progress.&lt;code&gt;</c>, so the text follows the UI language.
+/// </summary>
+public delegate void BuildProgress(
+    string phase, int current, int total, string messageCode,
+    params (string Key, string Value)[] messageParams);
 
 public static class BuildCommon
 {
@@ -59,7 +66,7 @@ public static class BuildCommon
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             File.Copy(file.SourcePath, destination, overwrite: true);
             current++;
-            progress("copy", current, total, Path.GetFileName(destination));
+            progress("copy", current, total, "file", ("name", Path.GetFileName(destination)));
         }
     }
 

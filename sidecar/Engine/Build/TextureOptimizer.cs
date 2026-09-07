@@ -32,7 +32,7 @@ public static class TextureOptimizer
 
         var sourceTextures = ytd?.TextureDict?.Textures?.data_items;
         if (sourceTextures == null || sourceTextures.Length == 0)
-            throw new InvalidDataException("Keine Texturen in der YTD-Datei gefunden.");
+            throw new InvalidDataException("No textures found in the YTD file.");
 
         var before = Dimensions(sourceTextures, sourceBytes.LongLength);
 
@@ -58,7 +58,7 @@ public static class TextureOptimizer
         var verifyEntry = RpfFile.CreateResourceFileEntry(ref verifyData, 0);
         var verifyYtd = RpfFile.GetFile<YtdFile>(verifyEntry, ResourceBuilder.Decompress(verifyData));
         var verifyTextures = verifyYtd?.TextureDict?.Textures?.data_items
-            ?? throw new InvalidDataException("Optimierte YTD-Datei konnte nicht zurückgelesen werden.");
+            ?? throw new InvalidDataException("The optimized YTD file could not be read back.");
 
         return new TextureOptimizeResult(
             Path.GetFullPath(targetPath),
@@ -69,7 +69,7 @@ public static class TextureOptimizer
     private static Texture OptimizeTexture(Texture texture, int maxDimension, string? format, bool regenerateMips)
     {
         var rgba = DDSIO.GetPixels(texture, 0)
-            ?? throw new InvalidDataException($"Textur '{texture.Name}' konnte nicht dekodiert werden.");
+            ?? throw new InvalidDataException($"Texture '{texture.Name}' could not be decoded.");
 
         // DDSIO.GetPixels returns BGRA byte order (GDI+/WPF convention);
         // BCnEncoder consumes the buffer as Rgba32, so swap R/B first or the

@@ -23,7 +23,7 @@ public static class YtdParser
 
         var items = ytd?.TextureDict?.Textures?.data_items;
         if (items == null || items.Length == 0)
-            throw new InvalidDataException("Keine Texturen in der YTD-Datei gefunden.");
+            throw new InvalidDataException("No textures found in the YTD file.");
 
         var result = new List<TextureInfo>(items.Length);
         for (var i = 0; i < items.Length; i++)
@@ -50,7 +50,7 @@ public static class YtdParser
         }
 
         if (result.Count == 0)
-            throw new InvalidDataException("Keine Texturen in der YTD-Datei gefunden.");
+            throw new InvalidDataException("No textures found in the YTD file.");
 
         return result;
     }

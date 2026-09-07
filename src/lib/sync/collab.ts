@@ -335,7 +335,7 @@ async function syncLocksOnce(): Promise<void> {
       const result = await acquireLock(packId, id);
       if (result.acquired) heldLocks.add(id);
       // Either our own lock or the current holder (409) — both belong in the
-      // store so chips/banner can show "wird gerade von X bearbeitet".
+      // store so chips/banner can show who is currently editing an object.
       store.upsertLock(toCollabLock(result.lock));
     } catch (e) {
       if (e instanceof ApiError && e.status === 403) {

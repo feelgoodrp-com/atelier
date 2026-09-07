@@ -26,6 +26,21 @@
     "title": "Zonen",
     "all": "Alle"
   },
+  "zoneFigure": {
+    "aria": "Tattoo-Zonen"
+  },
+  "zone": {
+    "torso": "Torso",
+    "head": "Kopf",
+    "left_arm": "Linker Arm",
+    "right_arm": "Rechter Arm",
+    "left_leg": "Linkes Bein",
+    "right_leg": "Rechtes Bein"
+  },
+  "type": {
+    "tattoo": "Tattoo",
+    "badge": "Abzeichen"
+  },
   "grid": {
     "searchPlaceholder": "Tattoos durchsuchen…",
     "import": "Importieren",

@@ -108,7 +108,7 @@ export function TattooZoneTree() {
             <Row
               key={zone.id}
               icon={ZONE_ICONS[zone.icon] ?? Shirt}
-              label={zone.label}
+              label={t(`zone.${zone.id}`)}
               count={countByZone.get(zone.id) ?? 0}
               active={zoneFilter === zone.id}
               onSelect={() => select(zone.id)}

@@ -55,8 +55,7 @@ public static class PreviewEndpoints
 
             var pedModel = (request?.PedModel ?? DefaultPedModel).Trim().ToLowerInvariant();
             if (!AllowedPedModels.Contains(pedModel))
-                return Results.BadRequest(new ErrorResponse(
-                    "Feld 'pedModel' muss 'mp_m_freemode_01' oder 'mp_f_freemode_01' sein."));
+                return Fail.Bad("ped_model_invalid", ("allowed", string.Join(", ", AllowedPedModels)));
 
             var includePedBody = request?.IncludePedBody ?? false;
             if (includePedBody && !state.GtaPathReady)
@@ -136,8 +135,7 @@ public static class PreviewEndpoints
             {
                 // CodeWalker throws on garbage/non-RSC7 input - report as client error.
                 log.LogError(ex, "Preview build failed for {Path}", request?.YddPath);
-                return Results.BadRequest(new ErrorResponse(
-                    $"Vorschau konnte nicht erstellt werden: {ex.Message}"));
+                return Fail.Bad("preview_build_failed", ("error", ex.Message));
             }
 
             if (cacheable)
@@ -320,14 +318,13 @@ public static class PreviewEndpoints
             {
                 var slot = rawSlot?.Trim().ToLowerInvariant() ?? string.Empty;
                 if (!Engine.Build.GtaSlots.ComponentIds.ContainsKey(slot))
-                    return Results.BadRequest(new ErrorResponse(
-                        $"Unbekannter Komponenten-Slot '{rawSlot}' in 'appearance.components' (erlaubt: {string.Join(", ", Engine.Build.GtaSlots.ComponentIds.Keys)})."));
+                    return Fail.Bad("appearance_slot_unknown",
+                        ("slot", rawSlot ?? string.Empty),
+                        ("allowed", string.Join(", ", Engine.Build.GtaSlots.ComponentIds.Keys)));
                 if (component == null || component.Drawable < 0 || component.Texture < 0 || (component.Alt ?? 0) < 0)
-                    return Results.BadRequest(new ErrorResponse(
-                        $"Feld 'appearance.components.{slot}': 'drawable', 'texture' und 'alt' müssen Zahlen >= 0 sein."));
+                    return Fail.Bad("appearance_component_invalid", ("slot", slot));
                 if (!components.TryAdd(slot, component))
-                    return Results.BadRequest(new ErrorResponse(
-                        $"Slot '{slot}' ist in 'appearance.components' mehrfach angegeben."));
+                    return Fail.Bad("appearance_slot_duplicate", ("slot", slot));
             }
         }
 
@@ -340,16 +337,15 @@ public static class PreviewEndpoints
             {
                 var anchor = prop?.Anchor?.Trim().ToLowerInvariant() ?? string.Empty;
                 if (prop == null || !Engine.Build.GtaSlots.PropAnchorIds.ContainsKey(anchor))
-                    return Results.BadRequest(new ErrorResponse(
-                        $"Unbekannter Prop-Anker '{prop?.Anchor}' in 'appearance.props' (erlaubt: {string.Join(", ", Engine.Build.GtaSlots.PropAnchorIds.Keys)})."));
+                    return Fail.Bad("appearance_anchor_unknown",
+                        ("anchor", prop?.Anchor ?? string.Empty),
+                        ("allowed", string.Join(", ", Engine.Build.GtaSlots.PropAnchorIds.Keys)));
                 if (prop.Drawable < 0 || prop.Texture < 0)
-                    return Results.BadRequest(new ErrorResponse(
-                        $"Feld 'appearance.props' ({anchor}): 'drawable' und 'texture' müssen Zahlen >= 0 sein."));
+                    return Fail.Bad("appearance_prop_invalid", ("anchor", anchor));
                 // Duplicate anchors would make the canonical key ambiguous —
                 // reject them exactly like duplicate component slots.
                 if (!seenAnchors.Add(anchor))
-                    return Results.BadRequest(new ErrorResponse(
-                        $"Anker '{anchor}' ist in 'appearance.props' mehrfach angegeben."));
+                    return Fail.Bad("appearance_anchor_duplicate", ("anchor", anchor));
                 props.Add(prop with { Anchor = anchor });
             }
         }
@@ -429,14 +425,13 @@ public static class PreviewEndpoints
 
             var items = request?.Items;
             if (items == null || items.Count == 0)
-                return Results.BadRequest(new ErrorResponse("Feld 'items' fehlt oder ist leer."));
+                return Fail.Bad("field_missing", ("field", "items"));
             if (items.Count > 8)
-                return Results.BadRequest(new ErrorResponse("Maximal 8 Teile pro Outfit-Vorschau."));
+                return Fail.Bad("outfit_too_many_items", ("max", "8"));
 
             var pedModel = (request?.PedModel ?? DefaultPedModel).Trim().ToLowerInvariant();
             if (!AllowedPedModels.Contains(pedModel))
-                return Results.BadRequest(new ErrorResponse(
-                    "Feld 'pedModel' muss 'mp_m_freemode_01' oder 'mp_f_freemode_01' sein."));
+                return Fail.Bad("ped_model_invalid", ("allowed", string.Join(", ", AllowedPedModels)));
 
             var includePedBody = request?.IncludePedBody ?? false;
             if (includePedBody && !state.GtaPathReady)
@@ -538,8 +533,7 @@ public static class PreviewEndpoints
             catch (Exception ex)
             {
                 log.LogError(ex, "Outfit preview build failed");
-                return Results.BadRequest(new ErrorResponse(
-                    $"Outfit-Vorschau konnte nicht erstellt werden: {ex.Message}"));
+                return Fail.Bad("outfit_preview_failed", ("error", ex.Message));
             }
 
             if (cacheable)
@@ -568,7 +562,7 @@ public static class PreviewEndpoints
     }
 
     private static IResult PedBodyUnavailable() =>
-        Results.Json(new ErrorResponse("ped_body_unavailable"), statusCode: StatusCodes.Status422UnprocessableEntity);
+        Fail.Status(StatusCodes.Status422UnprocessableEntity, "ped_body_unavailable");
 
     /// <summary>Contract shape: { "error": "pose_unavailable", "pose": "<id>" } with 422.</summary>
     private static IResult PoseUnavailable(string pose) =>
@@ -580,15 +574,16 @@ public static class PreviewEndpoints
         bytes = Array.Empty<byte>();
 
         if (string.IsNullOrWhiteSpace(rawPath))
-            return Results.BadRequest(new ErrorResponse(
-                expectedExtension == ".ydd" ? "Feld 'yddPath' fehlt." : "Feld 'ytdPaths' enthält einen leeren Pfad."));
+            return expectedExtension == ".ydd"
+                ? Fail.Bad("field_missing", ("field", "yddPath"))
+                : Fail.Bad("field_empty_path", ("field", "ytdPaths"));
 
         var path = rawPath.Trim();
         if (!Path.GetExtension(path).Equals(expectedExtension, StringComparison.OrdinalIgnoreCase))
-            return Results.BadRequest(new ErrorResponse($"Erwartet wird eine {expectedExtension}-Datei: {path}"));
+            return Fail.Bad("unexpected_extension", ("expected", expectedExtension), ("path", path));
 
         if (!File.Exists(path))
-            return Results.BadRequest(new ErrorResponse($"Datei nicht gefunden: {path}"));
+            return Fail.Bad("file_not_found", ("path", path));
 
         try
         {
@@ -597,11 +592,11 @@ public static class PreviewEndpoints
         catch (Exception ex)
         {
             log.LogError(ex, "Failed to read {Path}", path);
-            return Results.BadRequest(new ErrorResponse($"Datei konnte nicht gelesen werden: {ex.Message}"));
+            return Fail.Bad("file_unreadable", ("path", path), ("error", ex.Message));
         }
 
         if (bytes.Length == 0)
-            return Results.BadRequest(new ErrorResponse($"Datei ist leer: {path}"));
+            return Fail.Bad("file_empty", ("path", path));
 
         return null;
     }

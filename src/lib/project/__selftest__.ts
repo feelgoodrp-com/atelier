@@ -576,11 +576,11 @@ dupProj.tattoos.push(
 const tatFindings = validateTattoos(dupProj);
 check(
   "validateTattoos flags duplicate overlay names",
-  tatFindings.some((f) => f.message.includes("dup")),
+  tatFindings.some((f) => f.code === "duplicate_overlay_name" && f.params.name === "dup"),
 );
 check(
   "validateTattoos flags a tattoo without an image",
-  tatFindings.some((f) => f.message.includes("kein Bild")),
+  tatFindings.some((f) => f.code === "no_image"),
 );
 
 // store: reorder within zone + undo, and removeGroup nulls tattoo groupId.

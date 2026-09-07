@@ -18,7 +18,7 @@ struct DeviceInfo {
 fn get_device_info(app: tauri::AppHandle) -> DeviceInfo {
     let name = std::env::var("COMPUTERNAME")
         .or_else(|_| std::env::var("HOSTNAME"))
-        .unwrap_or_else(|_| "Unbekanntes Gerät".into());
+        .unwrap_or_else(|_| "Unknown device".into());
     DeviceInfo {
         name,
         platform: "windows".into(),

@@ -1,3 +1,5 @@
+using Feelgood.Atelier.Sidecar.Api;
+
 namespace Feelgood.Atelier.Sidecar.Engine.Build;
 
 // ---------------------------------------------------------------------------
@@ -145,7 +147,7 @@ public sealed class BuildPlan
 {
     public required BuildOptions Options { get; init; }
     public required List<BuildPart> Parts { get; init; }
-    public required List<string> Warnings { get; init; }
+    public required List<LocalizedMessage> Warnings { get; init; }
     /// <summary>Tattoo overlays (emitted into part 1 by the FiveM builder only).</summary>
     public required TattooPlanCollection Tattoos { get; init; }
     /// <summary>Labels/groups for the opt-in viewer manifest.</summary>
@@ -244,7 +246,7 @@ public static class BuildPlanner
 {
     public static BuildPlan Plan(AtelierProjectDto project, string projectDir, BuildOptions options)
     {
-        var warnings = new List<string>();
+        var warnings = new List<LocalizedMessage>();
         var drawables = project.Drawables ?? new List<ProjectDrawableDto>();
 
         // Planner input filter: a drawable without a YDD cannot be built.
@@ -254,12 +256,13 @@ public static class BuildPlanner
         {
             if (drawable.Ydd?.Path == null)
             {
-                warnings.Add($"Drawable \"{drawable.DisplayLabel}\" hat keine YDD-Datei und wurde übersprungen.");
+                warnings.Add(LocalizedMessage.Of("drawable_no_ydd", ("label", drawable.DisplayLabel)));
                 continue;
             }
             if (!GtaSlots.IsValidSlot(drawable))
             {
-                warnings.Add($"Drawable \"{drawable.DisplayLabel}\" hat einen unbekannten Slot \"{drawable.Type}\" und wurde übersprungen.");
+                warnings.Add(LocalizedMessage.Of("drawable_unknown_slot",
+                    ("label", drawable.DisplayLabel), ("slot", drawable.Type ?? string.Empty)));
                 continue;
             }
             buildable.Add(drawable);
@@ -270,12 +273,13 @@ public static class BuildPlanner
 
         if (replaces.Count > 0 && options.Target != "fivem")
         {
-            warnings.Add($"{replaces.Count} Replace-Drawable(s) werden für das Ziel \"{options.Target}\" nicht unterstützt und wurden übersprungen.");
+            warnings.Add(LocalizedMessage.Of("replace_unsupported_target",
+                ("count", replaces.Count.ToString()), ("target", options.Target)));
             replaces.Clear();
         }
         foreach (var replace in replaces.Where(r => r.ReplaceTargetId == null).ToList())
         {
-            warnings.Add($"Replace-Drawable \"{replace.DisplayLabel}\" hat kein replaceTargetId und wurde übersprungen.");
+            warnings.Add(LocalizedMessage.Of("replace_no_target", ("label", replace.DisplayLabel)));
             replaces.Remove(replace);
         }
 
@@ -362,7 +366,7 @@ public static class BuildPlanner
     /// project.tattoos so both sides agree even if an entry is skipped.
     /// </summary>
     private static TattooPlanCollection PlanTattoos(
-        AtelierProjectDto project, string projectDir, List<string> warnings)
+        AtelierProjectDto project, string projectDir, List<LocalizedMessage> warnings)
     {
         var collection = project.TattooCollection?.Name
             ?? project.Settings?.DlcName
@@ -377,13 +381,14 @@ public static class BuildPlanner
 
             if (t.Image?.Path == null)
             {
-                warnings.Add($"Tattoo \"{t.Label ?? ytdName}\" hat kein Bild und wurde übersprungen.");
+                warnings.Add(LocalizedMessage.Of("tattoo_no_image", ("label", t.Label ?? ytdName)));
                 continue;
             }
             var zone = TattooZones.ById(t.Zone);
             if (zone == null)
             {
-                warnings.Add($"Tattoo \"{t.Label ?? ytdName}\" hat eine unbekannte Zone \"{t.Zone}\" und wurde übersprungen.");
+                warnings.Add(LocalizedMessage.Of("tattoo_unknown_zone",
+                    ("label", t.Label ?? ytdName), ("zone", t.Zone ?? string.Empty)));
                 continue;
             }
 

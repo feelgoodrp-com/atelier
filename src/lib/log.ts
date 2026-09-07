@@ -5,7 +5,7 @@
  * (%LOCALAPPDATA%\com.feelgood.atelier\logs\atelier.YYYY-MM-DD.log).
  *
  * Usage: import { log } from "@/lib/log";
- *        log.info("Projekt geöffnet", { dirPath });
+ *        log.info("project opened", { dirPath });
  */
 
 import { invoke } from "@tauri-apps/api/core";

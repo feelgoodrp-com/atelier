@@ -49,7 +49,7 @@ public sealed class TokenAuthMiddleware
             _log.LogWarning("Rejected {Method} {Path}: missing or invalid {Header}",
                 ctx.Request.Method, ctx.Request.Path, HeaderName);
             ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            await ctx.Response.WriteAsJsonAsync(new ErrorResponse("unauthorized"));
+            await ctx.Response.WriteAsJsonAsync(Fail.Body("unauthorized"));
             return;
         }
 

@@ -40,32 +40,28 @@ export interface TattooZone {
   shopZone: string;
   /** Default shop_tattoo.meta <eFacing> for this zone — the single source. */
   defaultFacing: string;
-  /** German UI label. */
-  label: string;
   /** lucide-react icon name (see icon map in the UI layer). */
   icon: string;
 }
 
 export const TATTOO_ZONES: TattooZone[] = [
-  { id: "torso", zoneValue: 0, overlayName: "ZONE_TORSO", shopZone: "PDZ_TORSO", defaultFacing: "TATTOO_CHEST", label: "Torso", icon: "Shirt" },
-  { id: "head", zoneValue: 1, overlayName: "ZONE_HEAD", shopZone: "PDZ_HEAD", defaultFacing: "TATTOO_FRONT", label: "Kopf", icon: "ScanFace" },
-  { id: "left_arm", zoneValue: 2, overlayName: "ZONE_LEFT_ARM", shopZone: "PDZ_LEFT_ARM", defaultFacing: "TATTOO_LEFT", label: "Linker Arm", icon: "ArrowLeft" },
-  { id: "right_arm", zoneValue: 3, overlayName: "ZONE_RIGHT_ARM", shopZone: "PDZ_RIGHT_ARM", defaultFacing: "TATTOO_RIGHT", label: "Rechter Arm", icon: "ArrowRight" },
-  { id: "left_leg", zoneValue: 4, overlayName: "ZONE_LEFT_LEG", shopZone: "PDZ_LEFT_LEG", defaultFacing: "TATTOO_LEFT", label: "Linkes Bein", icon: "MoveDownLeft" },
-  { id: "right_leg", zoneValue: 5, overlayName: "ZONE_RIGHT_LEG", shopZone: "PDZ_RIGHT_LEG", defaultFacing: "TATTOO_RIGHT", label: "Rechtes Bein", icon: "MoveDownRight" },
+  { id: "torso", zoneValue: 0, overlayName: "ZONE_TORSO", shopZone: "PDZ_TORSO", defaultFacing: "TATTOO_CHEST", icon: "Shirt" },
+  { id: "head", zoneValue: 1, overlayName: "ZONE_HEAD", shopZone: "PDZ_HEAD", defaultFacing: "TATTOO_FRONT", icon: "ScanFace" },
+  { id: "left_arm", zoneValue: 2, overlayName: "ZONE_LEFT_ARM", shopZone: "PDZ_LEFT_ARM", defaultFacing: "TATTOO_LEFT", icon: "ArrowLeft" },
+  { id: "right_arm", zoneValue: 3, overlayName: "ZONE_RIGHT_ARM", shopZone: "PDZ_RIGHT_ARM", defaultFacing: "TATTOO_RIGHT", icon: "ArrowRight" },
+  { id: "left_leg", zoneValue: 4, overlayName: "ZONE_LEFT_LEG", shopZone: "PDZ_LEFT_LEG", defaultFacing: "TATTOO_LEFT", icon: "MoveDownLeft" },
+  { id: "right_leg", zoneValue: 5, overlayName: "ZONE_RIGHT_LEG", shopZone: "PDZ_RIGHT_LEG", defaultFacing: "TATTOO_RIGHT", icon: "MoveDownRight" },
 ];
 
 export interface TattooType {
   id: TattooTypeId;
   /** Overlay XML <type> name. */
   overlayName: string;
-  /** German UI label. */
-  label: string;
 }
 
 export const TATTOO_TYPES: TattooType[] = [
-  { id: "tattoo", overlayName: "TYPE_TATTOO", label: "Tattoo" },
-  { id: "badge", overlayName: "TYPE_BADGE", label: "Abzeichen" },
+  { id: "tattoo", overlayName: "TYPE_TATTOO" },
+  { id: "badge", overlayName: "TYPE_BADGE" },
 ];
 
 export function getTattooZone(id: string): TattooZone | undefined {

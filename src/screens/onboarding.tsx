@@ -89,7 +89,7 @@ export function OnboardingWizard({
   onCancel,
 }: {
   onDone: () => void;
-  /** When set (re-run from Settings), shows an "Abbrechen" exit on step 1. */
+  /** When set (re-run from Settings), shows a cancel exit on step 1. */
   onCancel?: () => void;
 }) {
   const { t } = useTranslation("onboarding");

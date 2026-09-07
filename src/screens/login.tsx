@@ -2,7 +2,7 @@
  * Login gate — the app is NOT usable without a logged-in, APPROVED account.
  * Three states rendered here:
  *  - loggedOut / loggingIn: Discord login card (+ advanced API-URL setting)
- *  - pending: "Warte auf Freigabe" card with status polling
+ *  - pending: waiting-for-approval card with status polling
  *  - locked: locked notice with logout
  * The window is frameless, so the gate carries its own drag region + controls.
  */

@@ -26,6 +26,21 @@
     "title": "Zones",
     "all": "All"
   },
+  "zoneFigure": {
+    "aria": "Tattoo zones"
+  },
+  "zone": {
+    "torso": "Torso",
+    "head": "Head",
+    "left_arm": "Left arm",
+    "right_arm": "Right arm",
+    "left_leg": "Left leg",
+    "right_leg": "Right leg"
+  },
+  "type": {
+    "tattoo": "Tattoo",
+    "badge": "Badge"
+  },
   "grid": {
     "searchPlaceholder": "Search tattoos…",
     "import": "Import",

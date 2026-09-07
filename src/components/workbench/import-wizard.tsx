@@ -68,7 +68,8 @@ import {
   openProjectFromDir,
 } from "@/lib/project/session";
 import { importScan } from "@/lib/sidecar/client";
-import type { ImportScanEntry } from "@/lib/sidecar/types";
+import type { ImportScanEntry, LocalizedMessage } from "@/lib/sidecar/types";
+import { localizeWarning } from "@/lib/sidecar/localize";
 import { useProjectStore } from "@/lib/stores/project-store";
 import { useWorkbenchStore } from "@/lib/stores/workbench-store";
 import type { Gender } from "@/lib/project/schema";
@@ -292,7 +293,7 @@ export function ImportWizard() {
   const [step, setStep] = useState<WizardStep>("folder");
   const [folder, setFolder] = useState<string | null>(null);
   const [rows, setRows] = useState<ReviewRow[]>([]);
-  const [warnings, setWarnings] = useState<string[]>([]);
+  const [warnings, setWarnings] = useState<LocalizedMessage[]>([]);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
 
   const effectiveStep: WizardStep =
@@ -523,7 +524,9 @@ export function ImportWizard() {
                 <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300" />
                 <div className="text-xs text-amber-200">
                   {warnings.slice(0, 3).map((w) => (
-                    <p key={w}>{w}</p>
+                    <p key={`${w.code}:${JSON.stringify(w.params ?? {})}`}>
+                      {localizeWarning(w)}
+                    </p>
                   ))}
                   {warnings.length > 3 && (
                     <p className="text-amber-200/60">

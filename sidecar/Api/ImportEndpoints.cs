@@ -11,11 +11,11 @@ public static class ImportEndpoints
             var log = loggerFactory.CreateLogger("Atelier.Import.Scan");
 
             if (string.IsNullOrWhiteSpace(request?.FolderPath))
-                return Results.BadRequest(new ErrorResponse("Feld 'folderPath' fehlt."));
+                return Fail.Bad("field_missing", ("field", "folderPath"));
 
             var folderPath = request.FolderPath.Trim();
             if (!Directory.Exists(folderPath))
-                return Results.BadRequest(new ErrorResponse($"Ordner nicht gefunden: {folderPath}"));
+                return Fail.Bad("folder_not_found", ("path", folderPath));
 
             try
             {
@@ -27,8 +27,7 @@ public static class ImportEndpoints
             catch (Exception ex)
             {
                 log.LogError(ex, "Import scan failed for {Folder}", folderPath);
-                return Results.BadRequest(new ErrorResponse(
-                    $"Ordner konnte nicht gescannt werden: {ex.Message}"));
+                return Fail.Bad("scan_failed", ("error", ex.Message));
             }
         });
     }

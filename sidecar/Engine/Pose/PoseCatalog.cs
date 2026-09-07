@@ -32,15 +32,15 @@ public static class PoseCatalog
         // stand/walk: the exact dictionaries grzyClothTool uses for freemode
         // ped animation previews (move_m@generic / move_f@generic).
         new PoseDefinition(
-            "stand", "Stehen (Idle)",
+            "stand", "Stand (idle)",
             new[] { new PoseClip("move_m@generic", "idle") },
             new[] { new PoseClip("move_f@generic", "idle") }),
         new PoseDefinition(
-            "walk", "Gehen (eingefroren)",
+            "walk", "Walk (frozen)",
             new[] { new PoseClip("move_m@generic", "walk", 0.25f) },
             new[] { new PoseClip("move_f@generic", "walk", 0.25f) }),
         new PoseDefinition(
-            "sit", "Sitzen",
+            "sit", "Sit",
             new[]
             {
                 new PoseClip("amb@world_human_picnic@male@base", "base"),
@@ -52,7 +52,7 @@ public static class PoseCatalog
                 new PoseClip("amb@world_human_seat_wall@female@hands_by_sides@base", "base"),
             }),
         new PoseDefinition(
-            "hands_up", "Hände hoch",
+            "hands_up", "Hands up",
             new[]
             {
                 new PoseClip("missminuteman_1ig_2", "handsup_base"),
@@ -64,7 +64,7 @@ public static class PoseCatalog
                 new PoseClip("random@mugging3", "handsup_standing_base"),
             }),
         new PoseDefinition(
-            "aim", "Zielen",
+            "aim", "Aim",
             new[]
             {
                 new PoseClip("reaction@intimidation@1h", "intro", 0.99f),
@@ -76,7 +76,7 @@ public static class PoseCatalog
                 new PoseClip("weapons@projectile@", "aimlive_m"),
             }),
         new PoseDefinition(
-            "arms_crossed", "Arme verschränkt",
+            "arms_crossed", "Arms crossed",
             new[]
             {
                 new PoseClip("amb@world_human_hang_out_street@male_c@base", "base"),

@@ -54,7 +54,7 @@ export const TattooCard = forwardRef<HTMLButtonElement, TattooCardProps>(
           {tattoo.label || t("card.untitled")}
         </p>
         <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-white/40">
-          <span className="truncate">{zone?.label ?? tattoo.zone}</span>
+          <span className="truncate">{zone ? t(`zone.${zone.id}`) : tattoo.zone}</span>
           <span className="text-white/20">·</span>
           <span className="font-mono">{GENDER_LABEL[tattoo.gender]}</span>
         </div>

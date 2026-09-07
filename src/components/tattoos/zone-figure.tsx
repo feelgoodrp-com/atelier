@@ -5,6 +5,8 @@
  * canvas. Shapes are deliberately simple (head/torso/arms/legs).
  */
 
+import { useTranslation } from "react-i18next";
+
 import { cn } from "@/lib/utils";
 import { TATTOO_ZONES, type TattooZoneId } from "@/lib/gta/tattoos";
 
@@ -27,13 +29,14 @@ export function ZoneFigure({
   onSelectZone?: (zone: TattooZoneId) => void;
   className?: string;
 }) {
+  const { t } = useTranslation("tattoos");
   const interactive = Boolean(onSelectZone);
   return (
     <svg
       viewBox="0 0 120 200"
       className={cn("h-full w-full", className)}
       role={interactive ? "group" : "img"}
-      aria-label="Tattoo-Zonen"
+      aria-label={t("zoneFigure.aria")}
     >
       {TATTOO_ZONES.map((zone) => {
         const s = ZONE_SHAPES[zone.id];
@@ -56,7 +59,7 @@ export function ZoneFigure({
             )}
             strokeWidth={1.5}
           >
-            <title>{zone.label}</title>
+            <title>{t(`zone.${zone.id}`)}</title>
           </rect>
         );
       })}

@@ -701,13 +701,15 @@ export function hasUnrenderedExtras(
 }
 
 /**
- * Curated built-in presets ("hübscher" default with ONE click) — every index
+ * Curated built-in presets (a good-looking default in ONE click) — every index
  * is inside the base-game inventory (EnableDlc=false) verified by the live
  * asset probe, so they render without fallback warnings. Not deletable, not
  * persisted (they live here, the store only keeps user presets).
  */
 export const STANDARD_APPEARANCE_PRESETS: ReadonlyArray<AppearancePreset> = [
   {
+    // NOTE: `name` is the STABLE identity (reserved-name check, user-preset
+    // shadowing) and is never displayed — `nameKey` is. Do not translate it.
     name: "Standard (männlich)",
     nameKey: "presets.standardMale",
     pedModel: "mp_m_freemode_01",

@@ -1,3 +1,4 @@
+using Feelgood.Atelier.Sidecar.Api;
 using System.Text;
 
 namespace Feelgood.Atelier.Sidecar.Engine.Build.Targets;
@@ -19,18 +20,16 @@ public static class RageMpBuilder
         Directory.CreateDirectory(dlcFolder);
 
         var report = SingleplayerBuilder.BuildDlcRpf(plan, dlcFolder, progress);
-        report.Warnings.Add(
-            "RageMP-Ziel ist Best-Effort: dlc.rpf im Singleplayer-Format unter " +
-            "client_packages/game_resources/dlcpacks/ — bitte in-game gegentesten.");
+        report.Warnings.Add(LocalizedMessage.Of("ragemp_best_effort"));
 
         var readme = new StringBuilder();
-        readme.AppendLine("atelier by feelgood — RageMP Addon-Kleidung");
+        readme.AppendLine("atelier by feelgood — RageMP add-on clothing");
         readme.AppendLine();
         readme.AppendLine("Installation:");
-        readme.AppendLine("  Den Ordner client_packages/ in den RageMP-Server kopieren (mergen).");
-        readme.AppendLine($"  Der DLC-Pack wird als dlcpacks/{plan.Options.DlcName}/dlc.rpf geladen.");
+        readme.AppendLine("  Copy (merge) the client_packages/ folder into your RageMP server.");
+        readme.AppendLine($"  The DLC pack loads as dlcpacks/{plan.Options.DlcName}/dlc.rpf.");
         readme.AppendLine();
-        readme.AppendLine("Hinweis: RageMP laedt clientseitige dlcpacks automatisch aus");
+        readme.AppendLine("Note: RageMP loads client-side dlcpacks automatically from");
         readme.AppendLine("client_packages/game_resources/dlcpacks/.");
         File.WriteAllText(Path.Combine(resourceFolder, "README.txt"), readme.ToString());
 

@@ -45,6 +45,7 @@ import { useAuthStore, useCloudEnabled } from "@/lib/stores/auth-store";
 import { usePreferencesStore } from "@/lib/stores/preferences-store";
 import { listMyPacks, type Pack } from "@/lib/sync/api-client";
 import { clonePackToLocal } from "@/lib/sync/clone";
+import i18n from "@/lib/i18n";
 import { formatRelativeTime } from "@/lib/format";
 
 function errorMessage(e: unknown): string {
@@ -55,7 +56,7 @@ function formatLastOpened(iso: string): string {
   const date = new Date(iso);
   return Number.isNaN(date.getTime())
     ? ""
-    : date.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
+    : date.toLocaleString(i18n.language, { dateStyle: "medium", timeStyle: "short" });
 }
 
 export function LauncherScreen() {

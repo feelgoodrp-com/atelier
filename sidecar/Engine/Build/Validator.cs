@@ -3,11 +3,24 @@ using Feelgood.Atelier.Sidecar.Parsing;
 
 namespace Feelgood.Atelier.Sidecar.Engine.Build;
 
-public sealed record Finding(string Severity, string Code, string? DrawableId, string Message);
+/// <summary>
+/// One validation finding. It carries NO sentence: <c>Code</c> identifies the
+/// problem and <c>Params</c> holds the values to fill in, so the desktop app
+/// renders it as <c>errors:findings.&lt;code&gt;</c> in the UI language.
+/// </summary>
+public sealed record Finding(
+    string Severity, string Code, string? DrawableId, IReadOnlyDictionary<string, string> Params)
+{
+    /// <summary>Terse constructor, e.g. Of("error", "ydd_missing", id, ("label", label)).</summary>
+    public static Finding Of(string severity, string code, string? drawableId,
+        params (string Key, string Value)[] args) =>
+        new(severity, code, drawableId, args.ToDictionary(a => a.Key, a => a.Value));
+}
 
 /// <summary>
-/// Project validation for POST /validate and the pre-build gate. Findings use
-/// German messages; severity "error" blocks a build, "warn"/"info" do not.
+/// Project validation for POST /validate and the pre-build gate. Findings are
+/// language-neutral (code + params); severity "error" blocks a build,
+/// "warn"/"info" do not.
 /// </summary>
 public static class Validator
 {
@@ -42,15 +55,14 @@ public static class Validator
 
             if (!GtaSlots.IsValidSlot(drawable))
             {
-                findings.Add(new Finding("error", "invalid_slot", id,
-                    $"Drawable \"{label}\": Slot \"{drawable.Type}\" passt nicht zu Kind \"{drawable.Kind}\"."));
+                findings.Add(Finding.Of("error", "invalid_slot", id,
+                    ("label", label), ("slot", drawable.Type ?? string.Empty), ("kind", drawable.Kind ?? string.Empty)));
                 continue;
             }
 
             if (drawable.IsReplace && drawable.ReplaceTargetId == null)
             {
-                findings.Add(new Finding("error", "replace_target_missing", id,
-                    $"Drawable \"{label}\": Replace-Modus ohne replaceTargetId."));
+                findings.Add(Finding.Of("error", "replace_target_missing", id, ("label", label)));
             }
             else if (drawable.IsReplace && drawable.ReplaceTargetId != null)
             {
@@ -59,8 +71,10 @@ public static class Validator
                 var replaceKey = $"{drawable.Gender}|{drawable.Type}|{drawable.ReplaceTargetId}";
                 if (seenReplaceTargets.TryGetValue(replaceKey, out var firstReplaceLabel))
                 {
-                    findings.Add(new Finding("error", "duplicate_replace_target", id,
-                        $"Drawable \"{label}\": gleiches Replace-Ziel ({drawable.Type} #{drawable.ReplaceTargetId}) wie \"{firstReplaceLabel}\" — die Dateien würden sich gegenseitig überschreiben."));
+                    findings.Add(Finding.Of("error", "duplicate_replace_target", id,
+                        ("label", label), ("slot", drawable.Type ?? string.Empty),
+                        ("target", drawable.ReplaceTargetId?.ToString() ?? string.Empty),
+                        ("first", firstReplaceLabel)));
                 }
                 else
                 {
@@ -71,24 +85,21 @@ public static class Validator
             // --- YDD ---------------------------------------------------------
             if (drawable.Ydd?.Path == null)
             {
-                findings.Add(new Finding("error", "ydd_missing", id,
-                    $"Drawable \"{label}\": keine YDD-Datei zugewiesen."));
+                findings.Add(Finding.Of("error", "ydd_missing", id, ("label", label)));
             }
             else
             {
                 var yddPath = BuildPlanner.Resolve(projectDir, drawable.Ydd.Path);
                 if (!File.Exists(yddPath))
                 {
-                    findings.Add(new Finding("error", "ydd_file_missing", id,
-                        $"Drawable \"{label}\": YDD-Datei nicht gefunden: {yddPath}"));
+                    findings.Add(Finding.Of("error", "ydd_file_missing", id, ("label", label), ("path", yddPath)));
                 }
                 else
                 {
                     var bytes = TryRead(yddPath);
                     if (bytes == null)
                     {
-                        findings.Add(new Finding("error", "ydd_file_unreadable", id,
-                            $"Drawable \"{label}\": YDD-Datei konnte nicht gelesen werden: {yddPath}"));
+                        findings.Add(Finding.Of("error", "ydd_file_unreadable", id, ("label", label), ("path", yddPath)));
                     }
                     else
                     {
@@ -96,14 +107,12 @@ public static class Validator
                         if (!string.IsNullOrEmpty(drawable.Ydd.Hash) &&
                             !hash.Equals(drawable.Ydd.Hash, StringComparison.OrdinalIgnoreCase))
                         {
-                            findings.Add(new Finding("error", "ydd_hash_mismatch", id,
-                                $"Drawable \"{label}\": YDD-Datei wurde verändert (Hash stimmt nicht mit dem Projekt überein)."));
+                            findings.Add(Finding.Of("error", "ydd_hash_mismatch", id, ("label", label)));
                         }
 
                         if (seenYddHashes.TryGetValue(hash, out var firstLabel))
                         {
-                            findings.Add(new Finding("warn", "duplicate_ydd", id,
-                                $"Drawable \"{label}\": identische YDD-Datei wie \"{firstLabel}\" (gleicher Hash)."));
+                            findings.Add(Finding.Of("warn", "duplicate_ydd", id, ("label", label), ("first", firstLabel)));
                         }
                         else
                         {
@@ -119,15 +128,14 @@ public static class Validator
             var textures = drawable.Textures ?? new List<AssetRefDto>();
             if (textures.Count == 0)
             {
-                findings.Add(new Finding("warn", "no_textures", id,
-                    $"Drawable \"{label}\": keine Texturen — in-game wäre das Drawable unsichtbar texturiert."));
+                findings.Add(Finding.Of("warn", "no_textures", id, ("label", label)));
             }
             if (textures.Count > 26)
             {
                 // Error, not warn: TextureLetter wraps modulo 26, so the 27th
                 // texture would silently overwrite letter "a" in the output.
-                findings.Add(new Finding("error", "too_many_textures", id,
-                    $"Drawable \"{label}\": {textures.Count} Texturen — das Spiel unterstützt maximal 26 (a–z)."));
+                findings.Add(Finding.Of("error", "too_many_textures", id,
+                    ("label", label), ("count", textures.Count.ToString())));
             }
 
             for (var i = 0; i < textures.Count; i++)
@@ -136,32 +144,30 @@ public static class Validator
                 var letter = StreamNames.TextureLetter(i);
                 if (texture.Path == null)
                 {
-                    findings.Add(new Finding("error", "texture_file_missing", id,
-                        $"Drawable \"{label}\": Textur {letter} hat keinen Pfad."));
+                    findings.Add(Finding.Of("error", "texture_path_missing", id, ("label", label), ("letter", letter)));
                     continue;
                 }
 
                 var texPath = BuildPlanner.Resolve(projectDir, texture.Path);
                 if (!File.Exists(texPath))
                 {
-                    findings.Add(new Finding("error", "texture_file_missing", id,
-                        $"Drawable \"{label}\": Textur {letter} nicht gefunden: {texPath}"));
+                    findings.Add(Finding.Of("error", "texture_file_missing", id,
+                        ("label", label), ("letter", letter), ("path", texPath)));
                     continue;
                 }
 
                 var texBytes = TryRead(texPath);
                 if (texBytes == null)
                 {
-                    findings.Add(new Finding("error", "texture_file_unreadable", id,
-                        $"Drawable \"{label}\": Textur {letter} konnte nicht gelesen werden: {texPath}"));
+                    findings.Add(Finding.Of("error", "texture_file_unreadable", id,
+                        ("label", label), ("letter", letter), ("path", texPath)));
                     continue;
                 }
 
                 if (!string.IsNullOrEmpty(texture.Hash) &&
                     !Sha256Hex(texBytes).Equals(texture.Hash, StringComparison.OrdinalIgnoreCase))
                 {
-                    findings.Add(new Finding("error", "texture_hash_mismatch", id,
-                        $"Drawable \"{label}\": Textur {letter} wurde verändert (Hash stimmt nicht mit dem Projekt überein)."));
+                    findings.Add(Finding.Of("error", "texture_hash_mismatch", id, ("label", label), ("letter", letter)));
                 }
 
                 CheckYtd(findings, id, label, letter, texBytes);
@@ -186,14 +192,13 @@ public static class Validator
             if (!drawableInfos.Any(d => d.Lods.Low)) missing.Add("Low");
             if (missing.Count > 0)
             {
-                findings.Add(new Finding("warn", "missing_lods", id,
-                    $"Drawable \"{label}\": YDD ohne {string.Join("/", missing)}-LOD — kann in-game ab mittlerer Distanz unsichtbar sein."));
+                findings.Add(Finding.Of("warn", "missing_lods", id,
+                    ("label", label), ("lods", string.Join("/", missing))));
             }
         }
         catch (Exception ex)
         {
-            findings.Add(new Finding("error", "ydd_parse_failed", id,
-                $"Drawable \"{label}\": YDD-Datei konnte nicht geparst werden: {ex.Message}"));
+            findings.Add(Finding.Of("error", "ydd_parse_failed", id, ("label", label), ("error", ex.Message)));
         }
     }
 
@@ -205,20 +210,22 @@ public static class Validator
             {
                 if (texture.Width > 2048 || texture.Height > 2048)
                 {
-                    findings.Add(new Finding("warn", "texture_large", id,
-                        $"Drawable \"{label}\": Textur {letter} ({texture.Name}) ist {texture.Width}x{texture.Height} — über 2048px kostet unnötig Speicher; /texture/optimize kann verkleinern."));
+                    findings.Add(Finding.Of("warn", "texture_large", id,
+                        ("label", label), ("letter", letter), ("texture", texture.Name ?? string.Empty),
+                        ("width", texture.Width.ToString()), ("height", texture.Height.ToString())));
                 }
                 if (!texture.IsPowerOfTwo)
                 {
-                    findings.Add(new Finding("warn", "texture_not_pot", id,
-                        $"Drawable \"{label}\": Textur {letter} ({texture.Name}) ist {texture.Width}x{texture.Height} — keine Zweierpotenz, das Spiel rendert sie evtl. fehlerhaft."));
+                    findings.Add(Finding.Of("warn", "texture_not_pot", id,
+                        ("label", label), ("letter", letter), ("texture", texture.Name ?? string.Empty),
+                        ("width", texture.Width.ToString()), ("height", texture.Height.ToString())));
                 }
             }
         }
         catch (Exception ex)
         {
-            findings.Add(new Finding("error", "ytd_parse_failed", id,
-                $"Drawable \"{label}\": Textur {letter} konnte nicht geparst werden: {ex.Message}"));
+            findings.Add(Finding.Of("error", "ytd_parse_failed", id,
+                ("label", label), ("letter", letter), ("error", ex.Message)));
         }
     }
 
@@ -233,13 +240,13 @@ public static class Validator
         {
             var (gender, slot, mode) = bucket.Key;
             var count = bucket.Count();
-            findings.Add(new Finding("info", "bucket_count", null,
-                $"{count} Drawable(s) im Bucket {gender}/{slot}/{mode}."));
+            findings.Add(Finding.Of("info", "bucket_count", null,
+                ("count", count.ToString()), ("gender", gender), ("slot", slot), ("mode", mode)));
 
             if (mode == "addon" && count > splitAt)
             {
-                findings.Add(new Finding("warn", "bucket_split", null,
-                    $"Bucket {gender}/{slot}: {count} Drawables überschreiten das Limit von {splitAt} — der Build wird in mehrere _partN-Ressourcen aufgeteilt."));
+                findings.Add(Finding.Of("warn", "bucket_split", null,
+                    ("gender", gender), ("slot", slot), ("count", count.ToString()), ("limit", splitAt.ToString())));
             }
         }
     }

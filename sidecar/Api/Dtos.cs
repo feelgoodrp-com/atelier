@@ -2,8 +2,43 @@ using System.Text.Json.Serialization;
 
 namespace Feelgood.Atelier.Sidecar.Api;
 
-/// <summary>Uniform error shape: serialized as { "error": "message" }.</summary>
-public sealed record ErrorResponse(string Error);
+/// <summary>
+/// Uniform error shape, serialized as { "error": "code", "params": {…} }.
+/// <c>Error</c> is a MACHINE CODE, never a sentence: the desktop app renders it
+/// as <c>errors:api.&lt;code&gt;</c> with <c>Params</c> as the interpolation
+/// values, so the text follows the UI language. Build it with <see cref="Fail"/>.
+/// </summary>
+public sealed record ErrorResponse(string Error, IReadOnlyDictionary<string, string>? Params = null);
+
+/// <summary>
+/// A user-facing message that is rendered in the APP's language: a machine
+/// <c>Code</c> plus the values to interpolate. Used for build/import warnings,
+/// which the desktop app renders as <c>errors:warnings.&lt;code&gt;</c>.
+/// </summary>
+public sealed record LocalizedMessage(string Code, IReadOnlyDictionary<string, string>? Params = null)
+{
+    public static LocalizedMessage Of(string code, params (string Key, string Value)[] args) =>
+        new(code, args.Length == 0 ? null : args.ToDictionary(a => a.Key, a => a.Value));
+}
+
+/// <summary>Terse constructors for the <see cref="ErrorResponse"/> envelope.</summary>
+public static class Fail
+{
+    /// <summary>400 with a machine code and its interpolation values.</summary>
+    public static IResult Bad(string code, params (string Key, string Value)[] args) =>
+        Results.BadRequest(new ErrorResponse(code, Args(args)));
+
+    /// <summary>Any status with a machine code and its interpolation values.</summary>
+    public static IResult Status(int statusCode, string code, params (string Key, string Value)[] args) =>
+        Results.Json(new ErrorResponse(code, Args(args)), statusCode: statusCode);
+
+    /// <summary>The bare envelope, for handlers writing the response themselves.</summary>
+    public static ErrorResponse Body(string code, params (string Key, string Value)[] args) =>
+        new(code, Args(args));
+
+    private static IReadOnlyDictionary<string, string>? Args((string Key, string Value)[] args) =>
+        args.Length == 0 ? null : args.ToDictionary(a => a.Key, a => a.Value);
+}
 
 public sealed record HealthResponse(bool Ok, string Version);
 
@@ -319,4 +354,4 @@ public sealed record ImportScanEntry(
 
 public sealed record ImportScanResponse(
     IReadOnlyList<ImportScanEntry> Entries,
-    IReadOnlyList<string> Warnings);
+    IReadOnlyList<LocalizedMessage> Warnings);

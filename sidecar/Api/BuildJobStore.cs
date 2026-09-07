@@ -24,14 +24,33 @@ public sealed class BuildJob
     private static TaskCompletionSource NewPulse() =>
         new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    public void Report(string phase, int current, int total, string message) =>
-        Append(JsonSerializer.Serialize(new { phase, current, total, message }, JsonOptions), terminal: false);
+    /// <summary>
+    /// One progress tick. <paramref name="messageCode"/> is a MACHINE CODE (the
+    /// app renders it as <c>build:progress.&lt;code&gt;</c>) and
+    /// <paramref name="messageParams"/> carries its interpolation values, so the
+    /// detail line follows the UI language instead of being frozen here.
+    /// </summary>
+    public void Report(string phase, int current, int total, string messageCode,
+        params (string Key, string Value)[] messageParams) =>
+        Append(
+            JsonSerializer.Serialize(
+                new { phase, current, total, messageCode, messageParams = Args(messageParams) },
+                JsonOptions),
+            terminal: false);
 
     public void Complete(string outDir, object report) =>
         Append(JsonSerializer.Serialize(new { done = true, outDir, report }, JsonOptions), terminal: true);
 
-    public void Fail(string error) =>
-        Append(JsonSerializer.Serialize(new { done = true, error }, JsonOptions), terminal: true);
+    /// <summary>Terminal failure; <paramref name="error"/> is a machine code rendered as <c>errors:api.&lt;code&gt;</c>.</summary>
+    public void Fail(string error, params (string Key, string Value)[] errorParams) =>
+        Append(
+            JsonSerializer.Serialize(
+                new { done = true, error, errorParams = Args(errorParams) },
+                JsonOptions),
+            terminal: true);
+
+    private static IReadOnlyDictionary<string, string>? Args((string Key, string Value)[] args) =>
+        args.Length == 0 ? null : args.ToDictionary(a => a.Key, a => a.Value);
 
     private void Append(string payload, bool terminal)
     {

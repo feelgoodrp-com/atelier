@@ -63,7 +63,7 @@ public static class TattooTextureBuilder
         if (ext == ".dds")
         {
             var texture = DDSIO.GetTexture(File.ReadAllBytes(path))
-                ?? throw new InvalidDataException($"DDS konnte nicht dekodiert werden: {path}");
+                ?? throw new InvalidDataException($"DDS could not be decoded: {path}");
             return PixelsFrom(texture);
         }
 
@@ -73,7 +73,7 @@ public static class TattooTextureBuilder
             var entry = RpfFile.CreateResourceFileEntry(ref data, 0);
             var ytd = RpfFile.GetFile<YtdFile>(entry, ResourceBuilder.Decompress(data));
             var texture = ytd?.TextureDict?.Textures?.data_items?.FirstOrDefault(t => t != null)
-                ?? throw new InvalidDataException($"Keine Textur in der YTD-Datei: {path}");
+                ?? throw new InvalidDataException($"No texture in the YTD file: {path}");
             return PixelsFrom(texture);
         }
 
@@ -83,7 +83,7 @@ public static class TattooTextureBuilder
         var height = (int)image.Height;
         using var pixels = image.GetPixels();
         var rgba = pixels.ToByteArray(PixelMapping.RGBA)
-            ?? throw new InvalidDataException($"Bild konnte nicht dekodiert werden: {path}");
+            ?? throw new InvalidDataException($"Image could not be decoded: {path}");
         return (rgba, width, height);
     }
 
@@ -91,7 +91,7 @@ public static class TattooTextureBuilder
     private static (byte[] rgba, int width, int height) PixelsFrom(Texture texture)
     {
         var rgba = DDSIO.GetPixels(texture, 0)
-            ?? throw new InvalidDataException($"Textur '{texture.Name}' konnte nicht dekodiert werden.");
+            ?? throw new InvalidDataException($"Texture '{texture.Name}' could not be decoded.");
         PixelSwizzle.BgraToRgbaInPlace(rgba);
         return (rgba, Math.Max(1, (int)texture.Width), Math.Max(1, (int)texture.Height));
     }

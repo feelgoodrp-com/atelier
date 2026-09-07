@@ -100,11 +100,11 @@ public static class ImportScanner
         public List<ImportScanTexture> Textures { get; } = new();
     }
 
-    public static (IReadOnlyList<ImportScanEntry> Entries, IReadOnlyList<string> Warnings) Scan(
+    public static (IReadOnlyList<ImportScanEntry> Entries, IReadOnlyList<LocalizedMessage> Warnings) Scan(
         string folderPath, ILogger? log = null)
     {
         var root = Path.GetFullPath(folderPath);
-        var warnings = new List<string>();
+        var warnings = new List<LocalizedMessage>();
         var filesByDir = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
         var fileCount = 0;
@@ -113,9 +113,9 @@ public static class ImportScanner
         Walk(root, 0, filesByDir, ref fileCount, ref truncated, ref depthLimited, warnings);
 
         if (truncated)
-            warnings.Add($"Maximale Dateianzahl ({MaxFiles}) erreicht – der Scan wurde abgebrochen.");
+            warnings.Add(LocalizedMessage.Of("scan_file_limit", ("max", MaxFiles.ToString())));
         if (depthLimited)
-            warnings.Add($"Maximale Ordnertiefe ({MaxDepth}) erreicht – tiefere Ordner wurden übersprungen.");
+            warnings.Add(LocalizedMessage.Of("scan_depth_limit", ("max", MaxDepth.ToString())));
 
         var entries = new List<ImportScanEntry>();
         var unmatchedTextures = new List<string>();
@@ -129,12 +129,13 @@ public static class ImportScanner
         }
 
         if (ignoredMapCount > 0)
-            warnings.Add($"Normal-/Specular-Maps wurden ignoriert ({ignoredMapCount} Datei(en)).");
+            warnings.Add(LocalizedMessage.Of("scan_maps_ignored", ("count", ignoredMapCount.ToString())));
 
         foreach (var texture in unmatchedTextures.Take(MaxUnmatchedWarnings))
-            warnings.Add($"Textur ohne passendes YDD: {texture}");
+            warnings.Add(LocalizedMessage.Of("scan_texture_unmatched", ("texture", texture)));
         if (unmatchedTextures.Count > MaxUnmatchedWarnings)
-            warnings.Add($"... und {unmatchedTextures.Count - MaxUnmatchedWarnings} weitere Texturen ohne passendes YDD.");
+            warnings.Add(LocalizedMessage.Of("scan_texture_unmatched_more",
+                ("count", (unmatchedTextures.Count - MaxUnmatchedWarnings).ToString())));
 
         entries.Sort(static (a, b) => string.Compare(a.YddPath, b.YddPath, StringComparison.OrdinalIgnoreCase));
         return (entries, warnings);
@@ -144,7 +145,7 @@ public static class ImportScanner
         string dir, int depth,
         Dictionary<string, List<string>> filesByDir,
         ref int fileCount, ref bool truncated, ref bool depthLimited,
-        List<string> warnings)
+        List<LocalizedMessage> warnings)
     {
         string[] files;
         string[] subDirs;
@@ -155,7 +156,7 @@ public static class ImportScanner
         }
         catch (Exception ex)
         {
-            warnings.Add($"Ordner nicht lesbar: {dir} ({ex.Message})");
+            warnings.Add(LocalizedMessage.Of("scan_dir_unreadable", ("path", dir), ("error", ex.Message)));
             return;
         }
 
@@ -199,7 +200,7 @@ public static class ImportScanner
     private static void TryApplyPackMetadata(
         string dir, string root, List<string> files,
         List<ImportScanEntry> entries, HashSet<string> consumed,
-        List<string> warnings, ILogger? log)
+        List<LocalizedMessage> warnings, ILogger? log)
     {
         var metaPath = files.FirstOrDefault(static f =>
             string.Equals(Path.GetFileName(f), "pack-metadata.json", StringComparison.OrdinalIgnoreCase));
@@ -213,7 +214,8 @@ public static class ImportScanner
         catch (Exception ex)
         {
             log?.LogWarning(ex, "Failed to parse {MetaPath}", metaPath);
-            warnings.Add($"pack-metadata.json konnte nicht gelesen werden ({metaPath}): {ex.Message}");
+            warnings.Add(LocalizedMessage.Of("scan_pack_metadata_unreadable",
+                ("path", metaPath), ("error", ex.Message)));
             return;
         }
 
@@ -223,7 +225,7 @@ public static class ImportScanner
                 !doc.RootElement.TryGetProperty("drawables", out var drawables) ||
                 drawables.ValueKind != JsonValueKind.Array)
             {
-                warnings.Add($"pack-metadata.json ohne 'drawables'-Liste: {metaPath}");
+                warnings.Add(LocalizedMessage.Of("scan_pack_metadata_no_drawables", ("path", metaPath)));
                 return;
             }
 
@@ -283,7 +285,7 @@ public static class ImportScanner
     private static void ScanByConvention(
         string dir, string root, List<string> files,
         List<ImportScanEntry> entries, HashSet<string> consumed,
-        List<string> unmatchedTextures, List<string> warnings, ref int ignoredMapCount)
+        List<string> unmatchedTextures, List<LocalizedMessage> warnings, ref int ignoredMapCount)
     {
         var candidates = new List<YddCandidate>();
 
@@ -381,7 +383,7 @@ public static class ImportScanner
     /// _1 → the base's first-person model; _2+ are reported as unsupported.
     /// </summary>
     private static void FoldAlternationModels(
-        List<YddCandidate> candidates, HashSet<string> consumed, List<string> warnings)
+        List<YddCandidate> candidates, HashSet<string> consumed, List<LocalizedMessage> warnings)
     {
         // Index the bases by (prefix, baseName) so we only fold a _<n> when its
         // stem actually exists as a real drawable in the same folder.
@@ -404,8 +406,8 @@ public static class ImportScanner
             }
             else
             {
-                warnings.Add(
-                    $"Alternations-Modell nicht importiert (nicht unterstützt): {Path.GetFileName(c.Path)}");
+                warnings.Add(LocalizedMessage.Of("scan_alternation_skipped",
+                    ("file", Path.GetFileName(c.Path))));
             }
 
             folded.Add(c);

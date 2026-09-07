@@ -15,5 +15,11 @@
   "error": "Error",
   "warning": "Warning",
   "language": "Language",
-  "settings": "Settings"
+  "settings": "Settings",
+  "relativeTime": {
+    "justNow": "just now",
+    "seconds": "{{n}}s ago",
+    "minutes": "{{n}}min ago",
+    "hours": "{{n}}h ago"
+  }
 }

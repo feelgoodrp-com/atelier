@@ -126,4 +126,17 @@ void i18n.use(initReactI18next).init({
   returnNull: false,
 });
 
+// Keep <html lang> on the active language. It is not decoration: screen
+// readers pick the pronunciation from it, and it drives CSS :lang() and
+// hyphenation. index.html ships lang="en" (the DEFAULT_LANGUAGE), so this only
+// has to follow later changes — the startup restore in ./language and every
+// switch from the settings screen both go through changeLanguage.
+if (typeof document !== "undefined") {
+  const syncDocumentLanguage = (lng: string): void => {
+    document.documentElement.lang = lng;
+  };
+  syncDocumentLanguage(i18n.language || DEFAULT_LANGUAGE);
+  i18n.on("languageChanged", syncDocumentLanguage);
+}
+
 export default i18n;

@@ -20,7 +20,7 @@ public static class YddParser
         var ydd = RpfFile.GetFile<YddFile>(entry, decompressed);
 
         if (ydd?.Drawables == null || ydd.Drawables.Length == 0)
-            throw new InvalidDataException("Keine Drawables in der YDD-Datei gefunden.");
+            throw new InvalidDataException("No drawables found in the YDD file.");
 
         var result = new List<DrawableInfo>(ydd.Drawables.Length);
         for (var i = 0; i < ydd.Drawables.Length; i++)
@@ -66,7 +66,7 @@ public static class YddParser
         }
 
         if (result.Count == 0)
-            throw new InvalidDataException("Keine Drawables in der YDD-Datei gefunden.");
+            throw new InvalidDataException("No drawables found in the YDD file.");
 
         return result;
     }

@@ -1,6 +1,6 @@
 /**
- * "Charakter"-Panel des 3D-Preview-Headers: Komponenten-Stepper für den
- * Freemode-Body, Menyoo-XML-Import, Presets und Fallback-Warnungen.
+ * The "Character" panel of the 3D preview header: component stepper for the
+ * freemode body, Menyoo XML import, presets and fallback warnings.
  *
  * Built on the raw Radix dialog primitive in NON-modal mode (no overlay, no
  * focus trap) — components/ui has no popover, and a modal dialog would hide

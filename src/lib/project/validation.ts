@@ -6,16 +6,26 @@
  * The derived YTD file name and per-gender overlay names come from
  * selectDerivedTattooBuild (project-store.ts) so this validates EXACTLY what the
  * build step will emit.
+ *
+ * Findings carry a machine `code` plus its interpolation `params` instead of a
+ * ready-made sentence — the message is rendered in the UI language via
+ * `errors:tattooFindings.<code>` (same contract as the sidecar's build
+ * findings), so a language switch re-renders them without re-validating.
  */
 
 import type { AtelierProject } from "./schema";
 import { selectDerivedTattooBuild } from "@/lib/stores/project-store";
 
+export type TattooFindingCode = "no_image" | "duplicate_overlay_name";
+
 export interface TattooValidationFinding {
   severity: "error" | "warning";
   /** The offending tattoo uuid, or null for project-level findings. */
   tattooId: string | null;
-  message: string;
+  /** Rendered as `errors:tattooFindings.<code>` with {@link params}. */
+  code: TattooFindingCode;
+  /** Interpolation values for the localized message. */
+  params: Record<string, string>;
 }
 
 export function validateTattoos(project: AtelierProject): TattooValidationFinding[] {
@@ -28,7 +38,8 @@ export function validateTattoos(project: AtelierProject): TattooValidationFindin
       findings.push({
         severity: "error",
         tattooId: t.id,
-        message: `Tattoo "${t.label || t.id}" hat kein Bild`,
+        code: "no_image",
+        params: { label: t.label || t.id },
       });
     }
   }
@@ -46,7 +57,8 @@ export function validateTattoos(project: AtelierProject): TattooValidationFindin
         findings.push({
           severity: "error",
           tattooId: t.id,
-          message: `Overlay-Name "${name}" wird von mehreren Tattoos benutzt`,
+          code: "duplicate_overlay_name",
+          params: { name },
         });
       } else {
         seenName.set(name, t.id);

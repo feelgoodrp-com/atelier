@@ -1,4 +1,5 @@
-﻿using System.Security;
+﻿using Feelgood.Atelier.Sidecar.Api;
+using System.Security;
 using System.Text;
 
 namespace Feelgood.Atelier.Sidecar.Engine.Build.Targets;
@@ -15,7 +16,7 @@ public static class FivemBuilder
     public static BuildReport Build(BuildPlan plan, string outDir, BuildProgress progress)
     {
         var resources = new List<BuildResourceReport>();
-        var warnings = new List<string>(plan.Warnings);
+        var warnings = new List<LocalizedMessage>(plan.Warnings);
 
         var totalFiles = plan.Parts.Sum(p => p.Files.Count);
         var copied = 0;
@@ -38,8 +39,8 @@ public static class FivemBuilder
 
             foreach (var gender in part.Genders)
             {
-                progress("ymt", 0, part.Genders.Count,
-                    $"Erzeuge CPedVariationInfo für {gender.PedName} ({part.DlcName})");
+                progress("ymt", 0, part.Genders.Count, "ymt",
+                    ("ped", gender.PedName), ("dlc", part.DlcName));
 
                 var ymtBytes = YmtGenerator.BuildYmt(gender);
                 File.WriteAllBytes(
@@ -69,7 +70,7 @@ public static class FivemBuilder
                 }
             }
 
-            progress("meta", 0, 1, $"Schreibe Manifeste für {part.FolderName}");
+            progress("meta", 0, 1, "manifests", ("resource", part.FolderName));
 
             // First-person alternates (root-level meta + data_file).
             var firstPersonFiles = part.Files
@@ -93,15 +94,15 @@ public static class FivemBuilder
             string? tattooManifestFile = null;
             if (firstPart && plan.Tattoos.Items.Count > 0)
             {
-                progress("tattoos", 0, plan.Tattoos.Items.Count,
-                    $"Erzeuge {plan.Tattoos.Items.Count} Tattoo-Overlay(s)");
+                progress("tattoos", 0, plan.Tattoos.Items.Count, "tattooOverlays",
+                    ("count", plan.Tattoos.Items.Count.ToString()));
 
                 var tattooDone = 0;
                 foreach (var item in plan.Tattoos.Items)
                 {
                     var ytdBytes = TattooTextureBuilder.BuildYtd(item.SourceImagePath, item.YtdName);
                     File.WriteAllBytes(Path.Combine(streamFolder, $"{item.YtdName}.ytd"), ytdBytes);
-                    progress("tattoos", ++tattooDone, plan.Tattoos.Items.Count, $"{item.YtdName}.ytd");
+                    progress("tattoos", ++tattooDone, plan.Tattoos.Items.Count, "file", ("name", $"{item.YtdName}.ytd"));
                 }
 
                 overlayFile = $"{plan.Tattoos.Collection}_overlays.xml";
