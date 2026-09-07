@@ -4,7 +4,20 @@ All notable changes to **atelier** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
-## [1.11.1] — 2026-08-26
+## [1.12.0] — 2026-09-07
+
+### Added
+
+- **Full app-wide localization.** Every user-facing string is now translated —
+  not just the app UI, but the messages that cross from the Rust host and the
+  background engine too. Warnings, findings, build errors and progress updates
+  travel as language-neutral codes and are rendered in the language you picked,
+  so switching between English and German re-labels the whole app, including the
+  live log pane and the pre-build check. The document language (`<html lang>`)
+  follows your choice, and a language switch is broadcast to every open window
+  at once. Thanks to **[WooAf]** ([#14]) for contributing the localization pass.
+
+
 
 ### Fixed
 
@@ -367,6 +380,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
+[1.12.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.12.0
 [1.11.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.11.1
 [1.11.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.11.0
 [1.10.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.10.0
@@ -376,6 +390,8 @@ and this project follows [Semantic Versioning](https://semver.org/).
 [1.8.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.8.0
 [1.7.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.7.0
 [#13]: https://github.com/feelgoodrp-com/atelier/pull/13
+[#14]: https://github.com/feelgoodrp-com/atelier/pull/14
+[WooAf]: https://github.com/WooAf
 [#12]: https://github.com/feelgoodrp-com/atelier/pull/12
 [1.6.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.6.1
 [1.6.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.6.0
