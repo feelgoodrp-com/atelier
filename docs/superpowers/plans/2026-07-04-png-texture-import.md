@@ -388,7 +388,7 @@ Expected: a new variant appears with thumbnail; 3D preview renders it; the proje
 
 ```bash
 git push -u fork feat/png-texture-import
-gh pr create --repo feelgoodrp-com/atelier --base master --head gitBitsystem:feat/png-texture-import \
+gh pr create --repo grandTheftAtelier/atelier --base master --head gitBitsystem:feat/png-texture-import \
   --title "feat: import PNG/JPG/WebP images as texture variants" \
   --body "## What
 

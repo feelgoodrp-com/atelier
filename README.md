@@ -13,9 +13,9 @@ Manage clothing, preview it in real-time 3D, and build it in one click for
 &nbsp;![Windows](https://img.shields.io/badge/Windows-10%20%2F%2011-1f1f1f)
 &nbsp;![Tauri 2 · React 19](https://img.shields.io/badge/Tauri%202%20·%20React%2019-1f1f1f)
 
-[**⬇ Download**](https://github.com/feelgoodrp-com/atelier/releases) ·
-[Backend](https://github.com/feelgoodrp-com/atelier-api) ·
-[In-game viewer](https://github.com/feelgoodrp-com/atelier-fivem) ·
+[**⬇ Download**](https://github.com/grandTheftAtelier/atelier/releases) ·
+[Backend](https://github.com/grandTheftAtelier/atelier-api) ·
+[In-game viewer](https://github.com/grandTheftAtelier/atelier-fivem) ·
 [In the spirit of grzyClothTool](https://github.com/grzybeek/grzyClothTool)
 
 </div>
@@ -52,7 +52,7 @@ optionally collaborate as a team over a cloud.
   or as a batch across all oversized textures.
 - **In-game viewer** _(optional)_ — tick **Viewer metadata** when building for
   FiveM and the pack also gets an `atelier-pack.json`, so
-  [atelier-fivem](https://github.com/feelgoodrp-com/atelier-fivem) can find it on
+  [atelier-fivem](https://github.com/grandTheftAtelier/atelier-fivem) can find it on
   your server and let you browse it on a ped — with the labels and groups you
   gave your items, instead of bare index numbers. Off by default; without the
   tick the build output is unchanged and the pack stays invisible to the viewer.
@@ -61,14 +61,14 @@ optionally collaborate as a team over a cloud.
   asset hashes appear automatically on every connected client. Binary assets
   are uploaded content-addressed before the operation is published; reconnects
   recover from the durable server workspace and local operation queue (via
-  [atelier-api](https://github.com/feelgoodrp-com/atelier-api)).
+  [atelier-api](https://github.com/grandTheftAtelier/atelier-api)).
 - **Import wizard** — existing packs as well as `.ydd`/`.ytd`/`.yld` via drag &
   drop, with automatic classification.
 
 ## Installation
 
 Grab the latest version from the
-[**GitHub releases**](https://github.com/feelgoodrp-com/atelier/releases):
+[**GitHub releases**](https://github.com/grandTheftAtelier/atelier/releases):
 
 | Variant | File | When |
 | --- | --- | --- |
@@ -124,7 +124,7 @@ bun run tauri:build       # release bundle (installer + portable)
   `#0b0b0b`, blurple `#5865F2`, Sora).
 - **Sidecar** — .NET 8 minimal API, spawned locally by the app; uses
   CodeWalker.Core for parsing, the 3D preview and real binary YMTs.
-- **API** _(optional)_ — [atelier-api](https://github.com/feelgoodrp-com/atelier-api),
+- **API** _(optional)_ — [atelier-api](https://github.com/grandTheftAtelier/atelier-api),
   only needed for login & the team cloud.
 
 ## License
@@ -159,7 +159,7 @@ Keep the copyright line (`Required Notice` in the license) intact.
 - **[Blaccii](https://github.com/Blaccii)** — community contributor: the
   256-drawable split limit.
 - **[DasEric](https://github.com/DasEric)** — community contributor: the
-  realtime team workspace ([#13](https://github.com/feelgoodrp-com/atelier/pull/13)).
+  realtime team workspace ([#13](https://github.com/grandTheftAtelier/atelier/pull/13)).
 - **[WooAf](https://github.com/WooAf)** — community contributor: full app-wide
-  localization ([#14](https://github.com/feelgoodrp-com/atelier/pull/14)).
+  localization ([#14](https://github.com/grandTheftAtelier/atelier/pull/14)).
 - Built by the **feelgood team** and **Claude Fable 5**.

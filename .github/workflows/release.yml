@@ -147,10 +147,10 @@ jobs:
           $asset = "atelier_$($env:VERSION)_x64-setup.exe"
           Move-Item $exe.FullName "$nsis/$asset" -Force
           $signature = (Get-Content $sig.FullName -Raw).Trim()
-          $url = "https://github.com/feelgoodrp-com/atelier/releases/download/v$($env:VERSION)/$asset"
+          $url = "https://github.com/grandTheftAtelier/atelier/releases/download/v$($env:VERSION)/$asset"
           # Release notes shown in the in-app updater: the matching CHANGELOG
           # section, falling back to a link if this version isn't documented.
-          $notes = "See https://github.com/feelgoodrp-com/atelier/releases/tag/v$($env:VERSION)"
+          $notes = "See https://github.com/grandTheftAtelier/atelier/releases/tag/v$($env:VERSION)"
           if (Test-Path "CHANGELOG.md") {
             $cl = Get-Content "CHANGELOG.md"
             $start = -1; $end = $cl.Count

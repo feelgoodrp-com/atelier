@@ -76,7 +76,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
   into the resource, carrying what the game itself does not need and therefore
   loses: the **label**, **group**, slot name, texture count, mode and flags of
   every item.
-  That file is what [atelier-fivem](https://github.com/feelgoodrp-com/atelier-fivem)
+  That file is what [atelier-fivem](https://github.com/grandTheftAtelier/atelier-fivem)
   looks for — a new companion resource that finds your packs on a running
   server and lets you browse them in-game on a mannequin. No checkbox, no file,
   and the pack stays invisible to it: nothing is guessed from folder contents.
@@ -292,7 +292,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 - **Calmer update card** — the "update available" panel uses a more subtle
   background so it no longer dominates the Settings page.
 - Release notes now render as proper **Markdown** (headings, bullet lists,
-  emphasis and [links](https://github.com/feelgoodrp-com/atelier)) instead of
+  emphasis and [links](https://github.com/grandTheftAtelier/atelier)) instead of
   raw text.
 
 ## [1.2.5] — 2026-06-23
@@ -324,7 +324,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 > ⚠️ **One-time manual update required.** Versions before 1.2.3 don't have the
 > updater yet, so you must download and install the **latest version manually
 > once** — grab the `*-setup.exe` from the
-> [releases page](https://github.com/feelgoodrp-com/atelier/releases/latest).
+> [releases page](https://github.com/grandTheftAtelier/atelier/releases/latest).
 > From then on, updates install themselves. (The portable ZIP does **not**
 > auto-update — use the `setup.exe` installer to get automatic updates.)
 
@@ -380,32 +380,32 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 > ⚠️ 1.0.0 shipped with a locale-loading regression — use 1.0.1 or newer.
 
-[1.12.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.12.0
-[1.11.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.11.1
-[1.11.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.11.0
-[1.10.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.10.0
-[1.9.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.9.1
-[1.9.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.9.0
-[1.8.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.8.1
-[1.8.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.8.0
-[1.7.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.7.0
-[#13]: https://github.com/feelgoodrp-com/atelier/pull/13
-[#14]: https://github.com/feelgoodrp-com/atelier/pull/14
+[1.12.0]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.12.0
+[1.11.1]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.11.1
+[1.11.0]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.11.0
+[1.10.0]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.10.0
+[1.9.1]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.9.1
+[1.9.0]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.9.0
+[1.8.1]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.8.1
+[1.8.0]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.8.0
+[1.7.0]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.7.0
+[#13]: https://github.com/grandTheftAtelier/atelier/pull/13
+[#14]: https://github.com/grandTheftAtelier/atelier/pull/14
 [WooAf]: https://github.com/WooAf
-[#12]: https://github.com/feelgoodrp-com/atelier/pull/12
-[1.6.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.6.1
-[1.6.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.6.0
-[1.5.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.5.0
-[1.4.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.4.0
-[1.3.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.3.0
-[#6]: https://github.com/feelgoodrp-com/atelier/pull/6
-[#10]: https://github.com/feelgoodrp-com/atelier/pull/10
-[#11]: https://github.com/feelgoodrp-com/atelier/pull/11
-[1.2.7]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.7
-[1.2.6]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.6
-[1.2.5]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.5
-[1.2.4]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.4
-[1.2.3]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.3
-[1.2.2]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.2.2
-[1.0.1]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.0.1
-[1.0.0]: https://github.com/feelgoodrp-com/atelier/releases/tag/v1.0.0
+[#12]: https://github.com/grandTheftAtelier/atelier/pull/12
+[1.6.1]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.6.1
+[1.6.0]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.6.0
+[1.5.0]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.5.0
+[1.4.0]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.4.0
+[1.3.0]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.3.0
+[#6]: https://github.com/grandTheftAtelier/atelier/pull/6
+[#10]: https://github.com/grandTheftAtelier/atelier/pull/10
+[#11]: https://github.com/grandTheftAtelier/atelier/pull/11
+[1.2.7]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.2.7
+[1.2.6]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.2.6
+[1.2.5]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.2.5
+[1.2.4]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.2.4
+[1.2.3]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.2.3
+[1.2.2]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.2.2
+[1.0.1]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.0.1
+[1.0.0]: https://github.com/grandTheftAtelier/atelier/releases/tag/v1.0.0

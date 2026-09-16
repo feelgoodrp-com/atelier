@@ -1,5 +1,5 @@
 Required Notice: Copyright © 2026 atelier by feelgood — the feelgood community
-<https://github.com/feelgoodrp-com/atelier>
+<https://github.com/grandTheftAtelier/atelier>
 
 # PolyForm Noncommercial License 1.0.0
 
